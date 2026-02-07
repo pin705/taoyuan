@@ -42,11 +42,6 @@ jobs:
       - name: 安装依赖
         run: pnpm install --frozen-lockfile
 
-      - name: 字体子集化
-        run: |
-          pip install fonttools
-          python scripts/subset-font.py
-
       - name: 构建前端项目
         run: pnpm run build
 

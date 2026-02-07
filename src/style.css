@@ -8,7 +8,8 @@
 /* zpix 像素字体（支持中英文） */
 @font-face {
   font-family: "zpix";
-  src: url("@/assets/fonts/zpix.ttf") format("truetype");
+  src:
+    url("@/assets/fonts/zpix.woff2") format("woff2");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -252,4 +253,9 @@ body {
   line-height: 1;
   padding: 4px 0;
   letter-spacing: 0.3em;
+}
+
+.qmsg .qmsg-content-wrapper {
+  color: var(--color-bg) !important;
+  background: var(--color-accent) !important;
 }

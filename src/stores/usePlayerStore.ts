@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import type { Gender } from '@/types'
 import {
   LATE_NIGHT_STAMINA_RECOVERY,
   PASSOUT_STAMINA_RECOVERY,
@@ -18,6 +19,10 @@ const FIGHTER_HP_BONUS = 15
 const WARRIOR_HP_BONUS = 25
 
 export const usePlayerStore = defineStore('player', () => {
+  const playerName = ref('未命名')
+  const gender = ref<Gender>('male')
+  /** 旧存档加载后需要设置身份（不持久化） */
+  const needsIdentitySetup = ref(false)
   const money = ref(500)
   const stamina = ref(120)
   const maxStamina = ref(120)
@@ -29,6 +34,8 @@ export const usePlayerStore = defineStore('player', () => {
 
   const isExhausted = computed(() => stamina.value <= 15)
   const staminaPercent = computed(() => Math.round((stamina.value / maxStamina.value) * 100))
+  /** NPC 用来称呼玩家的称谓 */
+  const honorific = computed(() => (gender.value === 'male' ? '小哥' : '姑娘'))
 
   /** 计算当前最大 HP（基础 + 挖矿等级 + 专精加成） */
   const getMaxHp = (): number => {
@@ -119,8 +126,17 @@ export const usePlayerStore = defineStore('player', () => {
     money.value += amount
   }
 
+  /** 设置玩家身份（新游戏或旧存档迁移时调用） */
+  const setIdentity = (name: string, g: Gender) => {
+    playerName.value = name
+    gender.value = g
+    needsIdentitySetup.value = false
+  }
+
   const serialize = () => {
     return {
+      playerName: playerName.value,
+      gender: gender.value,
       money: money.value,
       stamina: stamina.value,
       maxStamina: maxStamina.value,
@@ -131,6 +147,10 @@ export const usePlayerStore = defineStore('player', () => {
   }
 
   const deserialize = (data: ReturnType<typeof serialize>) => {
+    const hasIdentity = (data as any).playerName != null
+    playerName.value = (data as any).playerName ?? '未命名'
+    gender.value = (data as any).gender ?? 'male'
+    needsIdentitySetup.value = !hasIdentity
     money.value = data.money
     stamina.value = data.stamina
     maxStamina.value = data.maxStamina
@@ -140,6 +160,10 @@ export const usePlayerStore = defineStore('player', () => {
   }
 
   return {
+    playerName,
+    gender,
+    needsIdentitySetup,
+    honorific,
     money,
     stamina,
     maxStamina,
@@ -159,6 +183,7 @@ export const usePlayerStore = defineStore('player', () => {
     upgradeMaxStamina,
     spendMoney,
     earnMoney,
+    setIdentity,
     serialize,
     deserialize
   }

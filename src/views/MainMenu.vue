@@ -8,9 +8,9 @@
     </div>
 
     <!-- 主菜单 -->
-    <template v-if="!showFarmSelect">
-      <div class="flex flex-col gap-3 w-full md:w-100">
-        <button class="btn text-center justify-center text-lg py-3" @click="showFarmSelect = true">
+    <template v-if="!showCharCreate && !showFarmSelect && !showIdentitySetup">
+      <div class="flex flex-col gap-3 w-full md:w-110">
+        <button class="btn text-center justify-center text-lg py-3" @click="showCharCreate = true">
           <Play :size="14" />
           新的旅程
         </button>
@@ -23,8 +23,10 @@
                 <FolderOpen :size="14" class="inline" />
                 存档 {{ info.slot + 1 }}
               </span>
-              <span class="text-muted text-xs">
-                第{{ info.year }}年 {{ SEASON_NAMES[info.season as keyof typeof SEASON_NAMES] }} 第{{ info.day }}天 · {{ info.money }}文
+              <span class="text-muted text-xs truncate">
+                {{ info.playerName ?? '未命名' }} · 第{{ info.year }}年 {{ SEASON_NAMES[info.season as keyof typeof SEASON_NAMES] }} 第{{
+                  info.day
+                }}天 · {{ info.money }}文
               </span>
             </button>
             <button class="btn px-2 text-xs" @click="handleExportSlot(info.slot)" title="导出">
@@ -45,8 +47,59 @@
       </div>
     </template>
 
+    <!-- 角色创建 -->
+    <template v-else-if="showCharCreate && !showFarmSelect">
+      <p class="text-muted text-sm">创建你的角色</p>
+
+      <div class="flex flex-col gap-4 w-full max-w-xs px-4">
+        <!-- 名字输入 -->
+        <div>
+          <label class="text-xs text-muted mb-1 block">你的名字</label>
+          <input
+            v-model="charName"
+            type="text"
+            maxlength="4"
+            placeholder="请输入你的名字"
+            class="w-full px-3 py-2 bg-bg border border-accent/30 rounded text-sm focus:border-accent outline-none"
+          />
+        </div>
+
+        <!-- 性别选择 -->
+        <div>
+          <label class="text-xs text-muted mb-1 block">性别</label>
+          <div class="flex gap-3">
+            <button
+              class="btn flex-1 justify-center py-2"
+              :class="charGender === 'male' ? '!border-accent !bg-accent/10' : ''"
+              @click="charGender = 'male'"
+            >
+              男
+            </button>
+            <button
+              class="btn flex-1 justify-center py-2"
+              :class="charGender === 'female' ? '!border-accent !bg-accent/10' : ''"
+              @click="charGender = 'female'"
+            >
+              女
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button class="btn" @click="handleBackToMenu">
+          <ArrowLeft :size="14" />
+          返回
+        </button>
+        <button class="btn text-lg px-6" :disabled="!charName.trim()" @click="handleCharCreateNext">
+          <Play :size="14" />
+          下一步
+        </button>
+      </div>
+    </template>
+
     <!-- 农场选择 -->
-    <template v-else>
+    <template v-else-if="showFarmSelect">
       <p class="text-muted text-sm">选择你的田庄类型</p>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-xl w-full px-4">
@@ -64,7 +117,7 @@
       </div>
 
       <div class="flex gap-3">
-        <button class="btn" @click="handleBackToMenu">
+        <button class="btn" @click="handleBackToCharCreate">
           <ArrowLeft :size="14" />
           返回
         </button>
@@ -74,6 +127,49 @@
         </button>
       </div>
     </template>
+
+    <!-- 旧存档身份设置 -->
+    <template v-else-if="showIdentitySetup">
+      <p class="text-muted text-sm">检测到角色信息为空，请设置你的角色信息</p>
+
+      <div class="flex flex-col gap-4 w-full max-w-xs px-4">
+        <div>
+          <label class="text-xs text-muted mb-1 block">你的名字</label>
+          <input
+            v-model="charName"
+            type="text"
+            maxlength="4"
+            placeholder="请输入你的名字"
+            class="w-full px-3 py-2 bg-bg border border-accent/30 rounded text-sm focus:border-accent outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="text-xs text-muted mb-1 block">性别</label>
+          <div class="flex gap-3">
+            <button
+              class="btn flex-1 justify-center py-2"
+              :class="charGender === 'male' ? '!border-accent !bg-accent/10' : ''"
+              @click="charGender = 'male'"
+            >
+              男
+            </button>
+            <button
+              class="btn flex-1 justify-center py-2"
+              :class="charGender === 'female' ? '!border-accent !bg-accent/10' : ''"
+              @click="charGender = 'female'"
+            >
+              女
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn text-lg px-6" :disabled="!charName.trim()" @click="handleIdentityConfirm">
+        <Play :size="14" />
+        确认并继续
+      </button>
+    </template>
   </div>
 </template>
 
@@ -81,10 +177,10 @@
   import { Play, FolderOpen, ArrowLeft, Trash2, Download, Upload } from 'lucide-vue-next'
   import { ref } from 'vue'
   import { useRouter } from 'vue-router'
-  import { useGameStore, useSaveStore, useFarmStore, useAnimalStore, SEASON_NAMES } from '@/stores'
+  import { useGameStore, useSaveStore, useFarmStore, useAnimalStore, usePlayerStore, SEASON_NAMES } from '@/stores'
   import { FARM_MAP_DEFS } from '@/data/farmMaps'
   import { useAudio } from '@/composables/useAudio'
-  import type { FarmMapType } from '@/types'
+  import type { FarmMapType, Gender } from '@/types'
 
   const router = useRouter()
   const { startBgm } = useAudio()
@@ -93,18 +189,34 @@
   const saveStore = useSaveStore()
   const farmStore = useFarmStore()
   const animalStore = useAnimalStore()
+  const playerStore = usePlayerStore()
 
   const slots = ref(saveStore.getSlots())
+  const showCharCreate = ref(false)
   const showFarmSelect = ref(false)
+  const showIdentitySetup = ref(false)
   const selectedMap = ref<FarmMapType>('standard')
+  const charName = ref('')
+  const charGender = ref<Gender>('male')
 
   const refreshSlots = () => {
     slots.value = saveStore.getSlots()
   }
 
   const handleBackToMenu = () => {
+    showCharCreate.value = false
     showFarmSelect.value = false
     selectedMap.value = 'standard'
+    charName.value = ''
+    charGender.value = 'male'
+  }
+
+  const handleCharCreateNext = () => {
+    showFarmSelect.value = true
+  }
+
+  const handleBackToCharCreate = () => {
+    showFarmSelect.value = false
   }
 
   const handleNewGame = () => {
@@ -114,6 +226,7 @@
       alert('存档槽位已满，请先删除一个旧存档。')
       return
     }
+    playerStore.setIdentity((charName.value.trim() || '未命名').slice(0, 4), charGender.value)
     gameStore.startNewGame(selectedMap.value)
     // 标准农场初始6×6，其余4×4
     farmStore.resetFarm(selectedMap.value === 'standard' ? 6 : 4)
@@ -151,8 +264,20 @@
 
   const handleLoadGame = (slot: number) => {
     if (saveStore.loadFromSlot(slot)) {
-      router.push('/game')
+      if (playerStore.needsIdentitySetup) {
+        // 旧存档没有性别/名字数据，先让玩家设置
+        showIdentitySetup.value = true
+      } else {
+        router.push('/game')
+      }
     }
+  }
+
+  /** 旧存档身份设置完成 */
+  const handleIdentityConfirm = () => {
+    playerStore.setIdentity((charName.value.trim() || '未命名').slice(0, 4), charGender.value)
+    showIdentitySetup.value = false
+    router.push('/game')
   }
 
   const handleDeleteSlot = (slot: number) => {

@@ -1,7 +1,7 @@
 <template>
   <Transition name="panel-fade">
     <div v-if="open" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-3" @click.self="$emit('close')">
-      <div class="map-container game-panel w-full max-w-sm max-h-[85vh] overflow-y-auto">
+      <div class="map-container game-panel w-full max-w-sm md:max-w-150 max-h-[85vh] overflow-y-auto">
         <p class="text-accent text-sm text-center mb-3 tracking-widest">—— 桃源乡地图 ——</p>
 
         <!-- 田庄 -->

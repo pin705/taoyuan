@@ -196,12 +196,58 @@ export const handleSellItem = (itemId: string, quality: Quality) => {
   }
 }
 
+/** 出售指定物品的全部数量 */
+export const handleSellItemAll = (itemId: string, quantity: number, quality: Quality) => {
+  const shopStore = useShopStore()
+  const achievementStore = useAchievementStore()
+  const itemDef = getItemById(itemId)
+  if (!itemDef || quantity <= 0) return
+  const earned = shopStore.sellItem(itemId, quantity, quality)
+  if (earned > 0) {
+    sfxCoin()
+    achievementStore.recordMoneyEarned(earned)
+    showFloat(`+${earned}文`, 'accent')
+    addLog(`卖出了${itemDef.name}×${quantity}。(+${earned}文)`)
+  }
+}
+
+/** 一键出售背包中所有可出售物品 */
+export const handleSellAll = () => {
+  const shopStore = useShopStore()
+  const inventoryStore = useInventoryStore()
+  const achievementStore = useAchievementStore()
+  let totalEarned = 0
+  let totalCount = 0
+  // 快照当前可卖物品（避免遍历中修改数组）
+  const sellable = inventoryStore.items
+    .filter(inv => {
+      const def = getItemById(inv.itemId)
+      return def && def.category !== 'seed'
+    })
+    .map(inv => ({ itemId: inv.itemId, quantity: inv.quantity, quality: inv.quality }))
+  for (const item of sellable) {
+    const earned = shopStore.sellItem(item.itemId, item.quantity, item.quality)
+    if (earned > 0) {
+      totalEarned += earned
+      totalCount += item.quantity
+    }
+  }
+  if (totalEarned > 0) {
+    sfxCoin()
+    achievementStore.recordMoneyEarned(totalEarned)
+    showFloat(`+${totalEarned}文`, 'accent')
+    addLog(`一键出售了${totalCount}件物品。(+${totalEarned}文)`)
+  }
+}
+
 export const useFarmActions = () => {
   return {
     selectedSeed,
     handlePlotClick,
     handleBuySeed,
     handleSellItem,
+    handleSellItemAll,
+    handleSellAll,
     QUALITY_NAMES
   }
 }

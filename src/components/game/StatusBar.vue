@@ -4,6 +4,7 @@
     <div class="flex items-center justify-between text-xs md:text-sm">
       <div class="flex items-center gap-2 md:gap-3">
         <span class="text-accent font-bold">桃源乡</span>
+        <span class="text-muted text-xs max-w-16 truncate">{{ playerStore.playerName }}</span>
         <span class="hidden md:inline">第{{ gameStore.year }}年</span>
         <span>{{ SEASON_NAMES[gameStore.season] }} 第{{ gameStore.day }}天</span>
         <span class="text-muted hidden md:inline">({{ gameStore.weekdayName }})</span>
@@ -58,6 +59,10 @@
       </div>
       <!-- 音频控制 -->
       <div class="flex items-center gap-1 shrink-0">
+        <button class="!hidden btn btn-danger text-xs py-0 px-2 min-h-0 md:!flex" @click="showMobileMap = true">
+          <Map :size="12" />
+          地图
+        </button>
         <button class="!hidden btn btn-danger text-xs py-0 px-2 min-h-0 md:!flex" @click.stop="handleSleep">
           <Moon :size="12" />
           {{ sleepLabel }}
@@ -71,21 +76,33 @@
         </button>
       </div>
     </div>
+    <MobileMapMenu :open="showMobileMap" :current="currentPanel" @close="showMobileMap = false" />
   </div>
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import { computed, ref } from 'vue'
+  import { useRoute } from 'vue-router'
   import { useGameStore, usePlayerStore, SEASON_NAMES, WEATHER_NAMES } from '@/stores'
   import { useAudio } from '@/composables/useAudio'
+  import MobileMapMenu from '@/components/game/MobileMapMenu.vue'
   import { DAY_START_HOUR, DAY_END_HOUR } from '@/data/timeConstants'
-  import { Zap, Heart, Clock, Coins, Volume2, VolumeX, Music, Moon } from 'lucide-vue-next'
+  import { Zap, Heart, Clock, Coins, Volume2, VolumeX, Music, Moon, Map } from 'lucide-vue-next'
 
   const emit = defineEmits<{ 'request-sleep': [] }>()
 
+  const route = useRoute()
   const gameStore = useGameStore()
   const playerStore = usePlayerStore()
   const { sfxEnabled, bgmEnabled, toggleSfx, toggleBgm } = useAudio()
+
+  /** 地图菜单 */
+  const showMobileMap = ref(false)
+
+  /** 从路由名称获取当前面板标识 */
+  const currentPanel = computed(() => {
+    return (route.name as string) ?? 'farm'
+  })
 
   const staminaBarColor = computed(() => {
     const pct = playerStore.staminaPercent

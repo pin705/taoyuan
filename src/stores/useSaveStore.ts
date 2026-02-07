@@ -58,6 +58,7 @@ export interface SaveSlotInfo {
   season?: string
   day?: number
   money?: number
+  playerName?: string
   savedAt?: string
 }
 
@@ -81,6 +82,7 @@ export const useSaveStore = defineStore('save', () => {
               season: data.game?.season,
               day: data.game?.day,
               money: data.player?.money,
+              playerName: data.player?.playerName,
               savedAt: data.savedAt
             })
           } else {

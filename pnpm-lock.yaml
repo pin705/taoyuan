@@ -23,6 +23,12 @@ importers:
       pinia:
         specifier: ^3.0.4
         version: 3.0.4(typescript@5.9.3)(vue@3.5.27(typescript@5.9.3))
+      qmsg:
+        specifier: ^1.6.2
+        version: 1.6.2
+      tone:
+        specifier: ^15.1.22
+        version: 15.1.22
       vue:
         specifier: ^3.5.24
         version: 3.5.27(typescript@5.9.3)
@@ -79,6 +85,10 @@ packages:
     resolution: {integrity: sha512-IyDgFV5GeDUVX4YdF/3CPULtVGSXXMLh1xVIgdCgxApktqnQV0r7/8Nqthg+8YLGaAtdyIlo2qIdZrbCv4+7ww==}
     engines: {node: '>=6.0.0'}
     hasBin: true
+
+  '@babel/runtime@7.28.6':
+    resolution: {integrity: sha512-05WQkdpL9COIMz4LjTxGpPNCdlpyimKppYNoJ5Di5EUObifl8t4tuLuUBBZEpoLYOmfvIWrsp9fCl0HoPRVTdA==}
+    engines: {node: '>=6.9.0'}
 
   '@babel/types@7.29.0':
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
@@ -621,8 +631,15 @@ packages:
     resolution: {integrity: sha512-cbdCP0PGOBq0ASG+sjnKIoYkWMKhhz+F/h9pRexUdX2Hd38+WOlBkRKlqkGOSm0YQpcFMQBJeK4WspUAkwsEdg==}
     engines: {node: '>=20.19.0'}
 
+  automation-events@7.1.15:
+    resolution: {integrity: sha512-NsHJlve3twcgs8IyP4iEYph7Fzpnh6klN7G5LahwvypakBjFbsiGHJxrqTmeHKREdu/Tx6oZboqNI0tD4MnFlA==}
+    engines: {node: '>=18.2.0'}
+
   birpc@2.9.0:
     resolution: {integrity: sha512-KrayHS5pBi69Xi9JmvoqrIgYGDkD6mcSe/i6YKi3w5kekCLzrX4+nawcXqrj2tIp50Kw/mT/s3p+GVK0A0sKxw==}
+
+  broker-factory@3.1.13:
+    resolution: {integrity: sha512-H2VALe31mEtO/SRcNp4cUU5BAm1biwhc/JaF77AigUuni/1YT0FLCJfbUxwIEs9y6Kssjk2fmXgf+Y9ALvmKlw==}
 
   chokidar@5.0.0:
     resolution: {integrity: sha512-TQMmc3w+5AxjpL8iIiwebF73dRDF4fBIieAqGn9RGCWaEVwQ6Fb2cGe31Yns0RRIzii5goJ1Y7xbMwo1TxMplw==}
@@ -666,6 +683,10 @@ packages:
 
   exsolve@1.0.8:
     resolution: {integrity: sha512-LmDxfWXwcTArk8fUEnOfSZpHOJ6zOMUJKOtFLFqJLoKJetuQG874Uc7/Kki7zFLzYybmZhp1M7+98pfMqeX8yA==}
+
+  fast-unique-numbers@9.0.26:
+    resolution: {integrity: sha512-3Mtq8p1zQinjGyWfKeuBunbuFoixG72AUkk4VvzbX4ykCW9Q4FzRaNyIlfQhUjnKw2ARVP+/CKnoyr6wfHftig==}
+    engines: {node: '>=18.2.0'}
 
   fdir@6.5.0:
     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
@@ -850,6 +871,9 @@ packages:
     resolution: {integrity: sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==}
     engines: {node: ^10 || ^12 || >=14}
 
+  qmsg@1.6.2:
+    resolution: {integrity: sha512-CslI3N2JDudDwRjuB2ULueNASnzvUqjgd+1IuyDUD4bNhcJI4W1560jbRBvXoD8Tok0rw5uBK01hAmIONFYqAQ==}
+
   quansync@0.2.11:
     resolution: {integrity: sha512-AifT7QEbW9Nri4tAwR5M/uzpBuqfZf+zwaEM/QkzEjj7NBuFD2rBuy0K3dE+8wltbezDV7JMA0WfnCPYRSYbXA==}
 
@@ -876,6 +900,9 @@ packages:
     resolution: {integrity: sha512-1POYv7uv2gXoyGFpBCmpDVSNV74IfsWlDW216UPjbWufNf+bSU6GdbDsxdcxtfwb4xlI3yxzOTKClUosxARYrQ==}
     engines: {node: '>=0.10.0'}
 
+  standardized-audio-context@25.3.77:
+    resolution: {integrity: sha512-Ki9zNz6pKcC5Pi+QPjPyVsD9GwJIJWgryji0XL9cAJXMGyn+dPOf6Qik1AHei0+UNVcc4BOCa0hWLBzlwqsW/A==}
+
   superjson@2.2.6:
     resolution: {integrity: sha512-H+ue8Zo4vJmV2nRjpx86P35lzwDT3nItnIsocgumgr0hHMQ+ZGq5vrERg9kJBo5AWGmxZDhzDo+WVIJqkB0cGA==}
     engines: {node: '>=16'}
@@ -890,6 +917,12 @@ packages:
   tinyglobby@0.2.15:
     resolution: {integrity: sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ==}
     engines: {node: '>=12.0.0'}
+
+  tone@15.1.22:
+    resolution: {integrity: sha512-TCScAGD4sLsama5DjvTUXlLDXSqPealhL64nsdV1hhr6frPWve0DeSo63AKnSJwgfg55fhvxj0iPPRwPN5o0ag==}
+
+  tslib@2.8.1:
+    resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
@@ -985,6 +1018,18 @@ packages:
   webpack-virtual-modules@0.6.2:
     resolution: {integrity: sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ==}
 
+  worker-factory@7.0.48:
+    resolution: {integrity: sha512-CGmBy3tJvpBPjUvb0t4PrpKubUsfkI1Ohg0/GGFU2RvA9j/tiVYwKU8O7yu7gH06YtzbeJLzdUR29lmZKn5pag==}
+
+  worker-timers-broker@8.0.15:
+    resolution: {integrity: sha512-Te+EiVUMzG5TtHdmaBZvBrZSFNauym6ImDaCAnzQUxvjnw+oGjMT2idmAOgDy30vOZMLejd0bcsc90Axu6XPWA==}
+
+  worker-timers-worker@9.0.13:
+    resolution: {integrity: sha512-qjn18szGb1kjcmh2traAdki1eiIS5ikFo+L90nfMOvSRpuDw1hAcR1nzkP2+Hkdqz5thIRnfuWx7QSpsEUsA6Q==}
+
+  worker-timers@8.0.30:
+    resolution: {integrity: sha512-8P7YoMHWN0Tz7mg+9oEhuZdjBIn2z6gfjlJqFcHiDd9no/oLnMGCARCDkV1LR3ccQus62ZdtIp7t3aTKrMLHOg==}
+
   yaml@2.8.2:
     resolution: {integrity: sha512-mplynKqc1C2hTVYxd0PU2xQAc22TI1vShAYGksCCfxbn/dFwnHTNi1bvYsBTkhdUNtGIf5xNOg938rrSSYvS9A==}
     engines: {node: '>= 14.6'}
@@ -1007,6 +1052,8 @@ snapshots:
   '@babel/parser@7.29.0':
     dependencies:
       '@babel/types': 7.29.0
+
+  '@babel/runtime@7.28.6': {}
 
   '@babel/types@7.29.0':
     dependencies:
@@ -1427,7 +1474,19 @@ snapshots:
       '@babel/parser': 7.29.0
       ast-kit: 2.2.0
 
+  automation-events@7.1.15:
+    dependencies:
+      '@babel/runtime': 7.28.6
+      tslib: 2.8.1
+
   birpc@2.9.0: {}
+
+  broker-factory@3.1.13:
+    dependencies:
+      '@babel/runtime': 7.28.6
+      fast-unique-numbers: 9.0.26
+      tslib: 2.8.1
+      worker-factory: 7.0.48
 
   chokidar@5.0.0:
     dependencies:
@@ -1486,6 +1545,11 @@ snapshots:
   estree-walker@2.0.2: {}
 
   exsolve@1.0.8: {}
+
+  fast-unique-numbers@9.0.26:
+    dependencies:
+      '@babel/runtime': 7.28.6
+      tslib: 2.8.1
 
   fdir@6.5.0(picomatch@4.0.3):
     optionalDependencies:
@@ -1625,6 +1689,10 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
+  qmsg@1.6.2:
+    dependencies:
+      worker-timers: 8.0.30
+
   quansync@0.2.11: {}
 
   readdirp@5.0.0: {}
@@ -1668,6 +1736,12 @@ snapshots:
 
   speakingurl@14.0.1: {}
 
+  standardized-audio-context@25.3.77:
+    dependencies:
+      '@babel/runtime': 7.28.6
+      automation-events: 7.1.15
+      tslib: 2.8.1
+
   superjson@2.2.6:
     dependencies:
       copy-anything: 4.0.5
@@ -1680,6 +1754,13 @@ snapshots:
     dependencies:
       fdir: 6.5.0(picomatch@4.0.3)
       picomatch: 4.0.3
+
+  tone@15.1.22:
+    dependencies:
+      standardized-audio-context: 25.3.77
+      tslib: 2.8.1
+
+  tslib@2.8.1: {}
 
   typescript@5.9.3: {}
 
@@ -1756,5 +1837,32 @@ snapshots:
       typescript: 5.9.3
 
   webpack-virtual-modules@0.6.2: {}
+
+  worker-factory@7.0.48:
+    dependencies:
+      '@babel/runtime': 7.28.6
+      fast-unique-numbers: 9.0.26
+      tslib: 2.8.1
+
+  worker-timers-broker@8.0.15:
+    dependencies:
+      '@babel/runtime': 7.28.6
+      broker-factory: 3.1.13
+      fast-unique-numbers: 9.0.26
+      tslib: 2.8.1
+      worker-timers-worker: 9.0.13
+
+  worker-timers-worker@9.0.13:
+    dependencies:
+      '@babel/runtime': 7.28.6
+      tslib: 2.8.1
+      worker-factory: 7.0.48
+
+  worker-timers@8.0.30:
+    dependencies:
+      '@babel/runtime': 7.28.6
+      tslib: 2.8.1
+      worker-timers-broker: 8.0.15
+      worker-timers-worker: 9.0.13
 
   yaml@2.8.2: {}

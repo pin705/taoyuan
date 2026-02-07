@@ -108,7 +108,7 @@
   import { ACTION_TIME_COSTS } from '@/data/timeConstants'
   import { BOMBS } from '@/data/processing'
   import type { CombatAction } from '@/types'
-  import { sfxMine, sfxAttack, sfxHurt, sfxClick } from '@/composables/useAudio'
+  import { sfxMine, sfxAttack, sfxHurt, sfxClick, sfxEncounter, sfxDefend, sfxFlee, sfxVictory } from '@/composables/useAudio'
   import { useAudio } from '@/composables/useAudio'
   import { addLog } from '@/composables/useGameLog'
   import { handleEndDay } from '@/composables/useEndDay'
@@ -182,6 +182,7 @@
     const result = miningStore.encounterMonster()
     if (result.found) {
       startBattleBgm()
+      sfxEncounter()
       addLog(result.message)
       const tr = gameStore.advanceTime(ACTION_TIME_COSTS.combat)
       if (tr.message) addLog(tr.message)
@@ -194,9 +195,12 @@
   const handleCombat = (action: CombatAction) => {
     const result = miningStore.combatAction(action)
     if (action === 'attack') sfxAttack()
+    if (action === 'defend') sfxDefend()
+    if (action === 'flee') sfxFlee()
     if (result.message.includes('受到')) sfxHurt()
     addLog(result.message)
     if (result.combatOver) {
+      if (result.won) sfxVictory()
       resumeNormalBgm()
       if (!miningStore.isExploring) {
         exploreLog.value.push(result.message)

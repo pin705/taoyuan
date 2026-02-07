@@ -120,7 +120,7 @@
 <script setup lang="ts">
   import { ref, computed } from 'vue'
   import { MessageCircle, Heart, Gift, Cake } from 'lucide-vue-next'
-  import { useNpcStore, useInventoryStore, useCookingStore, useGameStore } from '@/stores'
+  import { useNpcStore, useInventoryStore, useCookingStore, useGameStore, usePlayerStore } from '@/stores'
   import { NPCS, getNpcById, getItemById, getHeartEventById } from '@/data'
   import { ACTION_TIME_COSTS, isNpcAvailable, getNpcUnavailableReason } from '@/data/timeConstants'
   import { addLog } from '@/composables/useGameLog'
@@ -132,6 +132,7 @@
   const inventoryStore = useInventoryStore()
   const cookingStore = useCookingStore()
   const gameStore = useGameStore()
+  const playerStore = usePlayerStore()
 
   const selectedNpc = ref<string | null>(null)
   const dialogueText = ref<string | null>(null)
@@ -164,6 +165,7 @@
   /** 是否可以求婚 */
   const canPropose = computed(() => {
     if (!selectedNpcDef.value?.marriageable) return false
+    if (selectedNpcDef.value.gender === playerStore.gender) return false
     if (selectedNpcState.value?.married) return false
     if (npcStore.npcStates.some(s => s.married)) return false
     if ((selectedNpcState.value?.friendship ?? 0) < 300) return false

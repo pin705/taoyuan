@@ -232,12 +232,16 @@ export const useFarmStore = defineStore('farm', () => {
         }
       }
 
-      // 重置每日浇水状态（保湿土可能保留）
-      const retainFert = plot.fertilizer ? getFertilizerById(plot.fertilizer) : null
-      if (retainFert?.retainChance && Math.random() < retainFert.retainChance) {
-        // 保湿土保持浇水
+      // 重置每日浇水状态（洒水器覆盖或保湿土可能保留）
+      if (sprinklerWatered.has(plot.id)) {
+        // 洒水器覆盖，保持浇水状态
       } else {
-        plot.watered = false
+        const retainFert = plot.fertilizer ? getFertilizerById(plot.fertilizer) : null
+        if (retainFert?.retainChance && Math.random() < retainFert.retainChance) {
+          // 保湿土保持浇水
+        } else {
+          plot.watered = false
+        }
       }
     }
   }
@@ -247,8 +251,13 @@ export const useFarmStore = defineStore('farm', () => {
     let witheredCount = 0
     let reclaimedCount = 0
 
+    // 先记录换季前就已经空置的耕地
+    const preExistingTilled = new Set(
+      plots.value.filter(p => p.state === 'tilled' && !p.cropId).map(p => p.id)
+    )
+
+    // 作物枯萎检查（肥料保留在土壤中）
     for (const plot of plots.value) {
-      // 作物枯萎检查
       if ((plot.state === 'planted' || plot.state === 'growing' || plot.state === 'harvestable') && plot.cropId) {
         const crop = getCropById(plot.cropId)
         if (crop && !crop.season.includes(newSeason)) {
@@ -257,13 +266,14 @@ export const useFarmStore = defineStore('farm', () => {
           plot.growthDays = 0
           plot.watered = false
           plot.unwateredDays = 0
-          plot.fertilizer = null
           witheredCount++
         }
       }
+    }
 
-      // 空耕地退化（冬→春更严重）
-      if (plot.state === 'tilled' && !plot.cropId) {
+    // 只有换季前就空置的耕地才可能退化（冬→春更严重）
+    for (const plot of plots.value) {
+      if (plot.state === 'tilled' && preExistingTilled.has(plot.id)) {
         const revertChance = newSeason === 'spring' ? 0.3 : 0.15
         if (Math.random() < revertChance) {
           plot.state = 'wasteland'
@@ -313,6 +323,14 @@ export const useFarmStore = defineStore('farm', () => {
           newPlots[newIndex] = { ...oldPlot, id: newIndex }
         }
       }
+    }
+    // 重映射洒水器坐标
+    const oldSize = farmSize.value
+    for (const s of sprinklers.value) {
+      const oldRow = Math.floor(s.plotId / oldSize)
+      const oldCol = s.plotId % oldSize
+      s.plotId = oldRow * newSize + oldCol
+      s.id = `${s.type}_${s.plotId}`
     }
     farmSize.value = newSize
     plots.value = newPlots

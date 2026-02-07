@@ -27,3 +27,6 @@ export type Location = 'farm' | 'village' | 'shop' | 'bamboo_forest' | 'creek' |
 
 /** 农场地图类型 */
 export type FarmMapType = 'standard' | 'riverland' | 'forest' | 'hilltop' | 'wilderness' | 'meadowlands'
+
+/** 性别 */
+export type Gender = 'male' | 'female'

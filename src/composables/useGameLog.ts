@@ -1,49 +1,15 @@
-import { ref, readonly } from 'vue'
+import Qmsg from 'qmsg'
 
 export type FloatColor = 'danger' | 'success' | 'accent' | 'water'
 
-export interface FloatMessage {
-  id: number
-  text: string
-  colorClass: string
-  x: number
-  y: number
-}
-
-// 模块级单例状态
-const logs = ref<string[]>(['欢迎来到桃源乡！新的一天开始了。'])
-const floatMessages = ref<FloatMessage[]>([])
-let nextFloatId = 0
-
-/** 添加日志消息 */
-export const addLog = (msg: string) => {
-  logs.value.unshift(msg)
-  if (logs.value.length > 50) logs.value.pop()
-  // 循环依赖说明：useDialogs 导入 addLog，我们导入 checkAllPerks。
-  // 两者仅在函数内部使用，ESM 中安全。
-  // eslint-disable-next-line @typescript-eslint/no-use-before-define
-  _perkChecker?.()
-}
-
-/** 显示浮动文本反馈 */
-export const showFloat = (text: string, color: FloatColor = 'accent') => {
-  const id = nextFloatId++
-  floatMessages.value.push({
-    id,
-    text,
-    colorClass: `text-${color}`,
-    x: 160 + Math.random() * 200,
-    y: 50 + Math.random() * 30
-  })
-  setTimeout(() => {
-    floatMessages.value = floatMessages.value.filter(m => m.id !== id)
-  }, 1500)
-}
-
-/** 重置日志（新游戏） */
-export const resetLogs = () => {
-  logs.value = ['欢迎来到桃源乡！新的一天开始了。']
-}
+// 配置 Qmsg 全局样式
+Qmsg.config({
+  position: 'top',
+  showIcon: false,
+  maxNums: 5,
+  timeout: 2500,
+  useShadowRoot: false
+})
 
 // 天赋检查回调 — 由 useDialogs 注册以避免循环导入
 let _perkChecker: (() => void) | null = null
@@ -53,10 +19,37 @@ export const _registerPerkChecker = (fn: () => void) => {
   _perkChecker = fn
 }
 
+/** 添加日志消息（显示为 toast 通知） */
+export const addLog = (msg: string) => {
+  Qmsg.info(msg)
+  _perkChecker?.()
+}
+
+/** 显示浮动文本反馈（显示为 toast 通知） */
+export const showFloat = (text: string, color: FloatColor = 'accent') => {
+  switch (color) {
+    case 'danger':
+      Qmsg.error(text, { timeout: 1500 })
+      break
+    case 'success':
+      Qmsg.success(text, { timeout: 1500 })
+      break
+    case 'accent':
+      Qmsg.warning(text, { timeout: 1500 })
+      break
+    case 'water':
+      Qmsg.info(text, { timeout: 1500 })
+      break
+  }
+}
+
+/** 重置日志（新游戏） */
+export const resetLogs = () => {
+  Qmsg.closeAll()
+}
+
 export const useGameLog = () => {
   return {
-    logs: readonly(logs),
-    floatMessages: readonly(floatMessages),
     addLog,
     showFloat,
     resetLogs

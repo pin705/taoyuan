@@ -166,24 +166,47 @@
 
     <!-- 出售区 -->
     <div class="flex-1">
-      <h3 class="text-accent text-sm mb-3">
-        <TrendingUp :size="14" class="inline" />
-        出售物品
-      </h3>
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-accent text-sm">
+          <TrendingUp :size="14" class="inline" />
+          出售物品
+        </h3>
+        <button v-if="getSellableItems().length > 0" class="btn btn-danger text-xs" @click="handleSellAll()">
+          <Coins :size="14" />
+          一键全部出售
+        </button>
+      </div>
       <div class="flex flex-col gap-2">
         <div
           v-for="item in getSellableItems()"
           :key="item.itemId + item.quality"
-          class="flex items-center justify-between border border-accent/20 rounded-[2px] px-3 py-2"
+          class="flex items-center justify-between border rounded-[2px] px-3 py-2"
+          :class="item.quality !== 'normal' ? QUALITY_BORDERS[item.quality] : 'border-accent/20'"
         >
           <div>
             <span class="text-sm">{{ item.def?.name }}</span>
+            <span
+              v-if="item.quality !== 'normal'"
+              class="text-xs ml-1"
+              :class="{
+                'text-quality-fine': item.quality === 'fine',
+                'text-quality-excellent': item.quality === 'excellent',
+                'text-quality-supreme': item.quality === 'supreme'
+              }"
+            >
+              {{ QUALITY_LABELS[item.quality] }}
+            </span>
             <span class="text-muted text-xs ml-1">×{{ item.quantity }}</span>
           </div>
-          <button class="btn text-xs" @click="handleSellItem(item.itemId, item.quality)">
-            <Coins :size="14" />
-            售 {{ item.def?.sellPrice }}文
-          </button>
+          <div class="flex gap-1">
+            <button class="btn text-xs" @click="handleSellItem(item.itemId, item.quality)">
+              <Coins :size="14" />
+              售1
+            </button>
+            <button v-if="item.quantity > 1" class="btn text-xs" @click="handleSellItemAll(item.itemId, item.quantity, item.quality)">
+              全部
+            </button>
+          </div>
         </div>
         <p v-if="getSellableItems().length === 0" class="text-muted text-xs">背包中没有可出售的物品。</p>
       </div>
@@ -201,8 +224,21 @@
   import { HAY_PRICE } from '@/data/animals'
   import { SEASON_NAMES } from '@/stores'
   import { addLog } from '@/composables/useGameLog'
-  import { handleBuySeed, handleSellItem } from '@/composables/useFarmActions'
+  import { handleBuySeed, handleSellItem, handleSellItemAll, handleSellAll } from '@/composables/useFarmActions'
   import type { Season } from '@/types'
+
+  const QUALITY_LABELS: Record<string, string> = {
+    normal: '',
+    fine: '优良',
+    excellent: '精品',
+    supreme: '极品'
+  }
+
+  const QUALITY_BORDERS: Record<string, string> = {
+    fine: 'border-quality-fine',
+    excellent: 'border-quality-excellent',
+    supreme: 'border-quality-supreme'
+  }
 
   const shopStore = useShopStore()
   const playerStore = usePlayerStore()

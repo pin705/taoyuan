@@ -1,4 +1,4 @@
-import type { Season } from './game'
+import type { Season, Gender } from './game'
 
 /** 好感度等级 */
 export type FriendshipLevel = 'stranger' | 'acquaintance' | 'friendly' | 'bestFriend'
@@ -7,6 +7,8 @@ export type FriendshipLevel = 'stranger' | 'acquaintance' | 'friendly' | 'bestFr
 export interface NpcDef {
   id: string
   name: string
+  /** 性别 */
+  gender: Gender
   role: string
   personality: string
   lovedItems: string[]

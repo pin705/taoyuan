@@ -4,6 +4,7 @@ import type { NpcState, FriendshipLevel, HeartEventDef, Quality, ChildState } fr
 import { NPCS, getNpcById, getHeartEventsForNpc } from '@/data'
 import { useInventoryStore } from './useInventoryStore'
 import { useGameStore } from './useGameStore'
+import { usePlayerStore } from './usePlayerStore'
 
 /** 好感等级阈值 */
 const FRIENDSHIP_THRESHOLDS: { level: FriendshipLevel; min: number }[] = [
@@ -37,8 +38,9 @@ export const useNpcStore = defineStore('npc', () => {
   /** 子女出生倒计时 */
   const childCountdown = ref<number>(0)
 
-  /** 子女名字池 */
-  const CHILD_NAMES = ['小宝', '阿花', '小龙', '小凤', '团子', '豆豆', '年年', '圆圆']
+  /** 子女名字池（按性别） */
+  const CHILD_NAMES_MALE = ['小龙', '小宝', '团子', '年年']
+  const CHILD_NAMES_FEMALE = ['小凤', '阿花', '豆豆', '圆圆']
 
   /** 获取NPC状态 */
   const getNpcState = (npcId: string): NpcState | undefined => {
@@ -103,6 +105,12 @@ export const useNpcStore = defineStore('npc', () => {
     }
   }
 
+  /** 替换对话中的占位符 */
+  const replaceDialoguePlaceholders = (text: string): string => {
+    const playerStore = usePlayerStore()
+    return text.replace(/\{player\}/g, playerStore.playerName).replace(/\{title\}/g, playerStore.honorific)
+  }
+
   /** 与NPC对话 (+2好感) */
   const talkTo = (npcId: string): { message: string; friendshipGain: number } | null => {
     const state = getNpcState(npcId)
@@ -117,11 +125,13 @@ export const useNpcStore = defineStore('npc', () => {
 
     // 已婚NPC有特殊对话
     if (state.married) {
+      const playerStore = usePlayerStore()
+      const name = playerStore.playerName
       const marriedDialogues = [
-        '今天辛苦了，早点回来吃饭。',
-        '我给你留了饭菜，还热着呢。',
+        `${name}，今天辛苦了，早点回来吃饭。`,
+        `我给${name}留了饭菜，还热着呢。`,
         '田里的活干完了吗？别太累了。',
-        '有你在身边，每天都很开心。'
+        `有${name}在身边，每天都很开心。`
       ]
       const message = marriedDialogues[Math.floor(Math.random() * marriedDialogues.length)]!
       return { message, friendshipGain: 2 }
@@ -129,7 +139,8 @@ export const useNpcStore = defineStore('npc', () => {
 
     const level = getFriendshipLevel(npcId)
     const dialogues = npcDef.dialogues[level]
-    const message = dialogues[Math.floor(Math.random() * dialogues.length)]!
+    const raw = dialogues[Math.floor(Math.random() * dialogues.length)]!
+    const message = replaceDialoguePlaceholders(raw)
 
     return { message, friendshipGain: 2 }
   }
@@ -187,6 +198,12 @@ export const useNpcStore = defineStore('npc', () => {
 
     const npcDef = getNpcById(npcId)
     if (!npcDef?.marriageable) return { success: false, message: '这个人无法求婚。' }
+
+    // 只允许异性求婚
+    const playerStore = usePlayerStore()
+    if (npcDef.gender === playerStore.gender) {
+      return { success: false, message: '只能向异性求婚。' }
+    }
 
     // 检查是否已有配偶
     const alreadyMarried = npcStates.value.some(s => s.married)
@@ -253,8 +270,10 @@ export const useNpcStore = defineStore('npc', () => {
       childCountdown.value--
       if (childCountdown.value <= 0) {
         pendingChild.value = false
+        const isBoy = Math.random() < 0.5
+        const namePool = isBoy ? CHILD_NAMES_MALE : CHILD_NAMES_FEMALE
         const usedNames = children.value.map(c => c.name)
-        const availableNames = CHILD_NAMES.filter(n => !usedNames.includes(n))
+        const availableNames = namePool.filter(n => !usedNames.includes(n))
         const name = availableNames[Math.floor(Math.random() * availableNames.length)] ?? '小宝'
         children.value.push({
           id: children.value.length,

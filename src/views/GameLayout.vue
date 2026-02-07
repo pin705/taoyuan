@@ -1,8 +1,5 @@
 <template>
   <div v-if="gameStore.isGameStarted" class="flex flex-col gap-2 md:gap-4 h-screen p-2 md:p-4">
-    <!-- 浮动文字 -->
-    <FloatingText />
-
     <!-- 状态栏 -->
     <StatusBar @request-sleep="showSleepConfirm = true" />
 
@@ -11,23 +8,8 @@
       {{ sleepLabel }}
     </button>
 
-    <!-- 主体：侧边栏 + 内容 -->
+    <!-- 内容 -->
     <div class="flex flex-col md:flex-row gap-2 md:gap-4 flex-1 min-h-0">
-      <!-- 侧边菜单（桌面端） -->
-      <nav class="game-panel hidden md:flex flex-col gap-2 w-34 shrink-0">
-        <button
-          v-for="tab in TABS"
-          :key="tab.key"
-          class="btn text-xs justify-start"
-          :class="{ '!bg-accent !text-bg': currentPanel === tab.key }"
-          @click="navigateToPanel(tab.key)"
-        >
-          <component :is="tab.icon" :size="14" />
-          {{ tab.label }}
-        </button>
-        <div class="flex-1" />
-      </nav>
-
       <div class="flex flex-col gap-2 md:gap-4 flex-1 min-w-0">
         <!-- 主面板（带过渡） -->
         <div class="game-panel flex-1 min-h-0 overflow-y-auto">
@@ -36,21 +18,6 @@
               <component :is="Component" :key="$route.path" />
             </Transition>
           </router-view>
-        </div>
-
-        <!-- 游戏日志 -->
-        <div class="game-panel shrink-0">
-          <div class="flex items-center justify-between cursor-pointer md:cursor-default" @click="logExpanded = !logExpanded">
-            <p class="text-accent text-xs">—— 日志 ——</p>
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-muted md:hidden">{{ logExpanded ? '收起' : '展开' }}</span>
-            </div>
-          </div>
-          <div class="mt-5 md:max-h-40 md:overflow-y-auto" :class="logExpanded ? 'max-h-40 overflow-y-auto' : 'hidden md:block'">
-            <p v-for="(log, i) in logs" :key="i" class="text-xs leading-relaxed mt-1" :class="{ 'text-muted': i > 0 }">
-              {{ log }}
-            </p>
-          </div>
         </div>
       </div>
     </div>
@@ -109,15 +76,12 @@
   import { ref, computed } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { useGameStore, usePlayerStore } from '@/stores'
-  import { useGameLog } from '@/composables/useGameLog'
   import { useDialogs } from '@/composables/useDialogs'
-  import { TABS, navigateToPanel } from '@/composables/useNavigation'
   import { handleEndDay } from '@/composables/useEndDay'
   import { useAudio } from '@/composables/useAudio'
   import { Moon, X, Map } from 'lucide-vue-next'
   import MobileMapMenu from '@/components/game/MobileMapMenu.vue'
   import StatusBar from '@/components/game/StatusBar.vue'
-  import FloatingText from '@/components/game/FloatingText.vue'
   import EventDialog from '@/components/game/EventDialog.vue'
   import HeartEventDialog from '@/components/game/HeartEventDialog.vue'
   import PerkSelectDialog from '@/components/game/PerkSelectDialog.vue'
@@ -135,12 +99,8 @@
     router.replace('/')
   }
 
-  const { logs } = useGameLog()
   const { currentEvent, pendingHeartEvent, currentFestival, pendingPerk, closeEvent, closeHeartEvent, closeFestival, handlePerkSelect } =
     useDialogs()
-
-  /** 日志面板折叠状态 */
-  const logExpanded = ref(true)
 
   /** 从路由名称获取当前面板标识 */
   const currentPanel = computed(() => {
