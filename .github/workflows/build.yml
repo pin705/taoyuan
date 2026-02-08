@@ -44,13 +44,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 【关键点】这里只上传安装包后缀，不上传文件夹
-      - name: Upload Electron Installers
+      # 【关键点】上传 zip 产物
+      - name: Upload Electron Package
         uses: actions/upload-artifact@v4
         with:
           name: electron-${{ matrix.platform }}
           path: |
-            pkg/*.exe
+            pkg/*.zip
 
   # 4. 发布 Release
   release:
@@ -76,8 +76,8 @@ jobs:
         run: |
           mkdir -p ./final-release
 
-          # 移动 Electron 安装包 (排除 unpacked 目录)
-          find ./raw-assets/electron-* -type f -name "*.exe" -exec cp {} ./final-release/ \;
+          # 移动 Electron zip 包
+          find ./raw-assets/electron-* -type f -name "*.zip" -exec cp {} ./final-release/ \;
 
           # 检查结果
           echo "Final assets to upload:"

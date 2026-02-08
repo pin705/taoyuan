@@ -53,20 +53,9 @@
       "output": "pkg"
     },
     "win": {
-      "target": "nsis",
+      "target": "zip",
       "icon": "public/favicon.ico",
-      "verifyUpdateCodeSignature": false,
-      "artifactName": "taoyuan-Setup.${ext}"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "allowElevation": true,
-      "installerIcon": "public/favicon.ico",
-      "uninstallerIcon": "public/favicon.ico",
-      "installerHeaderIcon": "public/favicon.ico",
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "artifactName": "taoyuan-${version}-win.${ext}"
     }
   }
 }
