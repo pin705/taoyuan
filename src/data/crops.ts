@@ -12,7 +12,8 @@ export const CROPS: CropDef[] = [
     sellPrice: 35,
     seedPrice: 10,
     deepWatering: false,
-    description: '最基础的蔬菜，容易种植。'
+    description: '最基础的蔬菜，容易种植。',
+    giantCropEligible: true
   },
   {
     id: 'radish',
@@ -57,7 +58,8 @@ export const CROPS: CropDef[] = [
     sellPrice: 130,
     seedPrice: 40,
     deepWatering: false,
-    description: '盛夏消暑的佳品。'
+    description: '盛夏消暑的佳品。',
+    giantCropEligible: true
   },
   {
     id: 'rice',
@@ -102,7 +104,8 @@ export const CROPS: CropDef[] = [
     sellPrice: 180,
     seedPrice: 50,
     deepWatering: false,
-    description: '金秋时节的丰收象征。'
+    description: '金秋时节的丰收象征。',
+    giantCropEligible: true
   },
   {
     id: 'sweet_potato',
@@ -137,6 +140,31 @@ export const CROPS: CropDef[] = [
     deepWatering: false,
     description: '桂花飘香，高级作物。'
   },
+  {
+    id: 'rapeseed',
+    name: '油菜',
+    seedId: 'seed_rapeseed',
+    season: ['spring'],
+    growthDays: 5,
+    sellPrice: 50,
+    seedPrice: 15,
+    deepWatering: false,
+    description: '春日田野里金黄一片的油菜。'
+  },
+  {
+    id: 'broad_bean',
+    name: '蚕豆',
+    seedId: 'seed_broad_bean',
+    season: ['spring'],
+    growthDays: 7,
+    sellPrice: 85,
+    seedPrice: 25,
+    deepWatering: false,
+    description: '饱满的蚕豆，可反复采收。',
+    regrowth: true,
+    regrowthDays: 3,
+    maxHarvests: 3
+  },
   // 春季新作物
   {
     id: 'bamboo_shoot',
@@ -160,7 +188,8 @@ export const CROPS: CropDef[] = [
     deepWatering: false,
     description: '鲜美多汁的桃子。',
     regrowth: true,
-    regrowthDays: 3
+    regrowthDays: 3,
+    maxHarvests: 4
   },
   {
     id: 'green_bean',
@@ -173,7 +202,34 @@ export const CROPS: CropDef[] = [
     deepWatering: false,
     description: '清脆的豆角，跨春夏生长。',
     regrowth: true,
-    regrowthDays: 3
+    regrowthDays: 3,
+    maxHarvests: 5
+  },
+  {
+    id: 'loofah',
+    name: '丝瓜',
+    seedId: 'seed_loofah',
+    season: ['summer'],
+    growthDays: 6,
+    sellPrice: 55,
+    seedPrice: 18,
+    deepWatering: false,
+    description: '嫩绿的丝瓜，反复采收。',
+    regrowth: true,
+    regrowthDays: 3,
+    maxHarvests: 4
+  },
+  {
+    id: 'eggplant',
+    name: '茄子',
+    seedId: 'seed_eggplant',
+    season: ['summer'],
+    growthDays: 7,
+    sellPrice: 90,
+    seedPrice: 28,
+    deepWatering: false,
+    description: '紫亮的茄子，可形成巨型作物。',
+    giantCropEligible: true
   },
   // 夏季新作物
   {
@@ -187,7 +243,8 @@ export const CROPS: CropDef[] = [
     deepWatering: false,
     description: '火辣的开胃椒。',
     regrowth: true,
-    regrowthDays: 3
+    regrowthDays: 3,
+    maxHarvests: 4
   },
   {
     id: 'lotus_seed',
@@ -211,7 +268,30 @@ export const CROPS: CropDef[] = [
     deepWatering: false,
     description: '金灿灿的玉米，跨夏秋生长。',
     regrowth: true,
-    regrowthDays: 4
+    regrowthDays: 4,
+    maxHarvests: 5
+  },
+  {
+    id: 'yam',
+    name: '山药',
+    seedId: 'seed_yam',
+    season: ['autumn'],
+    growthDays: 8,
+    sellPrice: 150,
+    seedPrice: 45,
+    deepWatering: false,
+    description: '滋补上品，秋日收获的山药。'
+  },
+  {
+    id: 'peanut',
+    name: '花生',
+    seedId: 'seed_peanut',
+    season: ['autumn'],
+    growthDays: 5,
+    sellPrice: 65,
+    seedPrice: 18,
+    deepWatering: false,
+    description: '香脆可口的花生。'
   },
   // 秋季新作物
   {
@@ -225,7 +305,8 @@ export const CROPS: CropDef[] = [
     deepWatering: false,
     description: '滋补佳品红枣。',
     regrowth: true,
-    regrowthDays: 4
+    regrowthDays: 4,
+    maxHarvests: 3
   },
   {
     id: 'persimmon',
@@ -249,7 +330,55 @@ export const CROPS: CropDef[] = [
     deepWatering: false,
     description: '驱寒暖身的生姜，跨秋冬生长。'
   },
-  // 冬季新作物
+  {
+    id: 'napa_cabbage',
+    name: '白菜',
+    seedId: 'seed_napa_cabbage',
+    season: ['winter'],
+    growthDays: 7,
+    sellPrice: 50,
+    seedPrice: 12,
+    deepWatering: false,
+    description: '冬日里最家常的蔬菜，可形成巨型作物。',
+    giantCropEligible: true
+  },
+  {
+    id: 'spinach',
+    name: '菠菜',
+    seedId: 'seed_spinach',
+    season: ['winter'],
+    growthDays: 5,
+    sellPrice: 40,
+    seedPrice: 10,
+    deepWatering: false,
+    description: '耐寒的菠菜，冬季也能长得好。'
+  },
+  {
+    id: 'mustard_green',
+    name: '芥菜',
+    seedId: 'seed_mustard_green',
+    season: ['winter'],
+    growthDays: 6,
+    sellPrice: 45,
+    seedPrice: 12,
+    deepWatering: false,
+    description: '耐寒的芥菜，冬日腌制的好材料。'
+  },
+  {
+    id: 'chives',
+    name: '韭菜',
+    seedId: 'seed_chives',
+    season: ['winter', 'spring'],
+    growthDays: 4,
+    sellPrice: 30,
+    seedPrice: 8,
+    deepWatering: false,
+    description: '割了又长的韭菜，跨冬春生长。',
+    regrowth: true,
+    regrowthDays: 3,
+    maxHarvests: 6
+  },
+  // 冬季原有作物
   {
     id: 'winter_wheat',
     name: '冬小麦',

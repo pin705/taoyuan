@@ -19,6 +19,8 @@ export interface NpcDef {
   marriageable?: boolean
   /** 关联的心事件ID列表 */
   heartEventIds?: string[]
+  /** 约会阶段专属对话 */
+  datingDialogues?: string[]
   /** 生日 (季节+日期) */
   birthday?: { season: Season; day: number }
 }
@@ -29,6 +31,10 @@ export interface NpcState {
   friendship: number
   talkedToday: boolean
   giftedToday: boolean
+  /** 本周送礼次数 (上限2) */
+  giftsThisWeek: number
+  /** 是否正在约会 */
+  dating: boolean
   /** 是否已结婚 */
   married: boolean
   /** 已触发的心事件ID */

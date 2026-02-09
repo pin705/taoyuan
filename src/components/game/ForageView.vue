@@ -4,7 +4,7 @@
       <TreePine :size="14" class="inline" />
       竹林采集
     </h3>
-    <p class="text-xs text-muted mb-3">消耗5体力进行一次采集，可能获得多种物品。</p>
+    <p class="text-xs text-muted mb-3">使用斧头进行采集，可能获得多种物品。</p>
 
     <button class="btn text-xs mb-4" @click="handleForage">
       <Search :size="14" />
@@ -36,6 +36,7 @@
     useSkillStore,
     useGameStore,
     useAchievementStore,
+    useQuestStore,
     useCookingStore,
     useWalletStore
   } from '@/stores'
@@ -66,7 +67,15 @@
       return
     }
 
-    const cost = Math.max(1, Math.floor(5 * (1 - skillStore.getStaminaReduction('foraging'))))
+    if (!inventoryStore.isToolAvailable('axe')) {
+      addLog('斧头正在升级中，无法采集。')
+      return
+    }
+
+    const cost = Math.max(
+      1,
+      Math.floor(5 * inventoryStore.getToolStaminaMultiplier('axe') * (1 - skillStore.getStaminaReduction('foraging')))
+    )
     if (!playerStore.consumeStamina(cost)) {
       addLog('体力不足，无法采集。')
       return
@@ -103,6 +112,7 @@
         const qty = isForestFarm && Math.random() < 0.2 ? 2 : 1
         inventoryStore.addItem(item.itemId, qty, quality)
         achievementStore.discoverItem(item.itemId)
+        useQuestStore().onItemObtained(item.itemId, qty)
         const itemDef = getItemById(item.itemId)
         const name = itemDef?.name ?? item.itemId
         gathered.push(qty > 1 ? `${name}×${qty}` : name)
@@ -110,10 +120,24 @@
       }
     }
 
-    // 伐木工专精：25% 概率额外获得木材
-    if (foragingSkill.perk5 === 'lumberjack' && Math.random() < 0.25) {
+    // 伐木工专精：25% 概率额外获得木材 / 伐木工10级专精(forester)：必定获得木材
+    if (foragingSkill.perk10 === 'forester') {
       inventoryStore.addItem('wood')
       gathered.push('木材')
+    } else if (foragingSkill.perk5 === 'lumberjack' && Math.random() < 0.25) {
+      inventoryStore.addItem('wood')
+      gathered.push('木材')
+    }
+
+    // 追踪者专精：额外随机获得1件当季采集物
+    if (foragingSkill.perk10 === 'tracker' && items.length > 0) {
+      const randomItem = items[Math.floor(Math.random() * items.length)]!
+      const quality = skillStore.rollForageQuality()
+      inventoryStore.addItem(randomItem.itemId, 1, quality)
+      achievementStore.discoverItem(randomItem.itemId)
+      const itemDef = getItemById(randomItem.itemId)
+      const name = itemDef?.name ?? randomItem.itemId
+      gathered.push(name)
     }
 
     if (gathered.length === 0) {

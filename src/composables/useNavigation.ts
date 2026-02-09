@@ -1,10 +1,11 @@
 import type { Component } from 'vue'
 import router from '@/router'
 import { useGameStore } from '@/stores'
-import { isShopOpen } from '@/data/timeConstants'
+import { isShopOpen, TAB_TO_LOCATION_GROUP } from '@/data/timeConstants'
 import { addLog } from './useGameLog'
 import { handleEndDay } from './useEndDay'
 import { sfxClick, useAudio } from './useAudio'
+import { useGameClock } from './useGameClock'
 import {
   Wheat,
   Egg,
@@ -21,7 +22,8 @@ import {
   Star,
   BookOpen,
   Wallet,
-  ScrollText
+  ScrollText,
+  User
 } from 'lucide-vue-next'
 
 export type PanelKey =
@@ -41,19 +43,21 @@ export type PanelKey =
   | 'home'
   | 'wallet'
   | 'quest'
+  | 'charinfo'
 
 export const TABS: { key: PanelKey; label: string; icon: Component }[] = [
   { key: 'farm', label: '农场', icon: Wheat },
   { key: 'animal', label: '畜棚', icon: Egg },
   { key: 'home', label: '农舍', icon: Home },
   { key: 'village', label: '桃源村', icon: Users },
-  { key: 'shop', label: '万物铺', icon: Store },
+  { key: 'shop', label: '商圈', icon: Store },
   { key: 'forage', label: '竹林', icon: TreePine },
   { key: 'fishing', label: '清溪', icon: Fish },
   { key: 'mining', label: '矿洞', icon: Pickaxe },
   { key: 'cooking', label: '灶台', icon: Flame },
   { key: 'workshop', label: '加工坊', icon: Cog },
   { key: 'upgrade', label: '工坊', icon: Wrench },
+  { key: 'charinfo', label: '角色', icon: User },
   { key: 'inventory', label: '背包', icon: Package },
   { key: 'skills', label: '技能', icon: Star },
   { key: 'achievement', label: '图鉴', icon: BookOpen },
@@ -92,6 +96,15 @@ export const navigateToPanel = (panelKey: PanelKey) => {
   sfxClick()
   startBgm()
   router.push({ name: panelKey })
+
+  // UI 面板（无地点）暂停时钟，游戏面板恢复
+  const { pauseClock, resumeClock } = useGameClock()
+  const targetGroup = TAB_TO_LOCATION_GROUP[panelKey]
+  if (targetGroup === null || targetGroup === undefined) {
+    pauseClock()
+  } else {
+    resumeClock()
+  }
 }
 
 export const useNavigation = () => {

@@ -7,7 +7,8 @@ export default defineConfig({
   base: './',
   build: {
     outDir: 'docs',
-    cssMinify: true
+    cssMinify: true,
+    cssTarget: ['chrome61', 'firefox60', 'safari11', 'edge18']
   },
   esbuild: {
     drop: ['console', 'debugger'],

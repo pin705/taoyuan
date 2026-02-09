@@ -1,7 +1,10 @@
 ﻿import type { Season } from '.'
 
-export type AnimalBuildingType = 'coop' | 'barn'
-export type AnimalType = 'chicken' | 'duck' | 'cow' | 'sheep'
+export type AnimalBuildingType = 'coop' | 'barn' | 'stable'
+export type AnimalType =
+  | 'chicken' | 'duck' | 'rabbit' | 'goose' | 'quail' | 'pigeon' | 'silkie' | 'peacock'
+  | 'cow' | 'sheep' | 'goat' | 'pig' | 'buffalo' | 'yak' | 'alpaca' | 'deer' | 'donkey' | 'camel' | 'ostrich'
+  | 'horse'
 
 export interface AnimalBuildingDef {
   type: AnimalBuildingType
@@ -36,6 +39,7 @@ export interface Animal {
 }
 
 export type FruitTreeType = 'peach_tree' | 'lychee_tree' | 'mandarin_tree' | 'plum_tree'
+  | 'apricot_tree' | 'pomegranate_tree' | 'persimmon_tree' | 'hawthorn_tree'
 
 export interface FruitTreeDef {
   type: FruitTreeType
@@ -54,9 +58,24 @@ export interface PlantedFruitTree {
   type: FruitTreeType
   growthDays: number
   mature: boolean
-  seasonAge: number
+  yearAge: number
   todayFruit: boolean
 }
 
 export type FarmhouseLevel = 0 | 1 | 2 | 3
 export type CaveChoice = 'none' | 'mushroom' | 'fruit_bat'
+
+export type PetType = 'cat' | 'dog'
+
+export interface PetState {
+  type: PetType
+  name: string
+  friendship: number
+  wasPetted: boolean
+}
+
+export interface IncubationState {
+  itemId: string
+  animalType: AnimalType
+  daysLeft: number
+}

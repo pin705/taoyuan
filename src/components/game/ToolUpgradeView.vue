@@ -4,7 +4,16 @@
       <Wrench :size="14" class="inline" />
       工具升级（找小满）
     </h3>
-    <p class="text-xs text-muted mb-4">消耗矿石和金币升级你的工具。</p>
+    <p class="text-xs text-muted mb-4">消耗金属锭和金币升级你的工具，需等待2天。</p>
+
+    <!-- 正在升级提示 -->
+    <div v-if="inventoryStore.pendingUpgrade" class="game-panel mb-4 border-accent/40">
+      <p class="text-xs text-accent">
+        <Clock :size="12" class="inline" />
+        小满正在锻造「{{ TOOL_NAMES[inventoryStore.pendingUpgrade.toolType] }}」→
+        {{ TIER_NAMES[inventoryStore.pendingUpgrade.targetTier] }} （还需 {{ inventoryStore.pendingUpgrade.daysRemaining }} 天）
+      </p>
+    </div>
 
     <div class="space-y-3">
       <div v-for="tool in inventoryStore.tools" :key="tool.type" class="game-panel">
@@ -12,9 +21,15 @@
           <div>
             <p class="text-sm">{{ TOOL_NAMES[tool.type] }}</p>
             <p class="text-xs text-muted">当前：{{ TIER_NAMES[tool.tier] }}</p>
+            <p v-if="isUpgrading(tool.type)" class="text-xs text-accent">升级中…</p>
           </div>
 
-          <div v-if="getUpgradeCost(tool.type, tool.tier)" class="text-right">
+          <!-- 正在升级此工具 -->
+          <div v-if="isUpgrading(tool.type)" class="text-right">
+            <p class="text-xs text-accent">锻造中（{{ inventoryStore.pendingUpgrade!.daysRemaining }}天后完成）</p>
+          </div>
+          <!-- 可以升级 -->
+          <div v-else-if="getUpgradeCost(tool.type, tool.tier)" class="text-right">
             <p class="text-xs text-muted mb-1">
               升级至{{ TIER_NAMES[getUpgradeCost(tool.type, tool.tier)!.toTier] }}： {{ getUpgradeCost(tool.type, tool.tier)!.money }}文 +
               {{
@@ -39,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ArrowUp, Wrench } from 'lucide-vue-next'
+  import { ArrowUp, Wrench, Clock } from 'lucide-vue-next'
   import { useInventoryStore, usePlayerStore, useNpcStore, useGameStore } from '@/stores'
   import { getUpgradeCost, TOOL_NAMES, TIER_NAMES, getItemById } from '@/data'
   import { ACTION_TIME_COSTS } from '@/data/timeConstants'
@@ -48,7 +63,8 @@
   /** 升级目标等级 → 所需小满好感 */
   const TIER_FRIENDSHIP_REQ: Partial<Record<ToolTier, FriendshipLevel>> = {
     iron: 'acquaintance',
-    steel: 'friendly'
+    steel: 'friendly',
+    iridium: 'bestFriend'
   }
   const LEVEL_ORDER: FriendshipLevel[] = ['stranger', 'acquaintance', 'friendly', 'bestFriend']
   const LEVEL_NAMES: Record<FriendshipLevel, string> = {
@@ -67,7 +83,15 @@
   const npcStore = useNpcStore()
   const gameStore = useGameStore()
 
+  /** 该工具是否正在升级中 */
+  const isUpgrading = (type: ToolType): boolean => {
+    return inventoryStore.pendingUpgrade?.toolType === type
+  }
+
   const canUpgrade = (type: ToolType): boolean => {
+    // 已有工具在升级中，不能再升级
+    if (inventoryStore.pendingUpgrade) return false
+
     const tool = inventoryStore.getTool(type)
     if (!tool) return false
     const cost = getUpgradeCost(type, tool.tier)
@@ -85,6 +109,8 @@
 
   /** 返回升级被阻止的原因（用于 UI 提示），可升级时返回空字符串 */
   const getUpgradeBlockReason = (type: ToolType): string => {
+    if (inventoryStore.pendingUpgrade) return '小满正在锻造其他工具'
+
     const tool = inventoryStore.getTool(type)
     if (!tool) return ''
     const cost = getUpgradeCost(type, tool.tier)
@@ -119,9 +145,9 @@
     for (const mat of cost.materials) {
       inventoryStore.removeItem(mat.itemId, mat.quantity)
     }
-    inventoryStore.upgradeTool(type)
+    inventoryStore.startUpgrade(type, cost.toTier)
 
-    addLog(`小满帮你把${TOOL_NAMES[type]}升级为${TIER_NAMES[cost.toTier]}了！(-${cost.money}文)`)
+    addLog(`你把${TOOL_NAMES[type]}和材料交给了小满，${cost.money}文。2天后可以取回升级后的工具。`)
     const tr = gameStore.advanceTime(ACTION_TIME_COSTS.toolUpgrade)
     if (tr.message) addLog(tr.message)
     if (tr.passedOut) {

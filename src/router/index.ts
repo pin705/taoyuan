@@ -24,7 +24,8 @@ const router = createRouter({
         { path: 'skills', name: 'skills', component: () => import('@/components/game/SkillView.vue') },
         { path: 'achievement', name: 'achievement', component: () => import('@/components/game/AchievementView.vue') },
         { path: 'wallet', name: 'wallet', component: () => import('@/components/game/WalletView.vue') },
-        { path: 'quest', name: 'quest', component: () => import('@/components/game/QuestView.vue') }
+        { path: 'quest', name: 'quest', component: () => import('@/components/game/QuestView.vue') },
+        { path: 'charinfo', name: 'charinfo', component: () => import('@/components/game/CharInfoView.vue') }
       ]
     }
   ]

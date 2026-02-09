@@ -215,43 +215,45 @@
     </template>
 
     <!-- 隐私协议弹窗 -->
-    <div v-if="showPrivacy" class="fixed inset-0 z-50 flex items-center justify-center bg-bg/80" @click.self="handlePrivacyDecline">
-      <div class="game-panel w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
-        <h2 class="text-accent text-lg mb-3 text-center">
-          <ShieldCheck :size="14" class="inline" />
-          隐私协议
-        </h2>
-        <div class="flex-1 overflow-y-auto text-xs text-muted space-y-2 mb-4 pr-1">
-          <p>欢迎来到桃源乡！在开始游戏之前，请阅读以下隐私协议：</p>
-          <p class="text-text">1. 数据存储</p>
-          <p>本游戏的存档、设置等数据保存在您的浏览器本地存储（localStorage）中。存档数据不会上传至服务器。</p>
-          <p class="text-text">2. 流量统计</p>
-          <p>
-            本游戏使用第三方统计服务收集匿名访问数据（如页面浏览量、访问时间、设备类型、浏览器信息等），用于分析游戏使用情况和改进体验。这些数据不包含您的个人身份信息。
-          </p>
-          <p class="text-text">3. 网络通信</p>
-          <p>除流量统计外，游戏核心功能均在本地运行，不会将您的游戏存档或操作数据发送至任何服务器。</p>
-          <p class="text-text">4. 数据安全</p>
-          <p>清除浏览器数据或更换设备可能导致存档丢失，建议定期使用导出功能备份存档。</p>
-          <p class="text-text">5. 第三方服务</p>
-          <p>
-            本游戏使用的第三方统计服务有其独立的隐私政策，我们不对其数据处理方式负责。游戏中的外部链接指向的第三方网站亦不受本协议约束。
-          </p>
-          <p class="text-text">6. 协议变更</p>
-          <p>本协议可能随版本更新而调整，届时将在游戏内重新提示。继续使用即视为同意最新版本的协议。</p>
-        </div>
-        <div class="flex gap-3 justify-center">
-          <button class="btn text-sm" @click="handlePrivacyDecline">
-            <ArrowLeft :size="14" />
-            不同意
-          </button>
-          <button class="btn text-sm px-6" @click="handlePrivacyAgree">
-            <ShieldCheck :size="14" />
-            同意并继续
-          </button>
+    <Transition name="panel-fade">
+      <div v-if="showPrivacy" class="fixed inset-0 z-50 flex items-center justify-center bg-bg/80" @click.self="handlePrivacyDecline">
+        <div class="game-panel w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
+          <h2 class="text-accent text-lg mb-3 text-center">
+            <ShieldCheck :size="14" class="inline" />
+            隐私协议
+          </h2>
+          <div class="flex-1 overflow-y-auto text-xs text-muted space-y-2 mb-4 pr-1">
+            <p>欢迎来到桃源乡！在开始游戏之前，请阅读以下隐私协议：</p>
+            <p class="text-text">1. 数据存储</p>
+            <p>本游戏的存档、设置等数据保存在您的浏览器本地存储（localStorage）中。存档数据不会上传至服务器。</p>
+            <p class="text-text">2. 流量统计</p>
+            <p>
+              本游戏使用第三方统计服务收集匿名访问数据（如页面浏览量、访问时间、设备类型、浏览器信息等），用于分析游戏使用情况和改进体验。这些数据不包含您的个人身份信息。
+            </p>
+            <p class="text-text">3. 网络通信</p>
+            <p>除流量统计外，游戏核心功能均在本地运行，不会将您的游戏存档或操作数据发送至任何服务器。</p>
+            <p class="text-text">4. 数据安全</p>
+            <p>清除浏览器数据或更换设备可能导致存档丢失，建议定期使用导出功能备份存档。</p>
+            <p class="text-text">5. 第三方服务</p>
+            <p>
+              本游戏使用的第三方统计服务有其独立的隐私政策，我们不对其数据处理方式负责。游戏中的外部链接指向的第三方网站亦不受本协议约束。
+            </p>
+            <p class="text-text">6. 协议变更</p>
+            <p>本协议可能随版本更新而调整，届时将在游戏内重新提示。继续使用即视为同意最新版本的协议。</p>
+          </div>
+          <div class="flex gap-3 justify-center">
+            <button class="btn text-sm" @click="handlePrivacyDecline">
+              <ArrowLeft :size="14" />
+              不同意
+            </button>
+            <button class="btn text-sm px-6" @click="handlePrivacyAgree">
+              <ShieldCheck :size="14" />
+              同意并继续
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Transition>
   </div>
 </template>
 
@@ -259,7 +261,7 @@
   import { Play, FolderOpen, ArrowLeft, Trash2, Download, Upload, Info, Settings, ShieldCheck } from 'lucide-vue-next'
   import { ref } from 'vue'
   import { useRouter } from 'vue-router'
-  import { useGameStore, useSaveStore, useFarmStore, useAnimalStore, usePlayerStore, SEASON_NAMES } from '@/stores'
+  import { useGameStore, useSaveStore, useFarmStore, useAnimalStore, usePlayerStore, useQuestStore, SEASON_NAMES } from '@/stores'
   import { FARM_MAP_DEFS } from '@/data/farmMaps'
   import { useAudio } from '@/composables/useAudio'
   import type { FarmMapType, Gender } from '@/types'
@@ -272,6 +274,7 @@
   const farmStore = useFarmStore()
   const animalStore = useAnimalStore()
   const playerStore = usePlayerStore()
+  const questStore = useQuestStore()
 
   const slots = ref(saveStore.getSlots())
   const showCharCreate = ref(false)
@@ -354,6 +357,7 @@
         }
       )
     }
+    questStore.initMainQuest()
     router.push('/game')
   }
 

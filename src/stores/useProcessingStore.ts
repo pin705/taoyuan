@@ -16,7 +16,7 @@ import { useInventoryStore } from './useInventoryStore'
 import { usePlayerStore } from './usePlayerStore'
 
 /** 最大放置机器数 */
-const MAX_MACHINES = 6
+const MAX_MACHINES = 15
 
 export const useProcessingStore = defineStore('processing', () => {
   const inventoryStore = useInventoryStore()
@@ -208,6 +208,7 @@ export const useProcessingStore = defineStore('processing', () => {
     machineCount,
     MAX_MACHINES,
     canCraft,
+    consumeCraftMaterials,
     craftMachine,
     craftSprinkler,
     craftFertilizer,

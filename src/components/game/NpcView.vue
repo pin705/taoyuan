@@ -16,6 +16,7 @@
             <p class="text-sm">
               {{ npc.name }}
               <span v-if="npcStore.getNpcState(npc.id)?.married" class="text-danger text-xs ml-1">[伴侣]</span>
+              <span v-else-if="npcStore.getNpcState(npc.id)?.dating" class="text-danger/70 text-xs ml-1">[约会中]</span>
             </p>
             <p class="text-xs text-muted">{{ npc.role }}</p>
             <p v-if="npcStore.isBirthday(npc.id)" class="text-xs text-danger">
@@ -35,7 +36,7 @@
             v-for="h in 10"
             :key="h"
             class="text-xs"
-            :class="(npcStore.getNpcState(npc.id)?.friendship ?? 0) >= h * 40 ? 'text-danger' : 'text-muted/30'"
+            :class="(npcStore.getNpcState(npc.id)?.friendship ?? 0) >= h * 250 ? 'text-danger' : 'text-muted/30'"
           >
             &#x2665;
           </span>
@@ -45,75 +46,108 @@
     </div>
 
     <!-- NPC 交互弹窗 -->
-    <div v-if="selectedNpc" class="mt-4 game-panel">
-      <div class="flex justify-between items-center mb-3">
-        <div>
-          <p class="text-sm text-accent">
-            {{ selectedNpcDef?.name }} — {{ selectedNpcDef?.role }}
-            <span v-if="selectedNpcState?.married" class="text-danger text-xs ml-1">[伴侣]</span>
+    <Transition name="panel-fade">
+      <div v-if="selectedNpc" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" @click.self="selectedNpc = null">
+        <div class="game-panel max-w-lg w-full max-h-[80vh] overflow-y-auto">
+          <div class="flex justify-between items-center mb-3">
+            <div>
+              <p class="text-sm text-accent">
+                {{ selectedNpcDef?.name }} — {{ selectedNpcDef?.role }}
+                <span v-if="selectedNpcState?.married" class="text-danger text-xs ml-1">[伴侣]</span>
+                <span v-else-if="selectedNpcState?.dating" class="text-danger/70 text-xs ml-1">[约会中]</span>
+              </p>
+              <p class="text-xs text-muted">{{ selectedNpcDef?.personality }}</p>
+              <p v-if="selectedNpcDef?.birthday" class="text-xs text-muted">
+                生日: {{ SEASON_NAMES_MAP[selectedNpcDef.birthday.season] }}{{ selectedNpcDef.birthday.day }}日
+                <span v-if="npcStore.isBirthday(selectedNpc!)" class="text-danger ml-1">（今天！送礼好感×8）</span>
+              </p>
+            </div>
+            <button class="btn text-xs" @click="selectedNpc = null">关闭</button>
+          </div>
+
+          <!-- 已触发的心事件 -->
+          <div v-if="selectedNpcState && selectedNpcState.triggeredHeartEvents.length > 0" class="mb-3">
+            <p class="text-xs text-muted mb-1">回忆：</p>
+            <div class="flex gap-1 flex-wrap">
+              <span
+                v-for="eid in selectedNpcState.triggeredHeartEvents"
+                :key="eid"
+                class="text-xs border border-accent/20 rounded-[2px] px-1"
+              >
+                {{ getHeartEventTitle(eid) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- 对话 -->
+          <div class="mb-3 flex gap-2 flex-wrap">
+            <button class="btn text-xs" :disabled="selectedNpcState?.talkedToday" @click="handleTalk">
+              <MessageCircle :size="14" />
+              {{ selectedNpcState?.talkedToday ? '今天已聊过' : '聊天' }}
+            </button>
+            <!-- 赠帕按钮 -->
+            <button v-if="canStartDating" class="btn text-xs text-danger border-danger/40" @click="handleStartDating">
+              <Heart :size="14" />
+              赠帕
+            </button>
+            <!-- 求婚按钮 -->
+            <button v-if="canPropose" class="btn text-xs text-danger border-danger/40" @click="handlePropose">
+              <Heart :size="14" />
+              求婚
+            </button>
+            <!-- 离婚按钮 -->
+            <button v-if="selectedNpcState?.married" class="btn text-xs text-danger border-danger/40" @click="showDivorceConfirm = true">
+              休书
+            </button>
+          </div>
+
+          <!-- 婚礼倒计时 -->
+          <p v-if="npcStore.weddingCountdown > 0 && npcStore.weddingNpcId === selectedNpc" class="text-xs text-accent mb-3">
+            婚礼将在 {{ npcStore.weddingCountdown }} 天后举行！
           </p>
-          <p class="text-xs text-muted">{{ selectedNpcDef?.personality }}</p>
-          <p v-if="selectedNpcDef?.birthday" class="text-xs text-muted">
-            生日: {{ SEASON_NAMES_MAP[selectedNpcDef.birthday.season] }}{{ selectedNpcDef.birthday.day }}日
-            <span v-if="npcStore.isBirthday(selectedNpc!)" class="text-danger ml-1">（今天！送礼好感×5）</span>
-          </p>
+
+          <!-- 离婚确认 -->
+          <div v-if="showDivorceConfirm" class="game-panel mb-3 border-danger/40">
+            <p class="text-xs text-danger mb-2">确定要与{{ selectedNpcDef?.name }}和离吗？（花费30000文）</p>
+            <div class="flex gap-2">
+              <button class="btn text-xs text-danger" @click="handleDivorce">确认</button>
+              <button class="btn text-xs" @click="showDivorceConfirm = false">取消</button>
+            </div>
+          </div>
+
+          <!-- 对话内容 -->
+          <div v-if="dialogueText" class="game-panel mb-3 text-xs">
+            <p class="text-accent mb-1">「{{ selectedNpcDef?.name }}」</p>
+            <p>{{ dialogueText }}</p>
+          </div>
+
+          <!-- 送礼 -->
+          <div>
+            <p class="text-xs text-muted mb-2">
+              送礼（选择背包中的物品）
+              <span v-if="npcStore.isBirthday(selectedNpc!)" class="text-danger">— 生日加成中!</span>
+            </p>
+            <div class="flex gap-2 flex-wrap">
+              <button
+                v-for="item in giftableItems"
+                :key="`${item.itemId}_${item.quality ?? 'normal'}`"
+                class="btn text-xs"
+                :disabled="selectedNpcState?.giftedToday || (selectedNpcState?.giftsThisWeek ?? 0) >= 2"
+                @click="handleGift(item.itemId, item.quality)"
+              >
+                <Gift :size="14" />
+                {{ getItemById(item.itemId)?.name }}
+                <span v-if="item.quality && item.quality !== 'normal'" class="text-accent ml-0.5">{{ QUALITY_LABELS[item.quality] }}</span>
+                (&times;{{ item.quantity }})
+              </button>
+              <p v-if="giftableItems.length === 0" class="text-xs text-muted">背包为空</p>
+            </div>
+            <p v-if="selectedNpcState?.giftedToday" class="text-xs text-muted mt-1">今天已送过礼物了。</p>
+            <p v-else-if="(selectedNpcState?.giftsThisWeek ?? 0) >= 2" class="text-xs text-muted mt-1">本周已送过2次礼物了。</p>
+          </div>
         </div>
-        <button class="btn text-xs" @click="selectedNpc = null">关闭</button>
       </div>
-
-      <!-- 已触发的心事件 -->
-      <div v-if="selectedNpcState && selectedNpcState.triggeredHeartEvents.length > 0" class="mb-3">
-        <p class="text-xs text-muted mb-1">回忆：</p>
-        <div class="flex gap-1 flex-wrap">
-          <span v-for="eid in selectedNpcState.triggeredHeartEvents" :key="eid" class="text-xs border border-accent/20 rounded-[2px] px-1">
-            {{ getHeartEventTitle(eid) }}
-          </span>
-        </div>
-      </div>
-
-      <!-- 对话 -->
-      <div class="mb-3 flex gap-2 flex-wrap">
-        <button class="btn text-xs" :disabled="selectedNpcState?.talkedToday" @click="handleTalk">
-          <MessageCircle :size="14" />
-          {{ selectedNpcState?.talkedToday ? '今天已聊过' : '聊天' }}
-        </button>
-        <!-- 求婚按钮 -->
-        <button v-if="canPropose" class="btn text-xs text-danger border-danger/40" @click="handlePropose">
-          <Heart :size="14" />
-          求婚
-        </button>
-      </div>
-
-      <!-- 对话内容 -->
-      <div v-if="dialogueText" class="game-panel mb-3 text-xs">
-        <p class="text-accent mb-1">「{{ selectedNpcDef?.name }}」</p>
-        <p>{{ dialogueText }}</p>
-      </div>
-
-      <!-- 送礼 -->
-      <div>
-        <p class="text-xs text-muted mb-2">
-          送礼（选择背包中的物品）
-          <span v-if="npcStore.isBirthday(selectedNpc!)" class="text-danger">— 生日加成中!</span>
-        </p>
-        <div class="flex gap-2 flex-wrap">
-          <button
-            v-for="item in giftableItems"
-            :key="`${item.itemId}_${item.quality ?? 'normal'}`"
-            class="btn text-xs"
-            :disabled="selectedNpcState?.giftedToday"
-            @click="handleGift(item.itemId, item.quality)"
-          >
-            <Gift :size="14" />
-            {{ getItemById(item.itemId)?.name }}
-            <span v-if="item.quality && item.quality !== 'normal'" class="text-accent ml-0.5">{{ QUALITY_LABELS[item.quality] }}</span>
-            (&times;{{ item.quantity }})
-          </button>
-          <p v-if="giftableItems.length === 0" class="text-xs text-muted">背包为空</p>
-        </div>
-        <p v-if="selectedNpcState?.giftedToday" class="text-xs text-muted mt-1">今天已送过礼物了。</p>
-      </div>
-    </div>
+    </Transition>
   </div>
 </template>
 
@@ -136,6 +170,7 @@
 
   const selectedNpc = ref<string | null>(null)
   const dialogueText = ref<string | null>(null)
+  const showDivorceConfirm = ref(false)
 
   const selectedNpcDef = computed(() => (selectedNpc.value ? getNpcById(selectedNpc.value) : null))
   const selectedNpcState = computed(() => (selectedNpc.value ? npcStore.getNpcState(selectedNpc.value) : null))
@@ -148,6 +183,7 @@
     if (npcAvailable(npcId)) {
       selectedNpc.value = npcId
       dialogueText.value = null
+      showDivorceConfirm.value = false
     }
   }
 
@@ -162,13 +198,27 @@
     })
   )
 
+  /** 是否可以赠帕开始约会 */
+  const canStartDating = computed(() => {
+    if (!selectedNpcDef.value?.marriageable) return false
+    if (selectedNpcDef.value.gender === playerStore.gender) return false
+    if (selectedNpcState.value?.dating) return false
+    if (selectedNpcState.value?.married) return false
+    if (npcStore.npcStates.some(s => s.married)) return false
+    if ((selectedNpcState.value?.friendship ?? 0) < 2000) return false
+    if (!inventoryStore.hasItem('silk_ribbon')) return false
+    return true
+  })
+
   /** 是否可以求婚 */
   const canPropose = computed(() => {
     if (!selectedNpcDef.value?.marriageable) return false
     if (selectedNpcDef.value.gender === playerStore.gender) return false
+    if (!selectedNpcState.value?.dating) return false
     if (selectedNpcState.value?.married) return false
     if (npcStore.npcStates.some(s => s.married)) return false
-    if ((selectedNpcState.value?.friendship ?? 0) < 300) return false
+    if (npcStore.weddingCountdown > 0) return false
+    if ((selectedNpcState.value?.friendship ?? 0) < 2500) return false
     if (!inventoryStore.hasItem('jade_ring')) return false
     return true
   })
@@ -230,7 +280,9 @@
 
   const handleGift = (itemId: string, quality: Quality = 'normal') => {
     if (!selectedNpc.value) return
-    const giftMultiplier = cookingStore.activeBuff?.type === 'giftBonus' ? cookingStore.activeBuff.value : 1
+    const cookingGiftBonus = cookingStore.activeBuff?.type === 'giftBonus' ? cookingStore.activeBuff.value : 1
+    const ringGiftBonus = inventoryStore.getRingEffectValue('gift_friendship')
+    const giftMultiplier = cookingGiftBonus * (1 + ringGiftBonus)
     const result = npcStore.giveGift(selectedNpc.value, itemId, giftMultiplier, quality)
     if (result) {
       const itemName = getItemById(itemId)?.name ?? itemId
@@ -260,5 +312,27 @@
     } else {
       addLog(result.message)
     }
+  }
+
+  const handleStartDating = () => {
+    if (!selectedNpc.value) return
+    const result = npcStore.startDating(selectedNpc.value)
+    if (result.success) {
+      dialogueText.value = result.message
+      addLog(result.message)
+    } else {
+      addLog(result.message)
+    }
+  }
+
+  const handleDivorce = () => {
+    const result = npcStore.divorce()
+    if (result.success) {
+      addLog(result.message)
+      dialogueText.value = result.message
+    } else {
+      addLog(result.message)
+    }
+    showDivorceConfirm.value = false
   }
 </script>

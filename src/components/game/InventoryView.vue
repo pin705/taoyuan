@@ -49,6 +49,14 @@
           <Apple :size="14" />
           食用
         </button>
+        <button
+          v-if="isUsable(item.itemId)"
+          class="btn text-xs mt-1 w-full justify-center py-0.5"
+          @click="handleUse(item.itemId, item.quality)"
+        >
+          <Zap :size="14" />
+          使用
+        </button>
       </div>
 
       <!-- 空格子 -->
@@ -64,8 +72,8 @@
 </template>
 
 <script setup lang="ts">
-  import { Apple, Package, Wrench } from 'lucide-vue-next'
-  import { useInventoryStore, usePlayerStore, useSkillStore } from '@/stores'
+  import { Apple, Package, Wrench, Zap } from 'lucide-vue-next'
+  import { useInventoryStore, usePlayerStore, useSkillStore, useGameStore } from '@/stores'
   import { getItemById } from '@/data'
   import { addLog } from '@/composables/useGameLog'
   import type { Quality } from '@/types'
@@ -73,6 +81,7 @@
   const inventoryStore = useInventoryStore()
   const playerStore = usePlayerStore()
   const skillStore = useSkillStore()
+  const gameStore = useGameStore()
 
   const TOOL_NAMES: Record<string, string> = {
     wateringCan: '水壶',
@@ -128,5 +137,20 @@
     }
     msg += '。'
     addLog(msg)
+  }
+
+  /** 可使用的特殊物品 */
+  const USABLE_ITEMS = new Set(['rain_totem'])
+
+  const isUsable = (itemId: string): boolean => {
+    return USABLE_ITEMS.has(itemId)
+  }
+
+  const handleUse = (itemId: string, quality: Quality) => {
+    if (itemId === 'rain_totem') {
+      if (!inventoryStore.removeItem(itemId, 1, quality)) return
+      gameStore.setTomorrowWeather('rainy')
+      addLog('你使用了雨图腾，明天将会下雨。')
+    }
   }
 </script>

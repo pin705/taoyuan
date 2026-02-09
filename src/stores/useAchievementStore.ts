@@ -2,11 +2,14 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import type { AchievementDef } from '@/types'
 import { ACHIEVEMENTS, COMMUNITY_BUNDLES } from '@/data/achievements'
+import { ITEMS } from '@/data/items'
 import { usePlayerStore } from './usePlayerStore'
 import { useInventoryStore } from './useInventoryStore'
 import { useSkillStore } from './useSkillStore'
 import { useNpcStore } from './useNpcStore'
 import { useQuestStore } from './useQuestStore'
+import { useShopStore } from './useShopStore'
+import { useAnimalStore } from './useAnimalStore'
 
 export const useAchievementStore = defineStore('achievement', () => {
   const playerStore = usePlayerStore()
@@ -32,7 +35,9 @@ export const useAchievementStore = defineStore('achievement', () => {
     totalFishCaught: 0,
     totalMoneyEarned: 0,
     highestMineFloor: 0,
-    totalRecipesCooked: 0
+    totalRecipesCooked: 0,
+    skullCavernBestFloor: 0,
+    totalMonstersKilled: 0
   })
 
   const discoveredCount = computed(() => discoveredItems.value.length)
@@ -73,6 +78,16 @@ export const useAchievementStore = defineStore('achievement', () => {
     stats.value.totalRecipesCooked++
   }
 
+  const recordSkullCavernFloor = (floor: number) => {
+    if (floor > stats.value.skullCavernBestFloor) {
+      stats.value.skullCavernBestFloor = floor
+    }
+  }
+
+  const recordMonsterKill = () => {
+    stats.value.totalMonstersKilled++
+  }
+
   // === 成就检查 ===
 
   const checkAchievements = (): AchievementDef[] => {
@@ -99,6 +114,9 @@ export const useAchievementStore = defineStore('achievement', () => {
           break
         case 'mineFloor':
           met = stats.value.highestMineFloor >= c.floor
+          break
+        case 'skullCavernFloor':
+          met = stats.value.skullCavernBestFloor >= c.floor
           break
         case 'recipesCooked':
           met = stats.value.totalRecipesCooked >= c.count
@@ -131,6 +149,44 @@ export const useAchievementStore = defineStore('achievement', () => {
           break
         case 'hasChild':
           met = npcStore.children.length > 0
+          break
+        case 'monstersKilled':
+          met = stats.value.totalMonstersKilled >= c.count
+          break
+        case 'shippedCount': {
+          const shopStore = useShopStore()
+          met = shopStore.shippedItems.length >= c.count
+          break
+        }
+        case 'fullShipment': {
+          const shopStore2 = useShopStore()
+          const shippableCategories = [
+            'crop',
+            'fish',
+            'animal_product',
+            'processed',
+            'fruit',
+            'ore',
+            'gem',
+            'material',
+            'misc',
+            'food',
+            'gift'
+          ]
+          const shippableCount = ITEMS.filter(i => shippableCategories.includes(i.category)).length
+          met = shopStore2.shippedItems.length >= shippableCount
+          break
+        }
+        case 'animalCount': {
+          const animalStore = useAnimalStore()
+          met = animalStore.animals.length >= c.count
+          break
+        }
+        case 'allSkillsMax':
+          met = skillStore.skills.every(s => s.level === 10)
+          break
+        case 'allBundlesComplete':
+          met = completedBundles.value.length >= COMMUNITY_BUNDLES.length
           break
       }
 
@@ -197,6 +253,37 @@ export const useAchievementStore = defineStore('achievement', () => {
     return completedBundles.value.includes(bundleId)
   }
 
+  // === 完美度 ===
+
+  const SHIPPABLE_CATEGORIES = ['crop', 'fish', 'animal_product', 'processed', 'fruit', 'ore', 'gem', 'material', 'misc', 'food', 'gift']
+  const shippableItemCount = ITEMS.filter(i => SHIPPABLE_CATEGORIES.includes(i.category)).length
+
+  const perfectionPercent = computed(() => {
+    const shopStore = useShopStore()
+
+    // 成就 25%
+    const achievementRate = completedAchievements.value.length / ACHIEVEMENTS.length
+    // 出货 20%
+    const shippingRate = shippableItemCount > 0 ? shopStore.shippedItems.length / shippableItemCount : 0
+    // 社区任务 15%
+    const bundleRate = COMMUNITY_BUNDLES.length > 0 ? completedBundles.value.length / COMMUNITY_BUNDLES.length : 0
+    // 图鉴 15%
+    const collectionRate = ITEMS.length > 0 ? discoveredItems.value.length / ITEMS.length : 0
+    // 技能 15%
+    const avgSkillLevel = skillStore.skills.reduce((sum, s) => sum + s.level, 0) / skillStore.skills.length
+    const skillRate = avgSkillLevel / 10
+    // 好感 10%
+    const friendlyCount = npcStore.npcStates.filter(n => {
+      const level = npcStore.getFriendshipLevel(n.npcId)
+      return level === 'friendly' || level === 'bestFriend'
+    }).length
+    const friendRate = npcStore.npcStates.length > 0 ? friendlyCount / npcStore.npcStates.length : 0
+
+    const total =
+      achievementRate * 0.25 + shippingRate * 0.2 + bundleRate * 0.15 + collectionRate * 0.15 + skillRate * 0.15 + friendRate * 0.1
+    return Math.floor(total * 100)
+  })
+
   // === 序列化 ===
 
   const serialize = () => {
@@ -219,7 +306,15 @@ export const useAchievementStore = defineStore('achievement', () => {
       totalFishCaught: 0,
       totalMoneyEarned: 0,
       highestMineFloor: 0,
-      totalRecipesCooked: 0
+      totalRecipesCooked: 0,
+      skullCavernBestFloor: 0
+    }
+    // 兼容旧存档：补充缺失字段
+    if (stats.value.skullCavernBestFloor === undefined) {
+      stats.value.skullCavernBestFloor = 0
+    }
+    if ((stats.value as Record<string, unknown>).totalMonstersKilled === undefined) {
+      stats.value.totalMonstersKilled = 0
     }
   }
 
@@ -237,7 +332,10 @@ export const useAchievementStore = defineStore('achievement', () => {
     recordMoneyEarned,
     recordMineFloor,
     recordRecipeCooked,
+    recordSkullCavernFloor,
+    recordMonsterKill,
     checkAchievements,
+    perfectionPercent,
     submitToBundle,
     getBundleProgress,
     isBundleComplete,

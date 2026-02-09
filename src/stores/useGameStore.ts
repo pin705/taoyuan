@@ -14,6 +14,7 @@ import {
   getLocationGroupName
 } from '@/data/timeConstants'
 import { useCookingStore } from './useCookingStore'
+import { useAnimalStore } from './useAnimalStore'
 
 /** 季节顺序 */
 const SEASON_ORDER: Season[] = ['spring', 'summer', 'autumn', 'winter']
@@ -32,7 +33,8 @@ export const WEATHER_NAMES: Record<Weather, string> = {
   rainy: '雨',
   stormy: '雷雨',
   snowy: '雪',
-  windy: '大风'
+  windy: '大风',
+  green_rain: '绿雨'
 }
 
 /** 固定天气日 */
@@ -60,11 +62,12 @@ export const useGameStore = defineStore('game', () => {
   const currentLocationGroup = ref<LocationGroup>('farm')
   const isGameStarted = ref(false)
   const farmMapType = ref<FarmMapType>('standard')
+  const midnightWarned = ref(false)
 
   const seasonIndex = computed(() => SEASON_ORDER.indexOf(season.value))
   const seasonName = computed(() => SEASON_NAMES[season.value])
   const weatherName = computed(() => WEATHER_NAMES[weather.value])
-  const isRainy = computed(() => weather.value === 'rainy' || weather.value === 'stormy')
+  const isRainy = computed(() => weather.value === 'rainy' || weather.value === 'stormy' || weather.value === 'green_rain')
 
   // 时间相关 computed
   const weekday = computed(() => getWeekday(day.value))
@@ -86,13 +89,17 @@ export const useGameStore = defineStore('game', () => {
     const fixed = FIXED_WEATHER[targetSeason]?.[targetDay]
     if (fixed) return fixed
 
+    // 第1年夏季第5天固定绿雨
+    if (year.value === 1 && targetSeason === 'summer' && targetDay === 5) return 'green_rain'
+
     // 按季节概率随机
     const roll = Math.random()
     switch (targetSeason) {
       case 'spring':
         return roll < 0.5 ? 'sunny' : roll < 0.75 ? 'rainy' : roll < 0.85 ? 'stormy' : 'windy'
       case 'summer':
-        return roll < 0.4 ? 'sunny' : roll < 0.7 ? 'rainy' : roll < 0.85 ? 'stormy' : 'windy'
+        // 绿雨: 8% 概率 (仅夏季)
+        return roll < 0.08 ? 'green_rain' : roll < 0.42 ? 'sunny' : roll < 0.68 ? 'rainy' : roll < 0.83 ? 'stormy' : 'windy'
       case 'autumn':
         return roll < 0.45 ? 'sunny' : roll < 0.7 ? 'rainy' : roll < 0.8 ? 'stormy' : 'windy'
       case 'winter':
@@ -119,8 +126,9 @@ export const useGameStore = defineStore('game', () => {
 
     hour.value = newHour
 
-    // 跨午夜提示
-    if (prevHour < MIDNIGHT_HOUR && hour.value >= MIDNIGHT_HOUR) {
+    // 跨午夜提示（仅一次）
+    if (!midnightWarned.value && prevHour < MIDNIGHT_HOUR && hour.value >= MIDNIGHT_HOUR) {
+      midnightWarned.value = true
       return { ok: true, passedOut: false, message: '已经过了午夜，你开始感到困倦……' }
     }
 
@@ -133,7 +141,10 @@ export const useGameStore = defineStore('game', () => {
     if (!targetGroup) return 0
     if (targetGroup === currentLocationGroup.value) return 0
     const key = `${currentLocationGroup.value}->${targetGroup}`
-    return TRAVEL_TIME[key] ?? 0.5
+    const baseCost = TRAVEL_TIME[key] ?? 0.5
+    // 拥有马减少30%旅行时间
+    const animalStore = useAnimalStore()
+    return animalStore.hasHorse ? baseCost * 0.7 : baseCost
   }
 
   /** 移动到目标 tab 对应的地点组 */
@@ -176,6 +187,7 @@ export const useGameStore = defineStore('game', () => {
     const nextSeason = day.value + 1 > 28 ? SEASON_ORDER[(SEASON_ORDER.indexOf(season.value) + 1) % 4]! : season.value
     tomorrowWeather.value = rollWeather(nextSeason, nextDay)
     hour.value = DAY_START_HOUR
+    midnightWarned.value = false
     currentLocationGroup.value = 'farm'
     return { seasonChanged: oldSeason !== season.value, oldSeason }
   }
@@ -185,12 +197,18 @@ export const useGameStore = defineStore('game', () => {
     currentLocation.value = location
   }
 
+  /** 强制设置明日天气（雨图腾等） */
+  const setTomorrowWeather = (w: Weather) => {
+    tomorrowWeather.value = w
+  }
+
   /** 开始新游戏 */
   const startNewGame = (mapType: FarmMapType = 'standard') => {
     year.value = 1
     season.value = 'spring'
     day.value = 1
     hour.value = DAY_START_HOUR
+    midnightWarned.value = false
     weather.value = 'sunny'
     tomorrowWeather.value = rollWeather('spring', 2)
     currentLocation.value = 'farm'
@@ -220,6 +238,7 @@ export const useGameStore = defineStore('game', () => {
     season.value = data.season ?? 'spring'
     day.value = data.day ?? 1
     hour.value = data.hour ?? DAY_START_HOUR
+    midnightWarned.value = (data.hour ?? DAY_START_HOUR) >= MIDNIGHT_HOUR
     weather.value = data.weather ?? 'sunny'
     tomorrowWeather.value = data.tomorrowWeather ?? rollWeather(data.season ?? 'spring', ((data.day ?? 1) % 28) + 1)
     currentLocation.value = data.currentLocation ?? 'farm'
@@ -239,6 +258,7 @@ export const useGameStore = defineStore('game', () => {
     currentLocationGroup,
     isGameStarted,
     farmMapType,
+    midnightWarned,
     seasonIndex,
     seasonName,
     weatherName,
@@ -255,6 +275,7 @@ export const useGameStore = defineStore('game', () => {
     advanceTime,
     getTravelCost,
     travelTo,
+    setTomorrowWeather,
     serialize,
     deserialize
   }

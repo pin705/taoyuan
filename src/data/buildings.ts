@@ -23,7 +23,7 @@ export const FARMHOUSE_UPGRADES: FarmhouseUpgradeDef[] = [
     level: 2,
     name: '宅院',
     description: '宽敞的院落，每晚额外恢复10%体力。',
-    cost: 50000,
+    cost: 65000,
     materialCost: [
       { itemId: 'wood', quantity: 100 },
       { itemId: 'iron_ore', quantity: 50 }

@@ -15,7 +15,8 @@ export const WEATHER_FORAGE_MODIFIER: Record<Weather, number> = {
   rainy: 1.15,
   stormy: 0.8,
   snowy: 0.9,
-  windy: 1.1
+  windy: 1.1,
+  green_rain: 1.5
 }
 
 /** 竹林采集物 */

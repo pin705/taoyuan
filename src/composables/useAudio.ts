@@ -361,6 +361,15 @@ const WEATHER_MODIFIERS: Record<Weather, WeatherModifier> = {
     noiseFilterFreq: 800,
     noiseFilterType: 'bandpass',
     detuneAmount: 3
+  },
+  green_rain: {
+    tempoScale: 1.1,
+    volumeScale: 0.8,
+    noiseType: 'pink',
+    noiseVolume: 0.08,
+    noiseFilterFreq: 2500,
+    noiseFilterType: 'lowpass',
+    detuneAmount: 6
   }
 }
 

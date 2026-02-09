@@ -2,7 +2,7 @@
 export type Season = 'spring' | 'summer' | 'autumn' | 'winter'
 
 /** 天气 */
-export type Weather = 'sunny' | 'rainy' | 'stormy' | 'snowy' | 'windy'
+export type Weather = 'sunny' | 'rainy' | 'stormy' | 'snowy' | 'windy' | 'green_rain'
 
 /** 星期 */
 export type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'

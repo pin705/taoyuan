@@ -51,7 +51,7 @@ export const useWalletStore = defineStore('wallet', () => {
       newlyUnlocked.push('矿工护符')
     }
 
-    // 垂钓者令牌：钓到15种鱼
+    // 垂钓者令牌：钓到30种鱼
     if (!has('anglers_token')) {
       const fishCount = achievementStore.discoveredItems.filter(id => {
         // 简单判断：检查是否是鱼类物品
@@ -59,7 +59,7 @@ export const useWalletStore = defineStore('wallet', () => {
           /carp|bass|catfish|trout|salmon|crucian|mandarin_fish|eel|pufferfish|sturgeon|koi|loach|snakehead|perch|bream|legendary/
         )
       }).length
-      if (fishCount >= 15) {
+      if (fishCount >= 30) {
         unlock('anglers_token')
         newlyUnlocked.push('钓翁令牌')
       }

@@ -63,6 +63,12 @@
         <button class="btn text-xs" :disabled="!processingStore.canCraft(TAPPER.craftCost, TAPPER.craftMoney)" @click="handleCraftTapper">
           造{{ TAPPER.name }} ({{ TAPPER.craftMoney }}文)
         </button>
+        <button class="btn text-xs" :disabled="!processingStore.canCraft(LIGHTNING_ROD.craftCost, LIGHTNING_ROD.craftMoney)" @click="handleCraftLightningRod">
+          造{{ LIGHTNING_ROD.name }} ({{ LIGHTNING_ROD.craftMoney }}文) [已有{{ farmStore.lightningRods }}]
+        </button>
+        <button class="btn text-xs" :disabled="!processingStore.canCraft(SCARECROW.craftCost, SCARECROW.craftMoney)" @click="handleCraftScarecrow">
+          造{{ SCARECROW.name }} ({{ SCARECROW.craftMoney }}文) [已有{{ farmStore.scarecrows }}]
+        </button>
         <button
           v-for="b in BOMBS"
           :key="b.id"
@@ -185,6 +191,20 @@
           <span v-if="TAPPER.craftMoney">+ {{ TAPPER.craftMoney }}文</span>
           <span class="ml-2 text-muted">— {{ TAPPER.description }}</span>
         </div>
+        <div class="mb-1">
+          <span class="text-accent">{{ LIGHTNING_ROD.name }}</span>
+          :
+          {{ LIGHTNING_ROD.craftCost.map(c => `${getItemName(c.itemId)}×${c.quantity}`).join(', ') }}
+          <span v-if="LIGHTNING_ROD.craftMoney">+ {{ LIGHTNING_ROD.craftMoney }}文</span>
+          <span class="ml-2 text-muted">— {{ LIGHTNING_ROD.description }}</span>
+        </div>
+        <div class="mb-1">
+          <span class="text-accent">{{ SCARECROW.name }}</span>
+          :
+          {{ SCARECROW.craftCost.map(c => `${getItemName(c.itemId)}×${c.quantity}`).join(', ') }}
+          <span v-if="SCARECROW.craftMoney">+ {{ SCARECROW.craftMoney }}文</span>
+          <span class="ml-2 text-muted">— {{ SCARECROW.description }}</span>
+        </div>
         <div v-for="b in BOMBS" :key="'ref_' + b.id" class="mb-1">
           <span class="text-accent">{{ b.name }}</span>
           :
@@ -200,8 +220,8 @@
   import { Hammer, Trash2, Package, Boxes, BookOpen } from 'lucide-vue-next'
   import type { MachineType } from '@/types'
   import { computed } from 'vue'
-  import { useProcessingStore, useInventoryStore, usePlayerStore, useGameStore } from '@/stores'
-  import { PROCESSING_MACHINES, SPRINKLERS, FERTILIZERS, BAITS, TACKLES, TAPPER, BOMBS, getProcessingRecipeById } from '@/data/processing'
+  import { useProcessingStore, useInventoryStore, usePlayerStore, useGameStore, useFarmStore } from '@/stores'
+  import { PROCESSING_MACHINES, SPRINKLERS, FERTILIZERS, BAITS, TACKLES, TAPPER, LIGHTNING_ROD, SCARECROW, BOMBS, getProcessingRecipeById } from '@/data/processing'
   import { getItemById } from '@/data/items'
   import { ACTION_TIME_COSTS } from '@/data/timeConstants'
   import { sfxClick } from '@/composables/useAudio'
@@ -212,6 +232,7 @@
   const inventoryStore = useInventoryStore()
   const playerStore = usePlayerStore()
   const gameStore = useGameStore()
+  const farmStore = useFarmStore()
 
   const JADE_RING_COST = [
     { itemId: 'jade', quantity: 1 },
@@ -316,6 +337,38 @@
     if (processingStore.craftTapper()) {
       sfxClick()
       addLog(`制造了采脂器，已放入背包。去农场安装到野树上吧。`)
+      const tr = gameStore.advanceTime(ACTION_TIME_COSTS.craftMachine)
+      if (tr.message) addLog(tr.message)
+      if (tr.passedOut) {
+        handleEndDay()
+        return
+      }
+    } else {
+      addLog('材料不足。')
+    }
+  }
+
+  const handleCraftLightningRod = () => {
+    if (processingStore.consumeCraftMaterials(LIGHTNING_ROD.craftCost, LIGHTNING_ROD.craftMoney)) {
+      sfxClick()
+      farmStore.lightningRods++
+      addLog(`制造了避雷针，已安装到农场。(共${farmStore.lightningRods}根)`)
+      const tr = gameStore.advanceTime(ACTION_TIME_COSTS.craftMachine)
+      if (tr.message) addLog(tr.message)
+      if (tr.passedOut) {
+        handleEndDay()
+        return
+      }
+    } else {
+      addLog('材料不足。')
+    }
+  }
+
+  const handleCraftScarecrow = () => {
+    if (processingStore.consumeCraftMaterials(SCARECROW.craftCost, SCARECROW.craftMoney)) {
+      sfxClick()
+      farmStore.scarecrows++
+      addLog(`制造了稻草人，已安装到农场。(共${farmStore.scarecrows}个)`)
       const tr = gameStore.advanceTime(ACTION_TIME_COSTS.craftMachine)
       if (tr.message) addLog(tr.message)
       if (tr.passedOut) {

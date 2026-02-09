@@ -36,7 +36,8 @@
     farming: '农耕',
     foraging: '采集',
     fishing: '钓鱼',
-    mining: '挖矿'
+    mining: '挖矿',
+    combat: '战斗'
   }
 
   const PERK_NAMES: Record<SkillPerk5 | SkillPerk10, string> = {
@@ -47,15 +48,29 @@
     fisher: '渔夫',
     trapper: '捕手',
     miner: '矿工',
+    geologist: '地质学家',
     fighter: '斗士',
+    defender: '守护者',
     intensive: '精耕',
     artisan: '匠人',
+    coopmaster: '牧场主',
+    shepherd: '牧羊人',
     botanist: '植物学家',
     alchemist: '炼金师',
+    forester: '伐木工',
+    tracker: '追踪者',
     angler: '垂钓大师',
     aquaculture: '水产商',
+    mariner: '水手',
+    luremaster: '诱饵师',
     prospector: '探矿者',
-    warrior: '武者'
+    blacksmith: '铁匠',
+    excavator: '挖掘者',
+    mineralogist: '宝石学家',
+    warrior: '武者',
+    brute: '蛮力者',
+    acrobat: '杂技师',
+    tank: '重甲者'
   }
 
   const expInfo = (type: SkillType) => {

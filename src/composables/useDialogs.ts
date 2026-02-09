@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import type { HeartEventDef, SkillType, SkillPerk5, SkillPerk10 } from '@/types'
 import type { SeasonEventDef } from '@/data/events'
+import { WEDDING_EVENT } from '@/data/heartEvents'
 import { useSkillStore, useNpcStore, usePlayerStore } from '@/stores'
 import { addLog, showFloat, _registerPerkChecker } from './useGameLog'
 import { useAudio } from './useAudio'
@@ -10,6 +11,9 @@ const currentEvent = ref<SeasonEventDef | null>(null)
 const pendingHeartEvent = ref<HeartEventDef | null>(null)
 const currentFestival = ref<'fishing_contest' | 'harvest_fair' | null>(null)
 const pendingPerk = ref<{ skillType: SkillType; level: 5 | 10 } | null>(null)
+
+/** 宠物领养弹窗 */
+const pendingPetAdoption = ref(false)
 
 /** 检查是否有技能达到天赋阈值但尚未选择天赋 */
 export const checkAllPerks = () => {
@@ -64,6 +68,12 @@ export const closeHeartEvent = (changes: { npcId: string; amount: number }[]) =>
   pendingHeartEvent.value = null
 }
 
+/** 触发婚礼事件（由 useEndDay 调用） */
+export const triggerWeddingEvent = (npcId: string) => {
+  const event: HeartEventDef = { ...WEDDING_EVENT, npcId }
+  pendingHeartEvent.value = event
+}
+
 /** 显示季节事件对话框 */
 export const showEvent = (event: SeasonEventDef) => {
   currentEvent.value = event
@@ -94,19 +104,33 @@ export const closeFestival = (prize: number) => {
   endFestivalBgm()
 }
 
+/** 触发宠物领养弹窗 */
+export const triggerPetAdoption = () => {
+  pendingPetAdoption.value = true
+}
+
+/** 关闭宠物领养弹窗 */
+export const closePetAdoption = () => {
+  pendingPetAdoption.value = false
+}
+
 export const useDialogs = () => {
   return {
     currentEvent,
     pendingHeartEvent,
     currentFestival,
     pendingPerk,
+    pendingPetAdoption,
     checkAllPerks,
     handlePerkSelect,
     triggerHeartEvent,
+    triggerWeddingEvent,
     closeHeartEvent,
     showEvent,
     closeEvent,
     showFestival,
-    closeFestival
+    closeFestival,
+    triggerPetAdoption,
+    closePetAdoption
   }
 }

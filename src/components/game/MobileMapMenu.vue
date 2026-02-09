@@ -120,7 +120,7 @@
   const villageGroup = computed(() => pick(['village', 'shop']))
   const wildGroup = computed(() => pick(['forage', 'fishing', 'mining']))
   const craftGroup = computed(() => pick(['cooking', 'workshop', 'upgrade']))
-  const personalGroup = computed(() => pick(['inventory', 'skills', 'achievement', 'wallet', 'quest']))
+  const personalGroup = computed(() => pick(['charinfo', 'inventory', 'skills', 'achievement', 'wallet', 'quest']))
 
   const go = (key: PanelKey) => {
     navigateToPanel(key)

@@ -103,6 +103,15 @@
           </button>
           <span v-else-if="child.stage !== 'baby' && child.interactedToday" class="text-xs text-muted">今日已互动</span>
           <span v-else-if="child.stage === 'baby'" class="text-xs text-muted">还太小了</span>
+          <button class="btn text-xs py-0 px-1 text-danger" @click="releaseConfirmChildId = child.id">送走</button>
+        </div>
+      </div>
+      <!-- 送走子女确认 -->
+      <div v-if="releaseConfirmChildId !== null" class="mt-2 game-panel border-danger/40">
+        <p class="text-xs text-danger mb-2">确定将{{ getChildName(releaseConfirmChildId) }}送往远方亲戚家吗？（花费10000文）</p>
+        <div class="flex gap-2">
+          <button class="btn text-xs text-danger" @click="handleReleaseChild">确认</button>
+          <button class="btn text-xs" @click="releaseConfirmChildId = null">取消</button>
         </div>
       </div>
     </div>
@@ -148,7 +157,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import { computed, ref } from 'vue'
   import { ArrowUp, Mountain, Gem, Unlock, Heart, Leaf, Users } from 'lucide-vue-next'
   import { useHomeStore, useInventoryStore, useNpcStore } from '@/stores'
   import { getItemById } from '@/data'
@@ -164,6 +173,8 @@
   const inventoryStore = useInventoryStore()
   const gameStore = useGameStore()
   const npcStore = useNpcStore()
+
+  const releaseConfirmChildId = ref<number | null>(null)
 
   const QUALITY_NAMES: Record<Quality, string> = {
     normal: '普通',
@@ -189,6 +200,21 @@
         addLog(`获得了${itemDef?.name ?? result.item}！`)
       }
     }
+  }
+
+  const getChildName = (childId: number): string => {
+    return npcStore.children.find(c => c.id === childId)?.name ?? '孩子'
+  }
+
+  const handleReleaseChild = () => {
+    if (releaseConfirmChildId.value === null) return
+    const result = npcStore.releaseChild(releaseConfirmChildId.value)
+    if (result.success) {
+      addLog(result.message)
+    } else {
+      addLog(result.message)
+    }
+    releaseConfirmChildId.value = null
   }
 
   const AGEABLE_ITEMS = ['watermelon_wine', 'osmanthus_wine', 'peach_wine', 'jujube_wine', 'corn_wine', 'rice_vinegar']

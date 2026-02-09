@@ -26,7 +26,9 @@ const createPlots = (size: FarmSize): FarmPlot[] => {
     growthDays: 0,
     watered: false,
     unwateredDays: 0,
-    fertilizer: null
+    fertilizer: null,
+    harvestCount: 0,
+    giantCropGroup: null
   }))
 }
 
@@ -37,7 +39,9 @@ export const useFarmStore = defineStore('farm', () => {
   const fruitTrees = ref<PlantedFruitTree[]>([])
   const greenhousePlots = ref<FarmPlot[]>([])
   const wildTrees = ref<PlantedWildTree[]>([])
-
+  const lightningRods = ref(0)
+  const scarecrows = ref(0)
+  const giantCropCounter = ref(0)
   const tilledPlots = computed(() => plots.value.filter(p => p.state !== 'wasteland'))
   const harvestableCount = computed(() => plots.value.filter(p => p.state === 'harvestable').length)
 
@@ -90,12 +94,24 @@ export const useFarmStore = defineStore('farm', () => {
     const cropId = plot.cropId
     const crop = cropId ? getCropById(cropId) : null
 
-    // 再生作物：收获后回到生长状态
+    // 再生作物：收获后回到生长状态（有次数上限）
     if (crop && crop.regrowth && crop.regrowthDays) {
-      plot.state = 'growing'
-      plot.growthDays = crop.growthDays - crop.regrowthDays
-      plot.watered = false
-      plot.unwateredDays = 0
+      plot.harvestCount++
+      if (crop.maxHarvests && plot.harvestCount >= crop.maxHarvests) {
+        // 达到最大收获次数，清除作物
+        plot.state = 'tilled'
+        plot.cropId = null
+        plot.growthDays = 0
+        plot.watered = false
+        plot.unwateredDays = 0
+        plot.harvestCount = 0
+        plot.fertilizer = null
+      } else {
+        plot.state = 'growing'
+        plot.growthDays = crop.growthDays - crop.regrowthDays
+        plot.watered = false
+        plot.unwateredDays = 0
+      }
     } else {
       plot.state = 'tilled'
       plot.cropId = null
@@ -103,6 +119,7 @@ export const useFarmStore = defineStore('farm', () => {
       plot.watered = false
       plot.unwateredDays = 0
       plot.fertilizer = null
+      plot.harvestCount = 0
     }
 
     return cropId
@@ -136,6 +153,18 @@ export const useFarmStore = defineStore('farm', () => {
       // 周围8块
       for (let dr = -1; dr <= 1; dr++) {
         for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue
+          const nr = row + dr,
+            nc = col + dc
+          if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
+            covered.push(nr * size + nc)
+          }
+        }
+      }
+    } else if (range === 24) {
+      // 5×5 区域（2格半径）
+      for (let dr = -2; dr <= 2; dr++) {
+        for (let dc = -2; dc <= 2; dc++) {
           if (dr === 0 && dc === 0) continue
           const nr = row + dr,
             nc = col + dc
@@ -229,6 +258,7 @@ export const useFarmStore = defineStore('farm', () => {
           plot.growthDays = 0
           plot.unwateredDays = 0
           plot.fertilizer = null
+          plot.harvestCount = 0
         }
       }
 
@@ -252,9 +282,7 @@ export const useFarmStore = defineStore('farm', () => {
     let reclaimedCount = 0
 
     // 先记录换季前就已经空置的耕地
-    const preExistingTilled = new Set(
-      plots.value.filter(p => p.state === 'tilled' && !p.cropId).map(p => p.id)
-    )
+    const preExistingTilled = new Set(plots.value.filter(p => p.state === 'tilled' && !p.cropId).map(p => p.id))
 
     // 作物枯萎检查（肥料保留在土壤中）
     for (const plot of plots.value) {
@@ -266,6 +294,8 @@ export const useFarmStore = defineStore('farm', () => {
           plot.growthDays = 0
           plot.watered = false
           plot.unwateredDays = 0
+          plot.harvestCount = 0
+          plot.giantCropGroup = null
           witheredCount++
         }
       }
@@ -286,12 +316,17 @@ export const useFarmStore = defineStore('farm', () => {
     return { witheredCount, reclaimedCount }
   }
 
-  /** 雷暴闪电：25%概率摧毁一株随机作物 */
-  const lightningStrike = (): { hit: boolean; cropName?: string } => {
-    const croppedPlots = plots.value.filter(p => (p.state === 'planted' || p.state === 'growing' || p.state === 'harvestable') && p.cropId)
-    if (croppedPlots.length === 0) return { hit: false }
+  /** 雷暴闪电：25%概率触发，避雷针可吸收 */
+  const lightningStrike = (): { hit: boolean; absorbed: boolean; cropName?: string } => {
+    if (Math.random() > 0.25) return { hit: false, absorbed: false }
 
-    if (Math.random() > 0.25) return { hit: false }
+    // 避雷针吸收
+    if (lightningRods.value > 0) {
+      return { hit: false, absorbed: true }
+    }
+
+    const croppedPlots = plots.value.filter(p => (p.state === 'planted' || p.state === 'growing' || p.state === 'harvestable') && p.cropId)
+    if (croppedPlots.length === 0) return { hit: false, absorbed: false }
 
     const target = croppedPlots[Math.floor(Math.random() * croppedPlots.length)]!
     const crop = getCropById(target.cropId!)
@@ -302,8 +337,88 @@ export const useFarmStore = defineStore('farm', () => {
     target.growthDays = 0
     target.watered = false
     target.unwateredDays = 0
+    target.harvestCount = 0
+    target.giantCropGroup = null
 
-    return { hit: true, cropName }
+    return { hit: true, absorbed: false, cropName }
+  }
+
+  /** 乌鸦袭击：无稻草人时 15% 概率毁一株作物 */
+  const crowAttack = (): { attacked: boolean; cropName?: string } => {
+    if (scarecrows.value > 0) return { attacked: false }
+    if (Math.random() > 0.15) return { attacked: false }
+    const croppedPlots = plots.value.filter(p => (p.state === 'planted' || p.state === 'growing' || p.state === 'harvestable') && p.cropId)
+    if (croppedPlots.length === 0) return { attacked: false }
+    const target = croppedPlots[Math.floor(Math.random() * croppedPlots.length)]!
+    const crop = getCropById(target.cropId!)
+    const cropName = crop?.name ?? '作物'
+    target.state = 'tilled'
+    target.cropId = null
+    target.growthDays = 0
+    target.watered = false
+    target.unwateredDays = 0
+    target.harvestCount = 0
+    target.giantCropGroup = null
+    return { attacked: true, cropName }
+  }
+
+  /** 检测并形成巨型作物：3×3 同种 harvestable 且 giantCropEligible，1% 概率 */
+  const checkGiantCrops = (): { cropId: string; cropName: string }[] => {
+    const size = farmSize.value
+    if (size < 4) return []
+    const formed: { cropId: string; cropName: string }[] = []
+    const maxR = size - 3
+    const maxC = size - 3
+    for (let r = 0; r <= maxR; r++) {
+      for (let c = 0; c <= maxC; c++) {
+        const topLeft = plots.value[r * size + c]!
+        if (topLeft.state !== 'harvestable' || !topLeft.cropId || topLeft.giantCropGroup !== null) continue
+        const crop = getCropById(topLeft.cropId)
+        if (!crop || !crop.giantCropEligible) continue
+        let allMatch = true
+        for (let dr = 0; dr < 3 && allMatch; dr++) {
+          for (let dc = 0; dc < 3 && allMatch; dc++) {
+            if (dr === 0 && dc === 0) continue
+            const p = plots.value[(r + dr) * size + (c + dc)]!
+            if (p.state !== 'harvestable' || p.cropId !== topLeft.cropId || p.giantCropGroup !== null) {
+              allMatch = false
+            }
+          }
+        }
+        if (allMatch && Math.random() < 0.01) {
+          giantCropCounter.value++
+          const groupId = giantCropCounter.value
+          for (let dr = 0; dr < 3; dr++) {
+            for (let dc = 0; dc < 3; dc++) {
+              plots.value[(r + dr) * size + (c + dc)]!.giantCropGroup = groupId
+            }
+          }
+          formed.push({ cropId: topLeft.cropId, cropName: crop.name })
+        }
+      }
+    }
+    return formed
+  }
+
+  /** 收获巨型作物：清除同组 9 块，返回作物ID和总产出数量 */
+  const harvestGiantCrop = (plotId: number): { cropId: string; quantity: number } | null => {
+    const plot = plots.value[plotId]
+    if (!plot || plot.state !== 'harvestable' || plot.giantCropGroup === null) return null
+    const groupId = plot.giantCropGroup
+    const cropId = plot.cropId
+    if (!cropId) return null
+    const groupPlots = plots.value.filter(p => p.giantCropGroup === groupId)
+    for (const gp of groupPlots) {
+      gp.state = 'tilled'
+      gp.cropId = null
+      gp.growthDays = 0
+      gp.watered = false
+      gp.unwateredDays = 0
+      gp.fertilizer = null
+      gp.harvestCount = 0
+      gp.giantCropGroup = null
+    }
+    return { cropId, quantity: groupPlots.length * 2 }
   }
 
   /** 扩建农场 */
@@ -347,7 +462,7 @@ export const useFarmStore = defineStore('farm', () => {
       type: treeType,
       growthDays: 0,
       mature: false,
-      seasonAge: 0,
+      yearAge: 0,
       todayFruit: false
     })
     return true
@@ -365,7 +480,7 @@ export const useFarmStore = defineStore('farm', () => {
       if (tree.mature) {
         const def = FRUIT_TREE_DEFS.find(d => d.type === tree.type)
         if (def && def.fruitSeason === currentSeason) {
-          const quality = getFruitQuality(tree.seasonAge)
+          const quality = getFruitQuality(tree.yearAge)
           results.push({ fruitId: def.fruitId, quality })
           tree.todayFruit = true
         }
@@ -374,18 +489,18 @@ export const useFarmStore = defineStore('farm', () => {
     return { fruits: results }
   }
 
-  /** 果树品质：0季normal, 1季fine, 2季excellent, 3+季supreme */
-  const getFruitQuality = (seasonAge: number): Quality => {
-    if (seasonAge >= 3) return 'supreme'
-    if (seasonAge >= 2) return 'excellent'
-    if (seasonAge >= 1) return 'fine'
+  /** 果树品质：随年龄提升 0年normal, 1年fine, 2年excellent, 3+年supreme */
+  const getFruitQuality = (yearAge: number): Quality => {
+    if (yearAge >= 3) return 'supreme'
+    if (yearAge >= 2) return 'excellent'
+    if (yearAge >= 1) return 'fine'
     return 'normal'
   }
 
-  /** 果树换季更新 */
-  const fruitTreeSeasonUpdate = (): void => {
+  /** 果树换季更新（仅新年时增加年龄） */
+  const fruitTreeSeasonUpdate = (isNewYear: boolean): void => {
     for (const tree of fruitTrees.value) {
-      if (tree.mature) tree.seasonAge++
+      if (tree.mature && isNewYear) tree.yearAge++
       tree.todayFruit = false
     }
   }
@@ -463,7 +578,9 @@ export const useFarmStore = defineStore('farm', () => {
       growthDays: 0,
       watered: false,
       unwateredDays: 0,
-      fertilizer: null
+      fertilizer: null,
+      harvestCount: 0,
+      giantCropGroup: null
     }))
   }
 
@@ -489,10 +606,21 @@ export const useFarmStore = defineStore('farm', () => {
     const crop = cropId ? getCropById(cropId) : null
 
     if (crop && crop.regrowth && crop.regrowthDays) {
-      plot.state = 'growing'
-      plot.growthDays = crop.growthDays - crop.regrowthDays
-      plot.watered = false
-      plot.unwateredDays = 0
+      plot.harvestCount++
+      if (crop.maxHarvests && plot.harvestCount >= crop.maxHarvests) {
+        plot.state = 'tilled'
+        plot.cropId = null
+        plot.growthDays = 0
+        plot.watered = false
+        plot.unwateredDays = 0
+        plot.harvestCount = 0
+        plot.fertilizer = null
+      } else {
+        plot.state = 'growing'
+        plot.growthDays = crop.growthDays - crop.regrowthDays
+        plot.watered = false
+        plot.unwateredDays = 0
+      }
     } else {
       plot.state = 'tilled'
       plot.cropId = null
@@ -500,6 +628,7 @@ export const useFarmStore = defineStore('farm', () => {
       plot.watered = false
       plot.unwateredDays = 0
       plot.fertilizer = null
+      plot.harvestCount = 0
     }
     return cropId
   }
@@ -530,7 +659,10 @@ export const useFarmStore = defineStore('farm', () => {
       sprinklers: sprinklers.value,
       fruitTrees: fruitTrees.value,
       greenhousePlots: greenhousePlots.value,
-      wildTrees: wildTrees.value
+      wildTrees: wildTrees.value,
+      lightningRods: lightningRods.value,
+      scarecrows: scarecrows.value,
+      giantCropCounter: giantCropCounter.value
     }
   }
 
@@ -544,11 +676,27 @@ export const useFarmStore = defineStore('farm', () => {
 
   const deserialize = (data: ReturnType<typeof serialize>) => {
     farmSize.value = data.farmSize as FarmSize
-    plots.value = data.plots.map(p => ({ ...p, fertilizer: migrateFertilizer(p.fertilizer) }))
+    plots.value = data.plots.map(p => ({
+      ...p,
+      fertilizer: migrateFertilizer(p.fertilizer),
+      harvestCount: (p as any).harvestCount ?? 0,
+      giantCropGroup: (p as any).giantCropGroup ?? null
+    }))
     sprinklers.value = (data as any).sprinklers ?? []
-    fruitTrees.value = (data as any).fruitTrees ?? []
+    fruitTrees.value = ((data as any).fruitTrees ?? []).map((t: any) => ({
+      ...t,
+      yearAge: t.yearAge ?? t.seasonAge ?? 0
+    }))
     wildTrees.value = (data as any).wildTrees ?? []
-    greenhousePlots.value = ((data as any).greenhousePlots ?? []).map((p: any) => ({ ...p, fertilizer: migrateFertilizer(p.fertilizer) }))
+    greenhousePlots.value = ((data as any).greenhousePlots ?? []).map((p: any) => ({
+      ...p,
+      fertilizer: migrateFertilizer(p.fertilizer),
+      harvestCount: p.harvestCount ?? 0,
+      giantCropGroup: p.giantCropGroup ?? null
+    }))
+    lightningRods.value = (data as any).lightningRods ?? 0
+    scarecrows.value = (data as any).scarecrows ?? 0
+    giantCropCounter.value = (data as any).giantCropCounter ?? 0
   }
 
   return {
@@ -572,6 +720,11 @@ export const useFarmStore = defineStore('farm', () => {
     dailyUpdate,
     onSeasonChange,
     lightningStrike,
+    lightningRods,
+    scarecrows,
+    crowAttack,
+    checkGiantCrops,
+    harvestGiantCrop,
     expandFarm,
     plantFruitTree,
     dailyFruitTreeUpdate,

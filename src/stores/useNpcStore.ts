@@ -6,11 +6,11 @@ import { useInventoryStore } from './useInventoryStore'
 import { useGameStore } from './useGameStore'
 import { usePlayerStore } from './usePlayerStore'
 
-/** 好感等级阈值 */
+/** 好感等级阈值 (10心制, 每心250点, 上限2500) */
 const FRIENDSHIP_THRESHOLDS: { level: FriendshipLevel; min: number }[] = [
-  { level: 'bestFriend', min: 300 },
-  { level: 'friendly', min: 150 },
-  { level: 'acquaintance', min: 50 },
+  { level: 'bestFriend', min: 2000 },
+  { level: 'friendly', min: 1000 },
+  { level: 'acquaintance', min: 500 },
   { level: 'stranger', min: 0 }
 ]
 
@@ -21,6 +21,8 @@ export const useNpcStore = defineStore('npc', () => {
       friendship: 0,
       talkedToday: false,
       giftedToday: false,
+      giftsThisWeek: 0,
+      dating: false,
       married: false,
       triggeredHeartEvents: []
     }))
@@ -37,6 +39,12 @@ export const useNpcStore = defineStore('npc', () => {
 
   /** 子女出生倒计时 */
   const childCountdown = ref<number>(0)
+
+  /** 婚礼倒计时 (0=无婚礼待举行) */
+  const weddingCountdown = ref<number>(0)
+
+  /** 婚礼对象NPC ID */
+  const weddingNpcId = ref<string | null>(null)
 
   /** 子女名字池（按性别） */
   const CHILD_NAMES_MALE = ['小龙', '小宝', '团子', '年年']
@@ -111,14 +119,14 @@ export const useNpcStore = defineStore('npc', () => {
     return text.replace(/\{player\}/g, playerStore.playerName).replace(/\{title\}/g, playerStore.honorific)
   }
 
-  /** 与NPC对话 (+2好感) */
+  /** 与NPC对话 (+20好感) */
   const talkTo = (npcId: string): { message: string; friendshipGain: number } | null => {
     const state = getNpcState(npcId)
     if (!state) return null
     if (state.talkedToday) return null
 
     state.talkedToday = true
-    state.friendship += 2
+    state.friendship += 20
 
     const npcDef = getNpcById(npcId)
     if (!npcDef) return null
@@ -134,7 +142,14 @@ export const useNpcStore = defineStore('npc', () => {
         `有${name}在身边，每天都很开心。`
       ]
       const message = marriedDialogues[Math.floor(Math.random() * marriedDialogues.length)]!
-      return { message, friendshipGain: 2 }
+      return { message, friendshipGain: 20 }
+    }
+
+    // 约会中NPC使用约会对话
+    if (state.dating && npcDef.datingDialogues && npcDef.datingDialogues.length > 0) {
+      const raw = npcDef.datingDialogues[Math.floor(Math.random() * npcDef.datingDialogues.length)]!
+      const message = replaceDialoguePlaceholders(raw)
+      return { message, friendshipGain: 20 }
     }
 
     const level = getFriendshipLevel(npcId)
@@ -142,10 +157,10 @@ export const useNpcStore = defineStore('npc', () => {
     const raw = dialogues[Math.floor(Math.random() * dialogues.length)]!
     const message = replaceDialoguePlaceholders(raw)
 
-    return { message, friendshipGain: 2 }
+    return { message, friendshipGain: 20 }
   }
 
-  /** 送礼给NPC */
+  /** 送礼给NPC (每天1次, 每周2次) */
   const giveGift = (
     npcId: string,
     itemId: string,
@@ -155,11 +170,13 @@ export const useNpcStore = defineStore('npc', () => {
     const state = getNpcState(npcId)
     if (!state) return null
     if (state.giftedToday) return null
+    if (state.giftsThisWeek >= 2) return null
 
     const inventoryStore = useInventoryStore()
-    if (!inventoryStore.removeItem(itemId)) return null
+    if (!inventoryStore.removeItem(itemId, 1, quality)) return null
 
     state.giftedToday = true
+    state.giftsThisWeek++
     const npcDef = getNpcById(npcId)
     if (!npcDef) return null
 
@@ -167,23 +184,23 @@ export const useNpcStore = defineStore('npc', () => {
     let reaction: string
 
     if (npcDef.lovedItems.includes(itemId)) {
-      gain = 10
+      gain = 80
       reaction = '非常喜欢'
     } else if (npcDef.likedItems.includes(itemId)) {
-      gain = 3
+      gain = 45
       reaction = '还不错'
     } else if (npcDef.hatedItems.includes(itemId)) {
-      gain = -5
+      gain = -40
       reaction = '讨厌'
     } else {
-      gain = 1
+      gain = 20
       reaction = '一般'
     }
 
     // 品质加成
     const qualityMultiplier: Record<Quality, number> = { normal: 1.0, fine: 1.25, excellent: 1.5, supreme: 2.0 }
-    // 生日加成
-    const birthdayMultiplier = isBirthday(npcId) ? 5 : 1
+    // 生日加成 (8倍)
+    const birthdayMultiplier = isBirthday(npcId) ? 8 : 1
 
     gain = Math.floor(gain * qualityMultiplier[quality] * birthdayMultiplier * giftBonusMultiplier)
     state.friendship = Math.max(0, state.friendship + gain)
@@ -191,7 +208,35 @@ export const useNpcStore = defineStore('npc', () => {
     return { gain, reaction }
   }
 
-  /** 求婚 */
+  /** 赠帕开启约会 (需2000好感/8心) */
+  const startDating = (npcId: string): { success: boolean; message: string } => {
+    const state = getNpcState(npcId)
+    if (!state) return { success: false, message: 'NPC不存在。' }
+
+    const npcDef = getNpcById(npcId)
+    if (!npcDef?.marriageable) return { success: false, message: '无法与此人约会。' }
+
+    const playerStore = usePlayerStore()
+    if (npcDef.gender === playerStore.gender) {
+      return { success: false, message: '只能向异性赠帕。' }
+    }
+
+    if (state.dating) return { success: false, message: '你们已经在约会了。' }
+    if (state.married) return { success: false, message: '你们已经结婚了。' }
+    if (npcStates.value.some(s => s.married)) return { success: false, message: '你已经结婚了。' }
+    if (state.friendship < 2000) return { success: false, message: '好感度不足（需要8心/2000）。' }
+
+    const inventoryStore = useInventoryStore()
+    if (!inventoryStore.removeItem('silk_ribbon')) {
+      return { success: false, message: '需要一条丝帕。' }
+    }
+
+    state.dating = true
+    state.friendship += 160
+    return { success: true, message: `${npcDef.name}羞红了脸，接过了你的丝帕……你们开始约会了！` }
+  }
+
+  /** 求婚 (需2500好感/10心) */
   const propose = (npcId: string): { success: boolean; message: string } => {
     const state = getNpcState(npcId)
     if (!state) return { success: false, message: 'NPC不存在。' }
@@ -209,21 +254,92 @@ export const useNpcStore = defineStore('npc', () => {
     const alreadyMarried = npcStates.value.some(s => s.married)
     if (alreadyMarried) return { success: false, message: '你已经结婚了。' }
 
-    if (state.friendship < 300) return { success: false, message: '好感度不足（需要300）。' }
+    // 检查是否正在筹备婚礼
+    if (weddingCountdown.value > 0) return { success: false, message: '婚礼正在筹备中。' }
+
+    // 需要先约会
+    if (!state.dating) return { success: false, message: '需要先赠帕约会。' }
+
+    if (state.friendship < 2500) return { success: false, message: '好感度不足（需要10心/2500）。' }
 
     const inventoryStore = useInventoryStore()
     if (!inventoryStore.removeItem('jade_ring')) {
       return { success: false, message: '需要一枚翡翠戒指。' }
     }
 
-    state.married = true
-    state.friendship += 50
-    return { success: true, message: `${npcDef.name}含泪接受了你的翡翠戒指……你们结婚了！` }
+    // 设置婚礼倒计时而非立即结婚
+    weddingCountdown.value = 3
+    weddingNpcId.value = npcId
+    state.friendship += 400
+    return { success: true, message: `${npcDef.name}含泪接受了你的翡翠戒指……婚礼将在3天后举行！` }
   }
 
   /** 获取已婚配偶状态 */
   const getSpouse = (): NpcState | null => {
     return npcStates.value.find(s => s.married) ?? null
+  }
+
+  /** 每日婚礼倒计时更新 */
+  const dailyWeddingUpdate = (): { weddingToday: boolean; npcId: string | null } => {
+    if (weddingCountdown.value <= 0 || !weddingNpcId.value) {
+      return { weddingToday: false, npcId: null }
+    }
+    weddingCountdown.value--
+    if (weddingCountdown.value <= 0) {
+      const npcId = weddingNpcId.value
+      const state = getNpcState(npcId)
+      if (state) {
+        state.married = true
+        state.dating = false
+        state.friendship = Math.max(state.friendship, 3500)
+      }
+      weddingNpcId.value = null
+      return { weddingToday: true, npcId }
+    }
+    return { weddingToday: false, npcId: null }
+  }
+
+  /** 取消婚礼 */
+  const cancelWedding = () => {
+    weddingCountdown.value = 0
+    weddingNpcId.value = null
+  }
+
+  /** 离婚 */
+  const divorce = (): { success: boolean; message: string } => {
+    const spouse = getSpouse()
+    if (!spouse) return { success: false, message: '你还没有结婚。' }
+
+    const playerStore = usePlayerStore()
+    if (!playerStore.spendMoney(30000)) {
+      return { success: false, message: '金钱不足（需要30000文）。' }
+    }
+
+    const npcDef = getNpcById(spouse.npcId)
+    spouse.married = false
+    spouse.dating = false
+    spouse.friendship = 1000
+    pendingChild.value = false
+    childCountdown.value = 0
+    daysMarried.value = 0
+    cancelWedding()
+
+    return { success: true, message: `你和${npcDef?.name ?? '配偶'}的婚姻结束了。` }
+  }
+
+  /** 放生子女 */
+  const releaseChild = (childId: number): { success: boolean; message: string } => {
+    const child = children.value.find(c => c.id === childId)
+    if (!child) return { success: false, message: '找不到这个孩子。' }
+
+    const playerStore = usePlayerStore()
+    if (!playerStore.spendMoney(10000)) {
+      return { success: false, message: '金钱不足（需要10000文）。' }
+    }
+
+    const name = child.name
+    children.value = children.value.filter(c => c.id !== childId)
+    return { success: true, message: `${name}被送往了远方亲戚家。` }
   }
 
   /** 检查是否应触发要孩子对话 */
@@ -233,7 +349,7 @@ export const useNpcStore = defineStore('npc', () => {
     if (children.value.length >= 2) return false
     if (pendingChild.value) return false
     if (daysMarried.value < 7) return false
-    if (spouse.friendship < 250) return false
+    if (spouse.friendship < 3000) return false
     return Math.random() < 0.05
   }
 
@@ -304,20 +420,25 @@ export const useNpcStore = defineStore('npc', () => {
 
   /** 每日重置对话和送礼状态 + 好感衰减 */
   const dailyReset = () => {
-    const floorMap: Record<FriendshipLevel, number> = { bestFriend: 300, friendly: 150, acquaintance: 50, stranger: 0 }
+    const gameStore = useGameStore()
+    const floorMap: Record<FriendshipLevel, number> = { bestFriend: 2000, friendly: 1000, acquaintance: 500, stranger: 0 }
 
     for (const state of npcStates.value) {
       if (!state.talkedToday) {
         if (state.married) {
-          state.friendship = Math.max(0, state.friendship - 2)
+          state.friendship = Math.max(0, state.friendship - 20)
         } else {
           const currentLevel = getFriendshipLevel(state.npcId)
           const floor = floorMap[currentLevel]
-          state.friendship = Math.max(floor, state.friendship - 1)
+          state.friendship = Math.max(floor, state.friendship - 2)
         }
       }
       state.talkedToday = false
       state.giftedToday = false
+      // 每周日重置周送礼计数 (day 7,14,21,28)
+      if (gameStore.day % 7 === 0) {
+        state.giftsThisWeek = 0
+      }
     }
   }
 
@@ -327,20 +448,45 @@ export const useNpcStore = defineStore('npc', () => {
       children: children.value,
       daysMarried: daysMarried.value,
       pendingChild: pendingChild.value,
-      childCountdown: childCountdown.value
+      childCountdown: childCountdown.value,
+      weddingCountdown: weddingCountdown.value,
+      weddingNpcId: weddingNpcId.value,
+      friendshipVersion: 2
     }
   }
 
   const deserialize = (data: ReturnType<typeof serialize>) => {
-    npcStates.value = data.npcStates.map(s => ({
+    const isOldScale = !(data as any).friendshipVersion || (data as any).friendshipVersion < 2
+    const savedStates = data.npcStates.map(s => ({
       ...s,
+      // 旧存档好感度迁移: ×8 (300制→2500制)
+      friendship: isOldScale ? Math.round(s.friendship * 8) : s.friendship,
       married: s.married ?? false,
+      dating: s.dating ?? false,
+      giftsThisWeek: (s as any).giftsThisWeek ?? 0,
       triggeredHeartEvents: s.triggeredHeartEvents ?? []
     }))
+    // 合并：保留已保存的状态，为新增NPC补充默认状态
+    const savedIds = new Set(savedStates.map(s => s.npcId))
+    const newNpcStates: NpcState[] = NPCS
+      .filter(npc => !savedIds.has(npc.id))
+      .map(npc => ({
+        npcId: npc.id,
+        friendship: 0,
+        talkedToday: false,
+        giftedToday: false,
+        giftsThisWeek: 0,
+        dating: false,
+        married: false,
+        triggeredHeartEvents: []
+      }))
+    npcStates.value = [...savedStates, ...newNpcStates]
     children.value = (data as any).children ?? []
     daysMarried.value = (data as any).daysMarried ?? 0
     pendingChild.value = (data as any).pendingChild ?? false
     childCountdown.value = (data as any).childCountdown ?? 0
+    weddingCountdown.value = (data as any).weddingCountdown ?? 0
+    weddingNpcId.value = (data as any).weddingNpcId ?? null
   }
 
   return {
@@ -349,6 +495,8 @@ export const useNpcStore = defineStore('npc', () => {
     daysMarried,
     pendingChild,
     childCountdown,
+    weddingCountdown,
+    weddingNpcId,
     getNpcState,
     getFriendshipLevel,
     isBirthday,
@@ -358,8 +506,13 @@ export const useNpcStore = defineStore('npc', () => {
     adjustFriendship,
     talkTo,
     giveGift,
+    startDating,
     propose,
     getSpouse,
+    dailyWeddingUpdate,
+    cancelWedding,
+    divorce,
+    releaseChild,
     checkChildEvent,
     confirmChild,
     interactWithChild,

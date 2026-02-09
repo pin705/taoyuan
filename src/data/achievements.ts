@@ -69,6 +69,34 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     condition: { type: 'mineFloor', floor: 30 },
     reward: { money: 1000, items: [{ itemId: 'gold_ore', quantity: 10 }] }
   },
+  {
+    id: 'miner_60',
+    name: '熔岩征服者',
+    description: '到达矿洞第60层。',
+    condition: { type: 'mineFloor', floor: 60 },
+    reward: { money: 2000, items: [{ itemId: 'gold_ore', quantity: 20 }] }
+  },
+  {
+    id: 'miner_120',
+    name: '深渊行者',
+    description: '到达矿洞最底层。',
+    condition: { type: 'mineFloor', floor: 120 },
+    reward: { money: 5000, items: [{ itemId: 'void_ore', quantity: 10 }] }
+  },
+  {
+    id: 'skull_25',
+    name: '骷髅探险家',
+    description: '骷髅矿穴到达第25层。',
+    condition: { type: 'skullCavernFloor', floor: 25 },
+    reward: { money: 3000, items: [{ itemId: 'iridium_ore', quantity: 5 }] }
+  },
+  {
+    id: 'skull_100',
+    name: '深渊勇者',
+    description: '骷髅矿穴到达第100层。',
+    condition: { type: 'skullCavernFloor', floor: 100 },
+    reward: { money: 10000, items: [{ itemId: 'prismatic_shard', quantity: 1 }] }
+  },
   // 金钱
   {
     id: 'rich_5000',
@@ -159,6 +187,146 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     description: '迎来第一个孩子。',
     condition: { type: 'hasChild' },
     reward: { money: 300 }
+  },
+  // 怪物击杀
+  {
+    id: 'slayer_50',
+    name: '除魔新手',
+    description: '累计击杀50只怪物。',
+    condition: { type: 'monstersKilled', count: 50 },
+    reward: { money: 300 }
+  },
+  {
+    id: 'slayer_200',
+    name: '降妖能手',
+    description: '累计击杀200只怪物。',
+    condition: { type: 'monstersKilled', count: 200 },
+    reward: { money: 1000 }
+  },
+  {
+    id: 'slayer_500',
+    name: '斩妖除魔',
+    description: '累计击杀500只怪物。',
+    condition: { type: 'monstersKilled', count: 500 },
+    reward: { money: 3000 }
+  },
+  {
+    id: 'slayer_1000',
+    name: '万魔之敌',
+    description: '累计击杀1000只怪物。',
+    condition: { type: 'monstersKilled', count: 1000 },
+    reward: { money: 5000, items: [{ itemId: 'prismatic_shard', quantity: 1 }] }
+  },
+  // 出货
+  {
+    id: 'shipper_10',
+    name: '初入商途',
+    description: '出货10种不同物品。',
+    condition: { type: 'shippedCount', count: 10 },
+    reward: { money: 300 }
+  },
+  {
+    id: 'shipper_30',
+    name: '物流达人',
+    description: '出货30种不同物品。',
+    condition: { type: 'shippedCount', count: 30 },
+    reward: { money: 1000 }
+  },
+  {
+    id: 'full_shipment',
+    name: '出货全鉴',
+    description: '出货所有可出货物品。',
+    condition: { type: 'fullShipment' },
+    reward: { money: 5000 }
+  },
+  // 畜牧
+  {
+    id: 'rancher_5',
+    name: '畜牧新手',
+    description: '拥有5只牲畜。',
+    condition: { type: 'animalCount', count: 5 },
+    reward: { money: 500 }
+  },
+  {
+    id: 'rancher_15',
+    name: '牧场主',
+    description: '拥有15只牲畜。',
+    condition: { type: 'animalCount', count: 15 },
+    reward: { money: 2000 }
+  },
+  // 更高金钱
+  {
+    id: 'rich_50000',
+    name: '富甲一方',
+    description: '累计获得50000文。',
+    condition: { type: 'moneyEarned', amount: 50000 },
+    reward: { money: 3000 }
+  },
+  {
+    id: 'rich_200000',
+    name: '陶朱之富',
+    description: '累计获得200000文。',
+    condition: { type: 'moneyEarned', amount: 200000 },
+    reward: { money: 10000 }
+  },
+  // 更多农耕 & 钓鱼
+  {
+    id: 'farmer_500',
+    name: '田园大亨',
+    description: '累计收获500次作物。',
+    condition: { type: 'cropHarvest', count: 500 },
+    reward: { money: 2000 }
+  },
+  {
+    id: 'fisher_200',
+    name: '海龙王',
+    description: '累计钓到200条鱼。',
+    condition: { type: 'fishCaught', count: 200 },
+    reward: { money: 2000 }
+  },
+  // 全技能 & 全社区
+  {
+    id: 'all_skills',
+    name: '全能大师',
+    description: '所有技能达到10级。',
+    condition: { type: 'allSkillsMax' },
+    reward: { money: 5000 }
+  },
+  {
+    id: 'all_bundles',
+    name: '乡情圆满',
+    description: '完成所有社区任务。',
+    condition: { type: 'allBundlesComplete' },
+    reward: { money: 5000 }
+  },
+  // 更多收集 & 烹饪 & 委托 & 好感
+  {
+    id: 'collector_100',
+    name: '博物全才',
+    description: '发现100种不同物品。',
+    condition: { type: 'itemCount', count: 100 },
+    reward: { money: 3000 }
+  },
+  {
+    id: 'chef_100',
+    name: '御厨',
+    description: '累计烹饪100道菜。',
+    condition: { type: 'recipesCooked', count: 100 },
+    reward: { money: 2000 }
+  },
+  {
+    id: 'quest_80',
+    name: '百事通',
+    description: '累计完成80个委托任务。',
+    condition: { type: 'questsCompleted', count: 80 },
+    reward: { money: 3000 }
+  },
+  {
+    id: 'friend_all_best',
+    name: '人间至友',
+    description: '与6位村民成为挚友。',
+    condition: { type: 'npcBestFriend', count: 6 },
+    reward: { money: 3000, items: [{ itemId: 'jade_ring', quantity: 1 }] }
   }
 ]
 

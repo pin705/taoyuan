@@ -7,17 +7,21 @@
 
     <!-- 三栏切换 -->
     <div class="flex gap-2 mb-3">
-      <button class="btn text-xs" :class="{ 'bg-accent text-bg': tab === 'collection' }" @click="tab = 'collection'">
+      <button class="btn text-sm !p-1.5" :class="{ 'bg-accent text-bg': tab === 'collection' }" @click="tab = 'collection'">
         <Eye :size="14" />
-        物品图鉴 ({{ achievementStore.discoveredCount }})
+        图鉴
       </button>
-      <button class="btn text-xs" :class="{ 'bg-accent text-bg': tab === 'achievements' }" @click="tab = 'achievements'">
+      <button class="btn text-xs !p-1.5" :class="{ 'bg-accent text-bg': tab === 'achievements' }" @click="tab = 'achievements'">
         <Trophy :size="14" />
-        成就 ({{ completedCount }}/{{ ACHIEVEMENTS.length }})
+        成就
       </button>
-      <button class="btn text-xs" :class="{ 'bg-accent text-bg': tab === 'bundles' }" @click="tab = 'bundles'">
+      <button class="btn text-xs !p-1.5" :class="{ 'bg-accent text-bg': tab === 'bundles' }" @click="tab = 'bundles'">
         <Target :size="14" />
-        社区任务 ({{ completedBundleCount }}/{{ COMMUNITY_BUNDLES.length }})
+        社区
+      </button>
+      <button class="btn text-xs !p-1.5" :class="{ 'bg-accent text-bg': tab === 'shipping' }" @click="tab = 'shipping'">
+        <Truck :size="14" />
+        出货
       </button>
     </div>
 
@@ -97,22 +101,57 @@
       </div>
     </div>
 
+    <!-- 出货收集 -->
+    <div v-if="tab === 'shipping'" class="max-h-64 overflow-y-auto">
+      <p class="text-muted text-xs mb-2">通过出货箱出货的物品会记录在此。</p>
+      <div class="flex flex-col gap-3">
+        <div v-for="(items, category) in itemsByCategory" :key="category">
+          <h4 class="text-accent text-xs mb-1">{{ CATEGORY_NAMES[category] ?? category }}</h4>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-1">
+            <div
+              v-for="item in items"
+              :key="item.id"
+              class="border border-accent/20 rounded p-1 text-xs text-center"
+              :class="shopStore.shippedItems.includes(item.id) ? 'text-accent bg-success/5' : 'text-muted/30'"
+              :title="shopStore.shippedItems.includes(item.id) ? `${item.name}: ${item.description}` : '???'"
+            >
+              {{ shopStore.shippedItems.includes(item.id) ? item.name : '???' }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 完美度 -->
+    <div class="mt-4">
+      <div class="flex items-center gap-2 text-xs">
+        <span class="text-accent">完美度</span>
+        <div class="flex-1 h-2 bg-accent/20 rounded-[2px] overflow-hidden">
+          <div class="h-full bg-accent" :style="{ width: achievementStore.perfectionPercent + '%' }" />
+        </div>
+        <span class="text-accent">{{ achievementStore.perfectionPercent }}%</span>
+      </div>
+    </div>
+
     <!-- 统计数据 -->
-    <div class="mt-4 text-xs text-muted">
+    <div class="mt-3 text-xs text-muted">
       <p class="mb-1">—— 统计 ——</p>
       <p>
         作物收获: {{ achievementStore.stats.totalCropsHarvested }} | 钓鱼: {{ achievementStore.stats.totalFishCaught }} | 烹饪:
         {{ achievementStore.stats.totalRecipesCooked }}
       </p>
-      <p>累计收入: {{ achievementStore.stats.totalMoneyEarned }}文 | 矿洞最深: {{ achievementStore.stats.highestMineFloor }}层</p>
+      <p>
+        累计收入: {{ achievementStore.stats.totalMoneyEarned }}文 | 矿洞最深: {{ achievementStore.stats.highestMineFloor }}层 | 怪物击杀:
+        {{ achievementStore.stats.totalMonstersKilled }}
+      </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { BookOpen, Eye, Trophy, Target, Send } from 'lucide-vue-next'
+  import { BookOpen, Eye, Trophy, Target, Send, Truck } from 'lucide-vue-next'
   import { ref, computed } from 'vue'
-  import { useAchievementStore, useInventoryStore } from '@/stores'
+  import { useAchievementStore, useInventoryStore, useShopStore, useAnimalStore } from '@/stores'
   import { ACHIEVEMENTS, COMMUNITY_BUNDLES } from '@/data/achievements'
   import { ITEMS, getItemById } from '@/data/items'
   import { sfxClick } from '@/composables/useAudio'
@@ -120,14 +159,43 @@
 
   const achievementStore = useAchievementStore()
   const inventoryStore = useInventoryStore()
+  const shopStore = useShopStore()
+  const animalStore = useAnimalStore()
 
-  type Tab = 'collection' | 'achievements' | 'bundles'
+  type Tab = 'collection' | 'achievements' | 'bundles' | 'shipping'
   const tab = ref<Tab>('collection')
 
   const allItems = ITEMS
 
-  const completedCount = computed(() => achievementStore.completedAchievements.length)
-  const completedBundleCount = computed(() => achievementStore.completedBundles.length)
+  // === 出货收集 ===
+
+  const CATEGORY_NAMES: Record<string, string> = {
+    crop: '农作物',
+    fish: '鱼类',
+    animal_product: '畜产品',
+    processed: '加工品',
+    fruit: '水果',
+    ore: '矿石',
+    gem: '宝石',
+    material: '材料',
+    misc: '杂货',
+    food: '料理',
+    gift: '礼品'
+  }
+
+  /** 可出货的类别（排除种子、机器、工具类） */
+  const SHIPPABLE_CATEGORIES = ['crop', 'fish', 'animal_product', 'processed', 'fruit', 'ore', 'gem', 'material', 'misc', 'food', 'gift']
+
+  const shippableItems = computed(() => ITEMS.filter(i => SHIPPABLE_CATEGORIES.includes(i.category)))
+
+  const itemsByCategory = computed(() => {
+    const groups: Record<string, typeof ITEMS> = {}
+    for (const item of shippableItems.value) {
+      if (!groups[item.category]) groups[item.category] = []
+      groups[item.category]!.push(item)
+    }
+    return groups
+  })
 
   const isCompleted = (id: string): boolean => {
     return achievementStore.completedAchievements.includes(id)
@@ -155,8 +223,20 @@
         return `${s.totalMoneyEarned}/${c.amount}`
       case 'mineFloor':
         return `${s.highestMineFloor}/${c.floor}`
+      case 'skullCavernFloor':
+        return `${s.skullCavernBestFloor}/${c.floor}`
       case 'recipesCooked':
         return `${s.totalRecipesCooked}/${c.count}`
+      case 'monstersKilled':
+        return `${s.totalMonstersKilled}/${c.count}`
+      case 'shippedCount':
+        return `${shopStore.shippedItems.length}/${c.count}`
+      case 'fullShipment':
+        return `${shopStore.shippedItems.length}/${shippableItems.value.length}`
+      case 'animalCount':
+        return `${animalStore.animals.length}/${c.count}`
+      case 'questsCompleted':
+        return `${c.count}`
       default:
         return ''
     }
