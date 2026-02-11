@@ -41,6 +41,8 @@ export interface QuestInstance {
   accepted: boolean
   /** 物品奖励（特殊订单） */
   itemReward?: { itemId: string; quantity: number }[]
+  /** 难度标签（特殊订单） */
+  tierLabel?: string
 }
 
 // ============================================================

@@ -66,7 +66,6 @@
       >
         <div class="min-w-0">
           <p class="text-xs truncate">{{ questStore.specialOrder.description }}</p>
-          <p class="text-xs text-muted">限时 {{ questStore.specialOrder.daysRemaining }} 天</p>
         </div>
         <span class="text-xs text-accent whitespace-nowrap ml-2">{{ questStore.specialOrder.moneyReward }}文</span>
       </div>
@@ -190,7 +189,12 @@
 
           <!-- 特殊订单详情 -->
           <template v-if="questModal.type === 'special' && questStore.specialOrder">
-            <p class="text-accent text-sm mb-2">特殊订单</p>
+            <p class="text-accent text-sm mb-2">
+              特殊订单
+              <span v-if="questStore.specialOrder.tierLabel" class="text-[10px] text-muted border border-accent/20 rounded-xs px-1 ml-1">
+                {{ questStore.specialOrder.tierLabel }}
+              </span>
+            </p>
             <p class="text-xs leading-relaxed mb-2">{{ questStore.specialOrder.description }}</p>
             <div class="border border-accent/10 rounded-xs p-2 mb-2">
               <p class="text-xs text-muted mb-1">目标</p>
@@ -231,10 +235,14 @@
                 <div class="flex-1 h-1.5 bg-bg rounded-xs border border-accent/10">
                   <div
                     class="h-full rounded-xs bg-accent transition-all"
-                    :style="{ width: Math.floor((getEffectiveProgress(selectedActiveQuest) / selectedActiveQuest.targetQuantity) * 100) + '%' }"
+                    :style="{
+                      width: Math.floor((getEffectiveProgress(selectedActiveQuest) / selectedActiveQuest.targetQuantity) * 100) + '%'
+                    }"
                   />
                 </div>
-                <span class="text-xs text-muted">{{ getEffectiveProgress(selectedActiveQuest) }}/{{ selectedActiveQuest.targetQuantity }}</span>
+                <span class="text-xs text-muted">
+                  {{ getEffectiveProgress(selectedActiveQuest) }}/{{ selectedActiveQuest.targetQuantity }}
+                </span>
               </div>
               <p v-else class="text-xs">
                 背包中 {{ inventoryStore.getItemCount(selectedActiveQuest.targetItemId) }}/{{ selectedActiveQuest.targetQuantity }}

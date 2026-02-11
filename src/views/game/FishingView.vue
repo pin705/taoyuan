@@ -16,11 +16,7 @@
           v-for="loc in FISHING_LOCATIONS"
           :key="loc.id"
           class="text-center border rounded-xs px-2 py-1.5 cursor-pointer"
-          :class="
-            fishingStore.fishingLocation === loc.id
-              ? 'border-accent/60 bg-accent/10'
-              : 'border-accent/20 hover:bg-accent/5'
-          "
+          :class="fishingStore.fishingLocation === loc.id ? 'border-accent/60 bg-accent/10' : 'border-accent/20 hover:bg-accent/5'"
           @click="handleSetLocation(loc.id)"
         >
           <span class="text-xs" :class="fishingStore.fishingLocation === loc.id ? 'text-accent' : ''">
@@ -97,7 +93,7 @@
         <span class="text-xs">{{ lastResult }}</span>
       </div>
       <div v-else class="flex flex-col items-center justify-center py-6 text-muted">
-        <Fish :size="32" class="mb-2" />
+        <Fish :size="32" class="text-muted/30 mb-2" />
         <p class="text-xs">还没有钓过鱼，去试试吧。</p>
       </div>
     </div>
@@ -122,7 +118,7 @@
         </div>
       </div>
       <div v-else class="flex flex-col items-center justify-center py-6 text-muted">
-        <Fish :size="32" class="mb-2" />
+        <Fish :size="32" class="text-muted/30 mb-2" />
         <p class="text-xs">当前时段/天气/地点没有可钓的鱼。</p>
       </div>
     </div>
@@ -149,7 +145,7 @@
         </div>
       </div>
       <div v-else-if="!hasCrabPotInBag" class="flex flex-col items-center justify-center py-6 text-muted mb-2">
-        <Box :size="32" class="mb-2" />
+        <Box :size="32" class="text-muted/30 mb-2" />
         <p class="text-xs">购买或制造蟹笼后可在此放置。</p>
       </div>
       <div
@@ -181,7 +177,10 @@
           <span class="text-xs">{{ panResult }}</span>
         </div>
       </div>
-      <p v-else class="text-xs text-muted">{{ panDisabledReason }}</p>
+      <div v-else class="flex flex-col items-center justify-center py-6 text-muted">
+        <CircleDot :size="32" class="text-muted/30 mb-2" />
+        <p class="text-xs">{{ panDisabledReason }}</p>
+      </div>
     </div>
 
     <!-- 鱼饵选择弹窗 -->
@@ -191,29 +190,27 @@
         class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
         @click.self="showBaitModal = false"
       >
-        <div class="game-panel max-w-xs w-full">
-          <div class="flex items-center justify-between mb-2">
-            <p class="text-sm text-accent">鱼饵</p>
-            <button class="btn text-xs py-0 px-1" @click="showBaitModal = false">
-              <X :size="12" />
-            </button>
-          </div>
+        <div class="game-panel max-w-xs w-full relative">
+          <button class="absolute top-2 right-2 text-muted hover:text-text" @click="showBaitModal = false">
+            <X :size="14" />
+          </button>
+          <p class="text-sm text-accent mb-2">鱼饵</p>
           <!-- 当前装备 -->
-          <div v-if="fishingStore.equippedBait" class="mb-2">
+          <div v-if="fishingStore.equippedBait" class="border border-accent/10 rounded-xs p-2 mb-2">
             <p class="text-[10px] text-muted mb-1">当前装备</p>
-            <div class="flex items-center justify-between border border-accent/20 rounded-xs px-3 py-1.5">
+            <div class="flex items-center justify-between">
               <span class="text-xs text-accent">{{ getBaitName(fishingStore.equippedBait) }}</span>
               <button class="btn text-xs py-0 px-1" @click="handleUnequipBait">卸下</button>
             </div>
           </div>
           <!-- 可用鱼饵列表 -->
-          <div v-if="availableBaits.length > 0">
+          <div v-if="availableBaits.length > 0" class="border border-accent/10 rounded-xs p-2">
             <p class="text-[10px] text-muted mb-1">背包中的鱼饵</p>
             <div class="flex flex-col gap-1">
               <div
                 v-for="b in availableBaits"
                 :key="b.id"
-                class="flex items-center justify-between border border-accent/20 rounded-xs px-3 py-1.5 cursor-pointer hover:bg-accent/5"
+                class="flex items-center justify-between border border-accent/10 rounded-xs px-2 py-1 cursor-pointer hover:bg-accent/5"
                 @click="handleEquipBaitFromModal(b.id)"
               >
                 <span class="text-xs">{{ b.name }}</span>
@@ -221,7 +218,11 @@
               </div>
             </div>
           </div>
-          <p v-else-if="!fishingStore.equippedBait" class="text-xs text-muted">背包中没有鱼饵。</p>
+          <div v-else-if="!fishingStore.equippedBait" class="flex flex-col items-center justify-center py-4 text-muted">
+            <Target :size="28" class="text-muted/30 mb-2" />
+            <p class="text-xs">背包中没有鱼饵</p>
+            <p class="text-[10px] text-muted/60 mt-0.5">可在商店购买或加工制造</p>
+          </div>
         </div>
       </div>
     </Transition>
@@ -233,32 +234,30 @@
         class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
         @click.self="showTackleModal = false"
       >
-        <div class="game-panel max-w-xs w-full">
-          <div class="flex items-center justify-between mb-2">
-            <p class="text-sm text-accent">浮漂</p>
-            <button class="btn text-xs py-0 px-1" @click="showTackleModal = false">
-              <X :size="12" />
-            </button>
-          </div>
+        <div class="game-panel max-w-xs w-full relative">
+          <button class="absolute top-2 right-2 text-muted hover:text-text" @click="showTackleModal = false">
+            <X :size="14" />
+          </button>
+          <p class="text-sm text-accent mb-2">浮漂</p>
           <!-- 当前装备 -->
-          <div v-if="fishingStore.equippedTackle" class="mb-2">
+          <div v-if="fishingStore.equippedTackle" class="border border-accent/10 rounded-xs p-2 mb-2">
             <p class="text-[10px] text-muted mb-1">当前装备</p>
-            <div class="flex items-center justify-between border border-accent/20 rounded-xs px-3 py-1.5">
-              <span class="text-xs text-accent">
-                {{ getTackleName(fishingStore.equippedTackle) }}
-                <span class="text-muted">(耐久{{ fishingStore.tackleDurability }})</span>
-              </span>
-              <button class="btn text-xs py-0 px-1" @click="handleUnequipTackle">卸下</button>
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-accent">{{ getTackleName(fishingStore.equippedTackle) }}</span>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] text-muted">耐久 {{ fishingStore.tackleDurability }}</span>
+                <button class="btn text-xs py-0 px-1" @click="handleUnequipTackle">卸下</button>
+              </div>
             </div>
           </div>
           <!-- 可用浮漂列表 -->
-          <div v-if="availableTackles.length > 0">
+          <div v-if="availableTackles.length > 0" class="border border-accent/10 rounded-xs p-2">
             <p class="text-[10px] text-muted mb-1">背包中的浮漂</p>
             <div class="flex flex-col gap-1">
               <div
                 v-for="t in availableTackles"
                 :key="t.id"
-                class="flex items-center justify-between border border-accent/20 rounded-xs px-3 py-1.5 cursor-pointer hover:bg-accent/5"
+                class="flex items-center justify-between border border-accent/10 rounded-xs px-2 py-1 cursor-pointer hover:bg-accent/5"
                 @click="handleEquipTackleFromModal(t.id)"
               >
                 <span class="text-xs">{{ t.name }}</span>
@@ -266,7 +265,11 @@
               </div>
             </div>
           </div>
-          <p v-else-if="!fishingStore.equippedTackle" class="text-xs text-muted">背包中没有浮漂。</p>
+          <div v-else-if="!fishingStore.equippedTackle" class="flex flex-col items-center justify-center py-4 text-muted">
+            <MapPin :size="28" class="text-muted/30 mb-2" />
+            <p class="text-xs">背包中没有浮漂</p>
+            <p class="text-[10px] text-muted/60 mt-0.5">可在商店购买或加工制造</p>
+          </div>
         </div>
       </div>
     </Transition>
@@ -278,16 +281,14 @@
         class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
         @click.self="handleCloseFishingModal"
       >
-        <div class="game-panel max-w-sm w-full">
-          <div class="flex items-center justify-between mb-2">
-            <p class="text-sm text-accent">
-              <Fish :size="14" class="inline" />
-              钓鱼
-            </p>
-            <button class="btn text-xs py-0 px-1" @click="handleCloseFishingModal">
-              <X :size="12" />
-            </button>
-          </div>
+        <div class="game-panel max-w-sm w-full relative">
+          <button class="absolute top-2 right-2 text-muted hover:text-text" @click="handleCloseFishingModal">
+            <X :size="14" />
+          </button>
+          <p class="text-sm text-accent mb-2">
+            <Fish :size="14" class="inline" />
+            钓鱼
+          </p>
           <!-- 放弃确认 -->
           <div v-if="showCloseConfirm" class="border border-danger/40 rounded-xs p-3 mb-3">
             <p class="text-xs text-danger mb-2">鱼还在咬钩，确定要放弃吗？</p>
@@ -308,19 +309,35 @@
         class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
         @click.self="selectedFish = null"
       >
-        <div class="game-panel max-w-xs w-full">
-          <div class="flex items-center justify-between mb-2">
-            <p class="text-sm" :class="DIFFICULTY_COLORS[selectedFish.difficulty]">{{ selectedFish.name }}</p>
-            <button class="btn text-xs py-0 px-1" @click="selectedFish = null">
-              <X :size="12" />
-            </button>
+        <div class="game-panel max-w-xs w-full relative">
+          <button class="absolute top-2 right-2 text-muted hover:text-text" @click="selectedFish = null">
+            <X :size="14" />
+          </button>
+          <p class="text-sm mb-2" :class="DIFFICULTY_COLORS[selectedFish.difficulty]">{{ selectedFish.name }}</p>
+
+          <div class="border border-accent/10 rounded-xs p-2 mb-2">
+            <p class="text-xs text-muted">{{ selectedFish.description }}</p>
           </div>
-          <div class="text-xs space-y-1 mb-3 border-b border-accent/20 pb-2">
-            <p class="text-muted">{{ selectedFish.description }}</p>
-            <p>难度：<span :class="DIFFICULTY_COLORS[selectedFish.difficulty]">{{ DIFFICULTY_NAMES[selectedFish.difficulty] }}</span></p>
-            <p>售价：{{ selectedFish.sellPrice }}文</p>
-            <p>季节：{{ selectedFish.season.map(s => SEASON_LABEL[s] ?? s).join('、') }}</p>
-            <p>天气：{{ selectedFish.weather.map(w => WEATHER_LABEL[w] ?? w).join('、') }}</p>
+
+          <div class="border border-accent/10 rounded-xs p-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-muted">难度</span>
+              <span class="text-xs" :class="DIFFICULTY_COLORS[selectedFish.difficulty]">
+                {{ DIFFICULTY_NAMES[selectedFish.difficulty] }}
+              </span>
+            </div>
+            <div class="flex items-center justify-between mt-0.5">
+              <span class="text-xs text-muted">售价</span>
+              <span class="text-xs text-accent">{{ selectedFish.sellPrice }}文</span>
+            </div>
+            <div class="flex items-center justify-between mt-0.5">
+              <span class="text-xs text-muted">季节</span>
+              <span class="text-xs">{{ selectedFish.season.map(s => SEASON_LABEL[s] ?? s).join('、') }}</span>
+            </div>
+            <div class="flex items-center justify-between mt-0.5">
+              <span class="text-xs text-muted">天气</span>
+              <span class="text-xs">{{ selectedFish.weather.map(w => WEATHER_LABEL[w] ?? w).join('、') }}</span>
+            </div>
           </div>
         </div>
       </div>

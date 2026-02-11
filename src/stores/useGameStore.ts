@@ -45,10 +45,10 @@ const FIXED_WEATHER: Partial<Record<Season, Record<number, Weather>>> = {
 
 /** 节日日期（永远晴天） */
 const FESTIVAL_DAYS: Record<Season, number[]> = {
-  spring: [8],
-  summer: [15],
-  autumn: [22],
-  winter: [28]
+  spring: [1, 8, 15, 24],
+  summer: [5, 15, 22],
+  autumn: [8, 15, 22],
+  winter: [8, 15, 22, 28]
 }
 
 export const useGameStore = defineStore('game', () => {
@@ -63,6 +63,7 @@ export const useGameStore = defineStore('game', () => {
   const isGameStarted = ref(false)
   const farmMapType = ref<FarmMapType>('standard')
   const midnightWarned = ref(false)
+  const dailyLuck = ref(0)
 
   const seasonIndex = computed(() => SEASON_ORDER.indexOf(season.value))
   const seasonName = computed(() => SEASON_NAMES[season.value])
@@ -90,7 +91,7 @@ export const useGameStore = defineStore('game', () => {
     if (fixed) return fixed
 
     // 第1年夏季第5天固定绿雨
-    if (year.value === 1 && targetSeason === 'summer' && targetDay === 5) return 'green_rain'
+    if (year.value === 1 && targetSeason === 'summer' && targetDay === 4) return 'green_rain'
 
     // 按季节概率随机
     const roll = Math.random()
@@ -186,6 +187,8 @@ export const useGameStore = defineStore('game', () => {
     const nextDay = day.value + 1 > 28 ? 1 : day.value + 1
     const nextSeason = day.value + 1 > 28 ? SEASON_ORDER[(SEASON_ORDER.indexOf(season.value) + 1) % 4]! : season.value
     tomorrowWeather.value = rollWeather(nextSeason, nextDay)
+    // 每日运势: -0.1 ~ +0.1
+    dailyLuck.value = Math.random() * 0.2 - 0.1
     hour.value = DAY_START_HOUR
     midnightWarned.value = false
     currentLocationGroup.value = 'farm'
@@ -228,7 +231,8 @@ export const useGameStore = defineStore('game', () => {
       tomorrowWeather: tomorrowWeather.value,
       currentLocation: currentLocation.value,
       currentLocationGroup: currentLocationGroup.value,
-      farmMapType: farmMapType.value
+      farmMapType: farmMapType.value,
+      dailyLuck: dailyLuck.value
     }
   }
 
@@ -244,6 +248,7 @@ export const useGameStore = defineStore('game', () => {
     currentLocation.value = data.currentLocation ?? 'farm'
     currentLocationGroup.value = data.currentLocationGroup ?? 'farm'
     farmMapType.value = data.farmMapType ?? 'standard'
+    dailyLuck.value = data.dailyLuck ?? 0
     isGameStarted.value = true
   }
 
@@ -259,6 +264,7 @@ export const useGameStore = defineStore('game', () => {
     isGameStarted,
     farmMapType,
     midnightWarned,
+    dailyLuck,
     seasonIndex,
     seasonName,
     weatherName,

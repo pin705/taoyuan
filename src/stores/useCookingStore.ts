@@ -107,6 +107,10 @@ export const useCookingStore = defineStore('cooking', () => {
     if (recipe.effect.buff) {
       activeBuff.value = { ...recipe.effect.buff }
       msg += ` ${recipe.effect.buff.description}`
+      // 「体力全恢复」类buff：立即将体力回满
+      if (recipe.effect.buff.type === 'stamina') {
+        playerStore.restoreStamina(playerStore.maxStamina)
+      }
     }
 
     return { success: true, message: msg }

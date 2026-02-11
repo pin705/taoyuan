@@ -746,6 +746,166 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     description: '战斗技能达到10级。',
     condition: { type: 'skillLevel', skillType: 'combat', level: 10 },
     reward: { money: 2000 }
+  },
+
+  // 育种
+  {
+    id: 'breeding_1',
+    name: '初涉育种',
+    description: '完成1次育种。',
+    condition: { type: 'breedingsDone', count: 1 },
+    reward: { money: 200 }
+  },
+  {
+    id: 'breeding_10',
+    name: '育种学徒',
+    description: '累计完成10次育种。',
+    condition: { type: 'breedingsDone', count: 10 },
+    reward: { money: 500 }
+  },
+  {
+    id: 'breeding_50',
+    name: '育种专家',
+    description: '累计完成50次育种。',
+    condition: { type: 'breedingsDone', count: 50 },
+    reward: { money: 2000 }
+  },
+  {
+    id: 'breeding_200',
+    name: '育种大师',
+    description: '累计完成200次育种。',
+    condition: { type: 'breedingsDone', count: 200 },
+    reward: { money: 5000 }
+  },
+  {
+    id: 'hybrid_1',
+    name: '新品诞生',
+    description: '发现1个杂交品种。',
+    condition: { type: 'hybridsDiscovered', count: 1 },
+    reward: { money: 300 }
+  },
+  {
+    id: 'hybrid_5',
+    name: '品种收集者',
+    description: '发现5个杂交品种。',
+    condition: { type: 'hybridsDiscovered', count: 5 },
+    reward: { money: 800 }
+  },
+  {
+    id: 'hybrid_20',
+    name: '杂交图鉴',
+    description: '发现20个杂交品种。',
+    condition: { type: 'hybridsDiscovered', count: 20 },
+    reward: { money: 2000 }
+  },
+  {
+    id: 'hybrid_50',
+    name: '品种宗师',
+    description: '发现50个杂交品种。',
+    condition: { type: 'hybridsDiscovered', count: 50 },
+    reward: { money: 5000 }
+  },
+  {
+    id: 'hybrid_100',
+    name: '万种图录',
+    description: '发现100个杂交品种。',
+    condition: { type: 'hybridsDiscovered', count: 100 },
+    reward: { money: 10000, items: [{ itemId: 'prismatic_shard', quantity: 1 }] }
+  },
+  {
+    id: 'tier_3',
+    name: '三代突破',
+    description: '培育出三代杂交品种。',
+    condition: { type: 'hybridTier', tier: 3 },
+    reward: { money: 1000 }
+  },
+  {
+    id: 'tier_5',
+    name: '五代传承',
+    description: '培育出五代杂交品种。',
+    condition: { type: 'hybridTier', tier: 5 },
+    reward: { money: 3000 }
+  },
+  {
+    id: 'tier_7',
+    name: '七代神品',
+    description: '培育出七代杂交品种。',
+    condition: { type: 'hybridTier', tier: 7 },
+    reward: { money: 5000 }
+  },
+  {
+    id: 'tier_10',
+    name: '登峰造极',
+    description: '培育出十代杂交品种。',
+    condition: { type: 'hybridTier', tier: 10 },
+    reward: { money: 15000, items: [{ itemId: 'prismatic_shard', quantity: 2 }] }
+  },
+
+  // 育种出货
+  {
+    id: 'hybrid_ship_1',
+    name: '杂交初售',
+    description: '出货1种杂交作物。',
+    condition: { type: 'hybridsShipped', count: 1 },
+    reward: { money: 300 }
+  },
+  {
+    id: 'hybrid_ship_5',
+    name: '良种外销',
+    description: '出货5种杂交作物。',
+    condition: { type: 'hybridsShipped', count: 5 },
+    reward: { money: 800 }
+  },
+  {
+    id: 'hybrid_ship_15',
+    name: '杂交商人',
+    description: '出货15种杂交作物。',
+    condition: { type: 'hybridsShipped', count: 15 },
+    reward: { money: 2000 }
+  },
+  {
+    id: 'hybrid_ship_30',
+    name: '良种流通',
+    description: '出货30种杂交作物。',
+    condition: { type: 'hybridsShipped', count: 30 },
+    reward: { money: 5000 }
+  },
+  {
+    id: 'hybrid_ship_50',
+    name: '杂交出货全鉴',
+    description: '出货50种杂交作物。',
+    condition: { type: 'hybridsShipped', count: 50 },
+    reward: { money: 10000, items: [{ itemId: 'prismatic_shard', quantity: 1 }] }
+  },
+  // 博物馆
+  {
+    id: 'museum_20',
+    name: '收藏爱好者',
+    description: '向博物馆捐赠20件物品。',
+    condition: { type: 'museumDonations', count: 20 },
+    reward: { money: 1000 }
+  },
+  {
+    id: 'museum_36',
+    name: '博物馆之星',
+    description: '完成博物馆全部36件收藏。',
+    condition: { type: 'museumDonations', count: 36 },
+    reward: { money: 5000, items: [{ itemId: 'prismatic_shard', quantity: 1 }] }
+  },
+  // 冒险家公会
+  {
+    id: 'guild_5',
+    name: '怪物猎人',
+    description: '完成5个讨伐目标。',
+    condition: { type: 'guildGoalsCompleted', count: 5 },
+    reward: { money: 1000 }
+  },
+  {
+    id: 'guild_21',
+    name: '屠龙勇士',
+    description: '完成全部21个讨伐目标。',
+    condition: { type: 'guildGoalsCompleted', count: 21 },
+    reward: { money: 10000, items: [{ itemId: 'iridium_bar', quantity: 5 }] }
   }
 ]
 
@@ -997,6 +1157,80 @@ export const COMMUNITY_BUNDLES: CommunityBundleDef[] = [
       { itemId: 'charcoal', quantity: 5 }
     ],
     reward: { money: 2000, items: [{ itemId: 'iridium_bar', quantity: 1 }], description: '2000文 + 铱锭×1' }
+  },
+  // 育种
+  {
+    id: 'hybrid_spring_bundle',
+    name: '春华杂交',
+    description: '春季杂交作物的初步收获。',
+    requiredItems: [
+      { itemId: 'emerald_radish', quantity: 2 },
+      { itemId: 'jade_shoot', quantity: 2 },
+      { itemId: 'peach_blossom_tea', quantity: 1 },
+      { itemId: 'twin_bean', quantity: 2 }
+    ],
+    reward: { money: 1500, description: '1500文' }
+  },
+  {
+    id: 'hybrid_summer_bundle',
+    name: '夏实杂交',
+    description: '夏季杂交作物的丰硕之果。',
+    requiredItems: [
+      { itemId: 'purple_melon', quantity: 2 },
+      { itemId: 'golden_rice', quantity: 2 },
+      { itemId: 'double_lotus', quantity: 1 },
+      { itemId: 'fire_sesame', quantity: 2 }
+    ],
+    reward: { money: 1500, description: '1500文' }
+  },
+  {
+    id: 'hybrid_autumn_bundle',
+    name: '秋韵杂交',
+    description: '秋季杂交作物的丰收之味。',
+    requiredItems: [
+      { itemId: 'amber_yam', quantity: 2 },
+      { itemId: 'twin_blossom', quantity: 1 },
+      { itemId: 'golden_persimmon', quantity: 2 },
+      { itemId: 'autumn_gem', quantity: 1 }
+    ],
+    reward: { money: 1500, description: '1500文' }
+  },
+  {
+    id: 'hybrid_winter_bundle',
+    name: '冬藏杂交',
+    description: '冬季杂交作物的严寒之珍。',
+    requiredItems: [
+      { itemId: 'jade_white', quantity: 2 },
+      { itemId: 'garlic_cabbage', quantity: 2 },
+      { itemId: 'evergreen_herb', quantity: 2 },
+      { itemId: 'allium_king', quantity: 1 }
+    ],
+    reward: { money: 1500, description: '1500文' }
+  },
+  {
+    id: 'hybrid_elite_bundle',
+    name: '二代珍品',
+    description: '二代杂交品种的珍稀收藏。',
+    requiredItems: [
+      { itemId: 'melon_tea_fruit', quantity: 1 },
+      { itemId: 'dragon_fire', quantity: 1 },
+      { itemId: 'celestial_rice', quantity: 1 },
+      { itemId: 'ice_lotus', quantity: 1 },
+      { itemId: 'golden_dragon', quantity: 1 }
+    ],
+    reward: { money: 5000, items: [{ itemId: 'iridium_ore', quantity: 5 }], description: '5000文 + 铱矿×5' }
+  },
+  {
+    id: 'hybrid_legendary_bundle',
+    name: '传奇良种',
+    description: '高阶杂交品种的传世之作。',
+    requiredItems: [
+      { itemId: 'dragon_pearl', quantity: 1 },
+      { itemId: 'immortal_flower', quantity: 1 },
+      { itemId: 'jade_golden_melon', quantity: 1 },
+      { itemId: 'moonlight_frost', quantity: 1 }
+    ],
+    reward: { money: 8000, items: [{ itemId: 'prismatic_shard', quantity: 1 }], description: '8000文 + 棱彩碎片×1' }
   }
 ]
 

@@ -23,7 +23,11 @@ import {
   BookOpen,
   Wallet,
   ScrollText,
-  User
+  User,
+  FlaskConical,
+  Landmark,
+  Swords,
+  Tent
 } from 'lucide-vue-next'
 
 export type PanelKey =
@@ -44,11 +48,16 @@ export type PanelKey =
   | 'wallet'
   | 'quest'
   | 'charinfo'
+  | 'breeding'
+  | 'museum'
+  | 'guild'
+  | 'hanhai'
 
 export const TABS: { key: PanelKey; label: string; icon: Component }[] = [
   { key: 'farm', label: '农场', icon: Wheat },
   { key: 'animal', label: '畜棚', icon: Egg },
   { key: 'home', label: '农舍', icon: Home },
+  { key: 'breeding', label: '育种', icon: FlaskConical },
   { key: 'village', label: '桃源村', icon: Users },
   { key: 'shop', label: '商圈', icon: Store },
   { key: 'forage', label: '竹林', icon: TreePine },
@@ -62,7 +71,10 @@ export const TABS: { key: PanelKey; label: string; icon: Component }[] = [
   { key: 'skills', label: '技能', icon: Star },
   { key: 'achievement', label: '图鉴', icon: BookOpen },
   { key: 'wallet', label: '钱袋', icon: Wallet },
-  { key: 'quest', label: '告示栏', icon: ScrollText }
+  { key: 'quest', label: '告示栏', icon: ScrollText },
+  { key: 'museum', label: '博物馆', icon: Landmark },
+  { key: 'guild', label: '公会', icon: Swords },
+  { key: 'hanhai', label: '瀚海', icon: Tent }
 ]
 
 /** 导航到游戏面板，检查旅行时间、就寝时间和商店营业时间 */

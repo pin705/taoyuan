@@ -11,7 +11,7 @@ export type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
 export type TimePeriod = 'morning' | 'afternoon' | 'evening' | 'night' | 'late_night'
 
 /** 地点分组 */
-export type LocationGroup = 'farm' | 'village_area' | 'nature' | 'mine'
+export type LocationGroup = 'farm' | 'village_area' | 'nature' | 'mine' | 'hanhai'
 
 /** 游戏时间状态 */
 export interface GameTime {

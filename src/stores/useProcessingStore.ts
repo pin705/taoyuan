@@ -14,6 +14,9 @@ import {
 } from '@/data/processing'
 import { useInventoryStore } from './useInventoryStore'
 import { usePlayerStore } from './usePlayerStore'
+import { useSkillStore } from './useSkillStore'
+import { useBreedingStore } from './useBreedingStore'
+import { addLog } from '@/composables/useGameLog'
 
 /** 最大放置机器数 */
 const MAX_MACHINES = 15
@@ -21,6 +24,7 @@ const MAX_MACHINES = 15
 export const useProcessingStore = defineStore('processing', () => {
   const inventoryStore = useInventoryStore()
   const playerStore = usePlayerStore()
+  const skillStore = useSkillStore()
 
   /** 已放置的加工机器（运行中的槽位） */
   const machines = ref<ProcessingSlot[]>([])
@@ -150,6 +154,15 @@ export const useProcessingStore = defineStore('processing', () => {
     if (!recipe) return null
 
     inventoryStore.addItem(recipe.outputItemId, recipe.outputQuantity)
+
+    // 种子制造机额外触发育种种子生成
+    if (slot.machineType === 'seed_maker' && slot.inputItemId) {
+      const breedingStore = useBreedingStore()
+      const farmingLevel = skillStore.farmingLevel
+      if (breedingStore.trySeedMakerGeneticSeed(slot.inputItemId, farmingLevel)) {
+        addLog('种子制造机额外产出了一颗育种种子！')
+      }
+    }
 
     // 重置槽位
     slot.recipeId = null

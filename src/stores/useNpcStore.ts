@@ -1,10 +1,13 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { NpcState, FriendshipLevel, HeartEventDef, Quality, ChildState } from '@/types'
-import { NPCS, getNpcById, getHeartEventsForNpc } from '@/data'
+import { NPCS, getNpcById, getHeartEventsForNpc, RECIPES } from '@/data'
+import { WEATHER_TIPS, getFortuneTip, getLivingTip, getRecipeTipMessage, NO_RECIPE_TIP, TIP_NPC_IDS } from '@/data/npcTips'
+import { getItemById } from '@/data/items'
 import { useInventoryStore } from './useInventoryStore'
 import { useGameStore } from './useGameStore'
 import { usePlayerStore } from './usePlayerStore'
+import { useCookingStore } from './useCookingStore'
 
 /** 好感等级阈值 (10心制, 每心250点, 上限2500) */
 const FRIENDSHIP_THRESHOLDS: { level: FriendshipLevel; min: number }[] = [
@@ -27,6 +30,9 @@ export const useNpcStore = defineStore('npc', () => {
       triggeredHeartEvents: []
     }))
   )
+
+  /** 每日提示NPC是否已给过提示 */
+  const tipGivenToday = ref<Record<string, boolean>>({})
 
   /** 子女列表 */
   const children = ref<ChildState[]>([])
@@ -418,9 +424,56 @@ export const useNpcStore = defineStore('npc', () => {
     return {}
   }
 
+  /** 检查NPC是否有每日提示功能 */
+  const hasDailyTip = (npcId: string): boolean => {
+    return (TIP_NPC_IDS as readonly string[]).includes(npcId)
+  }
+
+  /** 检查NPC今天是否已给过提示 */
+  const isTipGivenToday = (npcId: string): boolean => {
+    return tipGivenToday.value[npcId] ?? false
+  }
+
+  /** 获取NPC的每日提示 */
+  const getDailyTip = (npcId: string): string | null => {
+    if (!hasDailyTip(npcId)) return null
+    if (tipGivenToday.value[npcId]) return null
+
+    tipGivenToday.value[npcId] = true
+    const gameStore = useGameStore()
+
+    switch (npcId) {
+      case 'li_yu':
+        return WEATHER_TIPS[gameStore.tomorrowWeather]
+      case 'zhou_xiucai':
+        return getFortuneTip(gameStore.dailyLuck)
+      case 'wang_dashen': {
+        const cookingStore = useCookingStore()
+        const unlockedRecipes = RECIPES.filter(r => cookingStore.unlockedRecipes.includes(r.id))
+        if (unlockedRecipes.length === 0) return NO_RECIPE_TIP
+        // 每周推荐一个固定食谱（基于年+周数的种子）
+        const weekIndex = Math.floor((gameStore.day - 1) / 7)
+        const seed = (gameStore.year - 1) * 16 + ['spring', 'summer', 'autumn', 'winter'].indexOf(gameStore.season) * 4 + weekIndex
+        const recipe = unlockedRecipes[seed % unlockedRecipes.length]!
+        const ingredientNames = recipe.ingredients.map(ing => {
+          const item = getItemById(ing.itemId)
+          return item ? `${item.name}×${ing.quantity}` : ing.itemId
+        })
+        return getRecipeTipMessage(recipe.name, ingredientNames)
+      }
+      case 'liu_cunzhang':
+        return getLivingTip(gameStore.day, gameStore.year)
+      default:
+        return null
+    }
+  }
+
   /** 每日重置对话和送礼状态 + 伴侣好感衰减 */
   const dailyReset = () => {
     const gameStore = useGameStore()
+
+    // 重置每日提示
+    tipGivenToday.value = {}
 
     for (const state of npcStates.value) {
       // 只有已婚伴侣不聊天才会掉好感，普通NPC不衰减
@@ -462,18 +515,16 @@ export const useNpcStore = defineStore('npc', () => {
     }))
     // 合并：保留已保存的状态，为新增NPC补充默认状态
     const savedIds = new Set(savedStates.map(s => s.npcId))
-    const newNpcStates: NpcState[] = NPCS
-      .filter(npc => !savedIds.has(npc.id))
-      .map(npc => ({
-        npcId: npc.id,
-        friendship: 0,
-        talkedToday: false,
-        giftedToday: false,
-        giftsThisWeek: 0,
-        dating: false,
-        married: false,
-        triggeredHeartEvents: []
-      }))
+    const newNpcStates: NpcState[] = NPCS.filter(npc => !savedIds.has(npc.id)).map(npc => ({
+      npcId: npc.id,
+      friendship: 0,
+      talkedToday: false,
+      giftedToday: false,
+      giftsThisWeek: 0,
+      dating: false,
+      married: false,
+      triggeredHeartEvents: []
+    }))
     npcStates.value = [...savedStates, ...newNpcStates]
     children.value = (data as any).children ?? []
     daysMarried.value = (data as any).daysMarried ?? 0
@@ -512,6 +563,10 @@ export const useNpcStore = defineStore('npc', () => {
     interactWithChild,
     dailyChildUpdate,
     dailyReset,
+    hasDailyTip,
+    isTipGivenToday,
+    getDailyTip,
+    tipGivenToday,
     serialize,
     deserialize
   }

@@ -16,8 +16,13 @@
           <p class="text-xs truncate" :class="levelColor(npcStore.getFriendshipLevel(npc.id))">
             {{ npc.name }}
           </p>
-          <p class="text-[10px]" :class="heartCount(npc.id) > 0 ? 'text-danger' : 'text-muted/30'">{{ heartCount(npc.id) }}&#x2665;</p>
-          <div class="flex items-center justify-center gap-0.5 mt-0.5 min-h-3.5">
+          <p class="text-[10px]" :class="heartCount(npc.id) > 0 ? 'text-danger' : 'text-muted/30'">
+            {{ heartCount(npc.id) }}&#x2665;
+            <span class="text-muted/50">{{ npcStore.getNpcState(npc.id)?.friendship ?? 0 }}</span>
+          </p>
+          <div class="flex items-center justify-center gap-1 mt-0.5 min-h-3.5">
+            <MessageCircle :size="10" :class="npcStore.getNpcState(npc.id)?.talkedToday ? 'text-muted/20' : 'text-success'" />
+            <Gift :size="10" :class="npcGiftClass(npc.id)" />
             <Heart v-if="npcStore.getNpcState(npc.id)?.married" :size="10" class="text-danger" />
             <Heart v-else-if="npcStore.getNpcState(npc.id)?.dating" :size="10" class="text-danger/50" />
             <Heart v-else-if="npc.marriageable" :size="10" class="text-muted/30" />
@@ -32,7 +37,12 @@
               <span v-if="npcStore.getNpcState(npc.id)?.married" class="text-danger text-[10px] ml-0.5">[伴侣]</span>
               <span v-else-if="npcStore.getNpcState(npc.id)?.dating" class="text-danger/70 text-[10px] ml-0.5">[约会中]</span>
             </span>
-            <span v-if="npc.marriageable" class="text-danger/50"><Heart :size="10" /></span>
+            <div class="flex items-center gap-1">
+              <MessageCircle :size="10" :class="npcStore.getNpcState(npc.id)?.talkedToday ? 'text-muted/20' : 'text-success'" />
+              <Gift :size="10" :class="npcGiftClass(npc.id)" />
+              <span v-if="npc.marriageable" class="text-danger/50"><Heart :size="10" /></span>
+              <Cake v-if="npcStore.isBirthday(npc.id)" :size="10" class="text-danger" />
+            </div>
           </div>
           <p class="text-[10px] text-muted truncate">{{ npc.role }}</p>
           <div class="flex items-center justify-between mt-0.5">
@@ -46,7 +56,7 @@
                 &#x2665;
               </span>
             </div>
-            <Cake v-if="npcStore.isBirthday(npc.id)" :size="10" class="text-danger" />
+            <span class="text-[10px] text-muted/50">{{ npcStore.getNpcState(npc.id)?.friendship ?? 0 }}</span>
           </div>
         </div>
       </div>
@@ -56,20 +66,66 @@
     <Transition name="panel-fade">
       <div v-if="selectedNpc" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" @click.self="selectedNpc = null">
         <div class="game-panel max-w-lg w-full max-h-[80vh] overflow-y-auto">
-          <div class="flex justify-between items-center mb-3">
+          <!-- 头部：名称 + 关闭 -->
+          <div class="flex justify-between items-start mb-2">
             <div>
               <p class="text-sm text-accent">
-                {{ selectedNpcDef?.name }} — {{ selectedNpcDef?.role }}
-                <span v-if="selectedNpcState?.married" class="text-danger text-xs ml-1">[伴侣]</span>
-                <span v-else-if="selectedNpcState?.dating" class="text-danger/70 text-xs ml-1">[约会中]</span>
+                {{ selectedNpcDef?.name }}
+                <span class="text-xs text-muted ml-0.5">{{ selectedNpcDef?.role }}</span>
+                <span v-if="selectedNpcState?.married" class="text-[10px] text-danger border border-danger/30 rounded-xs px-1 ml-1">
+                  伴侣
+                </span>
+                <span v-else-if="selectedNpcState?.dating" class="text-[10px] text-danger/70 border border-danger/20 rounded-xs px-1 ml-1">
+                  约会中
+                </span>
               </p>
-              <p class="text-xs text-muted">{{ selectedNpcDef?.personality }}</p>
-              <p v-if="selectedNpcDef?.birthday" class="text-xs text-muted">
-                生日: {{ SEASON_NAMES_MAP[selectedNpcDef.birthday.season] }}{{ selectedNpcDef.birthday.day }}日
-                <span v-if="npcStore.isBirthday(selectedNpc!)" class="text-danger ml-1">（今天！送礼好感×8）</span>
-              </p>
+              <p class="text-[10px] text-muted/60 mt-0.5">{{ selectedNpcDef?.personality }}</p>
             </div>
             <button class="btn text-xs" @click="selectedNpc = null">关闭</button>
+          </div>
+
+          <!-- 好感度条 -->
+          <div class="border border-accent/10 rounded-xs p-2 mb-2">
+            <div class="flex items-center justify-between mb-1">
+              <div class="flex gap-px">
+                <span
+                  v-for="h in 10"
+                  :key="h"
+                  class="text-xs"
+                  :class="(selectedNpcState?.friendship ?? 0) >= h * 250 ? 'text-danger' : 'text-muted/20'"
+                >
+                  &#x2665;
+                </span>
+              </div>
+              <span class="text-xs" :class="levelColor(npcStore.getFriendshipLevel(selectedNpc!))">
+                {{ selectedNpcState?.friendship ?? 0 }}
+                <span class="text-muted/40">/{{ nextHeartThreshold }}</span>
+              </span>
+            </div>
+            <!-- 状态标签 -->
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span
+                class="text-[10px] border rounded-xs px-1 flex items-center gap-0.5"
+                :class="selectedNpcState?.talkedToday ? 'text-muted/40 border-muted/10' : 'text-success border-success/30'"
+              >
+                <MessageCircle :size="10" />
+                {{ selectedNpcState?.talkedToday ? '已聊天' : '可聊天' }}
+              </span>
+              <span class="text-[10px] border rounded-xs px-1 flex items-center gap-0.5" :class="giftTagClass">
+                <Gift :size="10" />
+                {{ giftTagText }}
+              </span>
+              <span
+                v-if="selectedNpcDef?.birthday"
+                class="text-[10px] border border-muted/10 rounded-xs px-1 text-muted flex items-center gap-0.5"
+              >
+                <Cake :size="10" />
+                {{ SEASON_NAMES_MAP[selectedNpcDef.birthday.season] }}{{ selectedNpcDef.birthday.day }}日
+              </span>
+              <span v-if="npcStore.isBirthday(selectedNpc!)" class="text-[10px] text-danger border border-danger/30 rounded-xs px-1">
+                生日! 送礼×8
+              </span>
+            </div>
           </div>
 
           <!-- 已触发的心事件 -->
@@ -87,6 +143,16 @@
             <button class="btn text-xs w-full" :disabled="selectedNpcState?.talkedToday" @click="handleTalk">
               <MessageCircle :size="14" />
               {{ selectedNpcState?.talkedToday ? '今天已聊过' : '聊天' }}
+            </button>
+            <!-- 每日提示按钮 -->
+            <button
+              v-if="selectedNpc && npcStore.hasDailyTip(selectedNpc)"
+              class="btn text-xs w-full text-success border-success/40"
+              :disabled="!!(selectedNpc && npcStore.isTipGivenToday(selectedNpc))"
+              @click="handleDailyTip"
+            >
+              <Lightbulb :size="14" />
+              {{ selectedNpc && npcStore.isTipGivenToday(selectedNpc) ? '今天已提示' : TIP_NPC_LABELS[selectedNpc as TipNpcId] }}
             </button>
             <!-- 赠帕按钮 -->
             <button v-if="canStartDating" class="btn text-xs text-danger border-danger/40" @click="handleStartDating">
@@ -209,10 +275,12 @@
 
 <script setup lang="ts">
   import { ref, computed } from 'vue'
-  import { MessageCircle, Heart, Gift, Cake, X, Package } from 'lucide-vue-next'
+  import { MessageCircle, Heart, Gift, Cake, X, Package, Lightbulb } from 'lucide-vue-next'
   import { useNpcStore, useInventoryStore, useCookingStore, useGameStore, usePlayerStore } from '@/stores'
   import { NPCS, getNpcById, getItemById, getHeartEventById } from '@/data'
   import { ACTION_TIME_COSTS, isNpcAvailable } from '@/data/timeConstants'
+  import { TIP_NPC_LABELS } from '@/data/npcTips'
+  import type { TipNpcId } from '@/data/npcTips'
   import { addLog } from '@/composables/useGameLog'
   import { triggerHeartEvent } from '@/composables/useDialogs'
   import { handleEndDay } from '@/composables/useEndDay'
@@ -259,6 +327,36 @@
     const friendship = npcStore.getNpcState(npcId)?.friendship ?? 0
     return Math.min(10, Math.floor(friendship / 250))
   }
+
+  const npcGiftClass = (npcId: string): string => {
+    const state = npcStore.getNpcState(npcId)
+    if ((state?.giftsThisWeek ?? 0) >= 2) return 'text-muted/20'
+    if (state?.giftedToday) return 'text-muted/20'
+    return 'text-accent'
+  }
+
+  /** 弹窗中下一颗心的阈值 */
+  const nextHeartThreshold = computed(() => {
+    const f = selectedNpcState.value?.friendship ?? 0
+    const hearts = Math.min(10, Math.floor(f / 250))
+    return hearts >= 10 ? 2500 : (hearts + 1) * 250
+  })
+
+  /** 弹窗中送礼标签样式 */
+  const giftTagClass = computed(() => {
+    const state = selectedNpcState.value
+    if ((state?.giftsThisWeek ?? 0) >= 2) return 'text-muted/40 border-muted/10'
+    if (state?.giftedToday) return 'text-muted/40 border-muted/10'
+    return 'text-accent border-accent/30'
+  })
+
+  /** 弹窗中送礼标签文字 */
+  const giftTagText = computed(() => {
+    const state = selectedNpcState.value
+    if ((state?.giftsThisWeek ?? 0) >= 2) return '本周已送满'
+    if (state?.giftedToday) return '今日已送'
+    return `可送礼 ${state?.giftsThisWeek ?? 0}/2`
+  })
 
   const giftableItems = computed(() =>
     inventoryStore.items.filter(i => {
@@ -349,6 +447,15 @@
       if (heartEvent) {
         triggerHeartEvent(heartEvent)
       }
+    }
+  }
+
+  const handleDailyTip = () => {
+    if (!selectedNpc.value) return
+    const tip = npcStore.getDailyTip(selectedNpc.value)
+    if (tip) {
+      dialogueText.value = tip
+      addLog(`${selectedNpcDef.value?.name}告诉了你一些有用的信息。`)
     }
   }
 

@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import type { AchievementDef } from '@/types'
 import { ACHIEVEMENTS, COMMUNITY_BUNDLES } from '@/data/achievements'
 import { ITEMS } from '@/data/items'
+import { HYBRID_DEFS } from '@/data/breeding'
 import { usePlayerStore } from './usePlayerStore'
 import { useInventoryStore } from './useInventoryStore'
 import { useSkillStore } from './useSkillStore'
@@ -11,6 +12,8 @@ import { useQuestStore } from './useQuestStore'
 import { useShopStore } from './useShopStore'
 import { useAnimalStore } from './useAnimalStore'
 import { useGameStore } from './useGameStore'
+import { useMuseumStore } from './useMuseumStore'
+import { useGuildStore } from './useGuildStore'
 
 export const useAchievementStore = defineStore('achievement', () => {
   const playerStore = usePlayerStore()
@@ -41,7 +44,10 @@ export const useAchievementStore = defineStore('achievement', () => {
     highestMineFloor: 0,
     totalRecipesCooked: 0,
     skullCavernBestFloor: 0,
-    totalMonstersKilled: 0
+    totalMonstersKilled: 0,
+    totalBreedingsDone: 0,
+    totalHybridsDiscovered: 0,
+    highestHybridTier: 0
   })
 
   const discoveredCount = computed(() => discoveredItems.value.length)
@@ -97,6 +103,20 @@ export const useAchievementStore = defineStore('achievement', () => {
 
   const recordMonsterKill = () => {
     stats.value.totalMonstersKilled++
+  }
+
+  const recordBreeding = () => {
+    stats.value.totalBreedingsDone++
+  }
+
+  const recordHybridDiscovered = () => {
+    stats.value.totalHybridsDiscovered++
+  }
+
+  const recordHybridTier = (tier: number) => {
+    if (tier > stats.value.highestHybridTier) {
+      stats.value.highestHybridTier = tier
+    }
   }
 
   // === 成就检查 ===
@@ -199,6 +219,32 @@ export const useAchievementStore = defineStore('achievement', () => {
         case 'allBundlesComplete':
           met = completedBundles.value.length >= COMMUNITY_BUNDLES.length
           break
+        case 'hybridsDiscovered':
+          met = stats.value.totalHybridsDiscovered >= c.count
+          break
+        case 'breedingsDone':
+          met = stats.value.totalBreedingsDone >= c.count
+          break
+        case 'hybridTier':
+          met = stats.value.highestHybridTier >= c.tier
+          break
+        case 'hybridsShipped': {
+          const shopStore3 = useShopStore()
+          const hybridItemIds = new Set(HYBRID_DEFS.map(h => h.resultCropId))
+          const shippedHybridCount = shopStore3.shippedItems.filter(id => hybridItemIds.has(id)).length
+          met = shippedHybridCount >= c.count
+          break
+        }
+        case 'museumDonations': {
+          const museumStore = useMuseumStore()
+          met = museumStore.donatedCount >= c.count
+          break
+        }
+        case 'guildGoalsCompleted': {
+          const guildStore = useGuildStore()
+          met = guildStore.completedGoalCount >= c.count
+          break
+        }
       }
 
       if (met) {
@@ -329,6 +375,15 @@ export const useAchievementStore = defineStore('achievement', () => {
     if ((stats.value as Record<string, unknown>).totalMonstersKilled === undefined) {
       stats.value.totalMonstersKilled = 0
     }
+    if ((stats.value as Record<string, unknown>).totalBreedingsDone === undefined) {
+      stats.value.totalBreedingsDone = 0
+    }
+    if ((stats.value as Record<string, unknown>).totalHybridsDiscovered === undefined) {
+      stats.value.totalHybridsDiscovered = 0
+    }
+    if ((stats.value as Record<string, unknown>).highestHybridTier === undefined) {
+      stats.value.highestHybridTier = 0
+    }
   }
 
   return {
@@ -349,6 +404,9 @@ export const useAchievementStore = defineStore('achievement', () => {
     recordRecipeCooked,
     recordSkullCavernFloor,
     recordMonsterKill,
+    recordBreeding,
+    recordHybridDiscovered,
+    recordHybridTier,
     checkAchievements,
     perfectionPercent,
     submitToBundle,

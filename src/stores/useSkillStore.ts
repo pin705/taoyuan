@@ -85,9 +85,9 @@ export const useSkillStore = defineStore('skill', () => {
     return rollCropQualityWithBonus(0)
   }
 
-  /** 判断作物品质（带肥料加成） */
-  const rollCropQualityWithBonus = (qualityBonus: number): 'normal' | 'fine' | 'excellent' | 'supreme' => {
-    const level = farmingLevel.value
+  /** 判断作物品质（带肥料加成 + 可选技能等级加成） */
+  const rollCropQualityWithBonus = (qualityBonus: number, levelBonus: number = 0): 'normal' | 'fine' | 'excellent' | 'supreme' => {
+    const level = farmingLevel.value + levelBonus
     const roll = Math.random()
 
     if (level >= 9 && roll < 0.05 + qualityBonus * 0.5) return 'supreme'
@@ -96,11 +96,11 @@ export const useSkillStore = defineStore('skill', () => {
     return 'normal'
   }
 
-  /** 判断采集物品质（基于采集等级和专精） */
-  const rollForageQuality = (): 'normal' | 'fine' | 'excellent' | 'supreme' => {
+  /** 判断采集物品质（基于采集等级和专精 + 可选技能等级加成） */
+  const rollForageQuality = (levelBonus: number = 0): 'normal' | 'fine' | 'excellent' | 'supreme' => {
     const skill = getSkill('foraging')
     if (skill.perk10 === 'botanist') return 'excellent'
-    const level = skill.level
+    const level = skill.level + levelBonus
     const roll = Math.random()
 
     if (level >= 9 && roll < 0.05) return 'supreme'

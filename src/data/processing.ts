@@ -1369,11 +1369,10 @@ export const SPRINKLERS: SprinklerDef[] = [
     description: '自动灌溉周围8块地。',
     range: 8,
     craftCost: [
-      { itemId: 'iron_ore', quantity: 5 },
-      { itemId: 'copper_ore', quantity: 5 },
-      { itemId: 'gold_ore', quantity: 2 }
+      { itemId: 'copper_bar', quantity: 3 },
+      { itemId: 'iron_bar', quantity: 1 }
     ],
-    craftMoney: 300
+    craftMoney: 500
   },
   {
     id: 'gold_sprinkler',
@@ -1381,11 +1380,11 @@ export const SPRINKLERS: SprinklerDef[] = [
     description: '自动灌溉周围5×5共24块地。',
     range: 24,
     craftCost: [
-      { itemId: 'gold_ore', quantity: 5 },
-      { itemId: 'iron_ore', quantity: 5 },
-      { itemId: 'quartz', quantity: 2 }
+      { itemId: 'gold_bar', quantity: 2 },
+      { itemId: 'iron_bar', quantity: 2 },
+      { itemId: 'quartz', quantity: 1 }
     ],
-    craftMoney: 800
+    craftMoney: 1500
   }
 ]
 

@@ -19,6 +19,8 @@ export type ItemCategory =
   | 'bait'
   | 'tackle'
   | 'bomb'
+  | 'fossil'
+  | 'artifact'
 
 /** 物品品质 */
 export type Quality = 'normal' | 'fine' | 'excellent' | 'supreme'

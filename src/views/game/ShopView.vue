@@ -26,7 +26,7 @@
       <!-- 左侧：购买区 -->
       <div class="flex-1" :class="{ 'hidden md:block': mobileTab === 'sell' }">
         <!-- 折扣提示 -->
-        <p v-if="hasDiscount" class="text-success text-xs mb-3">商人印章生效中：所有购物价格 -10%</p>
+        <p v-if="hasDiscount" class="text-success text-xs mb-3">折扣生效中：所有购物价格 -{{ discountPercent }}%</p>
 
         <!-- ====== 商圈总览 ====== -->
         <template v-if="!shopStore.currentShopId">
@@ -118,7 +118,10 @@
               </div>
               <span class="text-xs text-accent whitespace-nowrap">{{ discounted(seed.price) }}文</span>
             </div>
-            <p v-if="shopStore.availableSeeds.length === 0" class="text-muted text-xs">本季没有种子出售。</p>
+            <div v-if="shopStore.availableSeeds.length === 0" class="flex flex-col items-center justify-center py-4 text-muted">
+              <Sprout :size="24" class="text-muted/30 mb-2" />
+              <p class="text-xs">本季没有种子出售</p>
+            </div>
           </div>
 
           <!-- 杂货 -->
@@ -230,6 +233,26 @@
               <span class="text-xs text-accent whitespace-nowrap">{{ discounted(HAY_PRICE) }}文</span>
             </div>
 
+            <!-- 木材 -->
+            <div
+              class="flex items-center justify-between border border-accent/20 rounded-xs px-3 py-2 cursor-pointer hover:bg-accent/5"
+              @click="
+                openBuyModal(
+                  '木材',
+                  '建筑和加工的基础材料',
+                  discounted(WOOD_PRICE),
+                  () => handleBuyItem('wood', WOOD_PRICE, '木材'),
+                  () => playerStore.money >= discounted(WOOD_PRICE)
+                )
+              "
+            >
+              <div>
+                <p class="text-sm">木材</p>
+                <p class="text-muted text-xs">建筑和加工的基础材料</p>
+              </div>
+              <span class="text-xs text-accent whitespace-nowrap">{{ discounted(WOOD_PRICE) }}文</span>
+            </div>
+
             <!-- 雨图腾 -->
             <div
               class="flex items-center justify-between border border-accent/20 rounded-xs px-3 py-2 cursor-pointer hover:bg-accent/5"
@@ -300,7 +323,10 @@
               </div>
               <span class="text-xs text-accent whitespace-nowrap">{{ ring.recipeMoney }}文</span>
             </div>
-            <p v-if="craftableRings.length === 0" class="text-muted text-xs">没有可合成的戒指。</p>
+            <div v-if="craftableRings.length === 0" class="flex flex-col items-center justify-center py-4 text-muted">
+              <CircleDot :size="24" class="text-muted/30 mb-2" />
+              <p class="text-xs">没有可合成的戒指</p>
+            </div>
           </div>
         </template>
 
@@ -523,6 +549,22 @@
             一键全部出售
           </button>
         </div>
+        <!-- 售价加成提示 -->
+        <p v-if="hasSellBonus" class="text-success text-xs mb-2">戒指加成中：所有售价 +{{ sellBonusPercent }}%</p>
+
+        <!-- 今日行情 -->
+        <div class="border border-accent/30 rounded-xs p-2 mb-3">
+          <p class="text-[10px] text-muted mb-1">今日行情</p>
+          <div class="grid grid-cols-4">
+            <span v-for="m in todayMarket" :key="m.category" class="text-[10px] whitespace-nowrap mt-2">
+              <span class="text-muted">{{ MARKET_CATEGORY_NAMES[m.category] }}</span>
+              <span v-if="m.trend === 'stable'" class="text-muted/40 ml-0.5">—</span>
+              <span v-else class="ml-0.5" :class="trendColor(m.trend)">
+                {{ m.multiplier >= 1 ? '↑' : '↓' }}{{ Math.round(Math.abs(m.multiplier - 1) * 100) }}%
+              </span>
+            </span>
+          </div>
+        </div>
         <div class="flex flex-col gap-2">
           <div
             v-for="item in sellableItems"
@@ -534,9 +576,24 @@
               <span class="text-sm" :class="qualityTextClass(item.quality)">{{ item.def?.name }}</span>
               <span class="text-muted text-xs ml-1">×{{ item.quantity }}</span>
             </div>
-            <span class="text-xs text-accent whitespace-nowrap">{{ item.def?.sellPrice }}文</span>
+            <div class="flex items-center gap-1">
+              <span class="text-xs text-accent whitespace-nowrap">{{ shopStore.calculateSellPrice(item.itemId, 1, item.quality) }}文</span>
+              <span v-if="getItemTrend(item.itemId) === 'rising' || getItemTrend(item.itemId) === 'boom'" class="text-[10px] text-success">
+                ↑{{ Math.round((getItemMultiplier(item.itemId) - 1) * 100) }}%
+              </span>
+              <span
+                v-else-if="getItemTrend(item.itemId) === 'falling' || getItemTrend(item.itemId) === 'crash'"
+                class="text-[10px]"
+                :class="getItemTrend(item.itemId) === 'crash' ? 'text-danger' : 'text-warning'"
+              >
+                ↓{{ Math.round((1 - getItemMultiplier(item.itemId)) * 100) }}%
+              </span>
+            </div>
           </div>
-          <p v-if="sellableItems.length === 0" class="text-muted text-xs">背包中没有可出售的物品。</p>
+          <div v-if="sellableItems.length === 0" class="flex flex-col items-center justify-center py-4 text-muted">
+            <Package :size="100" class="text-muted/30 my-4" />
+            <p class="text-xs">背包中没有可出售的物品</p>
+          </div>
         </div>
       </div>
     </div>
@@ -605,21 +662,42 @@
             </div>
             <div class="flex items-center justify-between mt-0.5">
               <span class="text-xs text-muted">售价</span>
-              <span class="text-xs text-accent">{{ sellModalDef.sellPrice }}文</span>
+              <span class="text-xs flex items-center gap-1">
+                <span
+                  v-if="getItemTrend(sellModalData!.itemId) && getItemTrend(sellModalData!.itemId) !== 'stable'"
+                  class="line-through text-muted/40"
+                >
+                  {{ shopStore.calculateBaseSellPrice(sellModalData!.itemId, 1, sellModalData!.quality) }}文
+                </span>
+                <span class="text-accent">{{ shopStore.calculateSellPrice(sellModalData!.itemId, 1, sellModalData!.quality) }}文</span>
+              </span>
+            </div>
+            <div
+              v-if="getItemTrend(sellModalData!.itemId) && getItemTrend(sellModalData!.itemId) !== 'stable'"
+              class="flex items-center justify-between mt-0.5"
+            >
+              <span class="text-xs text-muted">行情</span>
+              <span class="text-xs" :class="trendColor(getItemTrend(sellModalData!.itemId)!)">
+                {{ TREND_NAMES[getItemTrend(sellModalData!.itemId)!] }} ×{{ getItemMultiplier(sellModalData!.itemId) }}
+              </span>
+            </div>
+            <div v-if="hasSellBonus" class="flex items-center justify-between mt-0.5">
+              <span class="text-xs text-muted">戒指加成</span>
+              <span class="text-xs text-success">+{{ sellBonusPercent }}%</span>
             </div>
           </div>
 
           <div class="flex flex-col gap-1.5">
             <button class="btn text-xs w-full justify-center" @click="handleModalSell(1)">
               <Coins :size="14" />
-              出售1个 · {{ sellModalDef.sellPrice }}文
+              出售1个 · {{ shopStore.calculateSellPrice(sellModalData!.itemId, 1, sellModalData!.quality) }}文
             </button>
             <button
               v-if="sellModalItem.quantity > 1"
               class="btn text-xs w-full justify-center"
               @click="handleModalSell(sellModalItem!.quantity)"
             >
-              全部出售 · {{ sellModalDef.sellPrice * sellModalItem.quantity }}文
+              全部出售 · {{ shopStore.calculateSellPrice(sellModalData!.itemId, sellModalItem.quantity, sellModalData!.quality) }}文
             </button>
           </div>
         </div>
@@ -671,8 +749,11 @@
   import { sfxBuy } from '@/composables/useAudio'
   import { showFloat } from '@/composables/useGameLog'
   import { handleBuySeed, handleSellItem, handleSellItemAll, handleSellAll, QUALITY_NAMES } from '@/composables/useFarmActions'
+  import { getDailyMarketInfo, MARKET_CATEGORY_NAMES, TREND_NAMES } from '@/data/market'
+  import type { MarketTrend } from '@/data/market'
 
   const RAIN_TOTEM_PRICE = 300
+  const WOOD_PRICE = 50
 
   const shopStore = useShopStore()
   const playerStore = usePlayerStore()
@@ -681,6 +762,36 @@
   const warehouseStore = useWarehouseStore()
   const walletStore = useWalletStore()
   const gameStore = useGameStore()
+
+  // === 行情系统 ===
+
+  const todayMarket = computed(() =>
+    getDailyMarketInfo(gameStore.year, gameStore.seasonIndex, gameStore.day, shopStore.getRecentShipping())
+  )
+
+  const getItemTrend = (itemId: string): MarketTrend | null => {
+    const def = getItemById(itemId)
+    if (!def) return null
+    const info = todayMarket.value.find(m => m.category === def.category)
+    return info?.trend ?? null
+  }
+
+  const getItemMultiplier = (itemId: string): number => {
+    const def = getItemById(itemId)
+    if (!def) return 1
+    return todayMarket.value.find(m => m.category === def.category)?.multiplier ?? 1
+  }
+
+  const trendColor = (trend: MarketTrend): string => {
+    if (trend === 'boom') return 'text-danger'
+    if (trend === 'rising') return 'text-success'
+    if (trend === 'falling') return 'text-warning'
+    if (trend === 'crash') return 'text-danger'
+    return 'text-muted/40'
+  }
+
+  // 每次进入商圈页面，重置到商圈总览（避免跳过营业时间检查）
+  shopStore.currentShopId = null
 
   // === 移动端切换 ===
 
@@ -798,12 +909,22 @@
   // === 折扣系统 ===
 
   const hasDiscount = computed(() => walletStore.getShopDiscount() > 0 || inventoryStore.getRingEffectValue('shop_discount') > 0)
+  const discountPercent = computed(() => {
+    const w = walletStore.getShopDiscount()
+    const r = inventoryStore.getRingEffectValue('shop_discount')
+    return Math.round((1 - (1 - w) * (1 - r)) * 100)
+  })
 
   const discounted = (price: number): number => {
     const walletDiscount = walletStore.getShopDiscount()
     const ringDiscount = inventoryStore.getRingEffectValue('shop_discount')
     return Math.floor(price * (1 - walletDiscount) * (1 - ringDiscount))
   }
+
+  // === 售价加成 ===
+
+  const hasSellBonus = computed(() => inventoryStore.getRingEffectValue('sell_price_bonus') > 0)
+  const sellBonusPercent = computed(() => Math.round(inventoryStore.getRingEffectValue('sell_price_bonus') * 100))
 
   // === 商铺开放状态 ===
 

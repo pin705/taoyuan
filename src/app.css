@@ -151,8 +151,9 @@ body {
 .qmsg .qmsg-content-wrapper {
   color: var(--color-bg) !important;
   background: var(--color-accent) !important;
-  max-width: 90vw !important;
+}
+
+.qmsg .qmsg-content-wrapper .qmsg-content-text {
   white-space: normal !important;
   word-break: break-word !important;
-  text-align: center !important;
 }

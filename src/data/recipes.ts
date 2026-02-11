@@ -1183,6 +1183,162 @@ export const RECIPES: RecipeDef[] = [
     description: '除夕夜包的幸运饺子。'
   },
 
+  // ==================== 新增节日食谱 (10) ====================
+  {
+    id: 'nian_gao',
+    name: '年糕',
+    ingredients: [
+      { itemId: 'rice', quantity: 3 },
+      { itemId: 'honey', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 40,
+      healthRestore: 15,
+      buff: { type: 'farming', value: 10, description: '农耕体力消耗-10%（当天）' }
+    },
+    unlockSource: '元日奖励',
+    description: '「年年高」的吉祥年糕。'
+  },
+  {
+    id: 'hua_gao',
+    name: '花糕',
+    ingredients: [
+      { itemId: 'peach', quantity: 2 },
+      { itemId: 'rice', quantity: 1 },
+      { itemId: 'honey', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 35,
+      healthRestore: 10,
+      buff: { type: 'luck', value: 10, description: '幸运+10%（当天）' }
+    },
+    unlockSource: '花朝节奖励',
+    description: '以鲜花入馅的精致糕点。'
+  },
+  {
+    id: 'qing_tuan',
+    name: '青团',
+    ingredients: [
+      { itemId: 'herb', quantity: 2 },
+      { itemId: 'rice', quantity: 2 }
+    ],
+    effect: {
+      staminaRestore: 30,
+      healthRestore: 10,
+      buff: { type: 'farming', value: 15, description: '农耕体力消耗-15%（当天）' }
+    },
+    unlockSource: '上巳踏青奖励',
+    description: '草药清香的踏青小食。'
+  },
+  {
+    id: 'yue_bing',
+    name: '月饼',
+    ingredients: [
+      { itemId: 'lotus_seed', quantity: 2 },
+      { itemId: 'sesame_oil', quantity: 1 },
+      { itemId: 'honey', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 45,
+      healthRestore: 20,
+      buff: { type: 'luck', value: 15, description: '幸运+15%（当天）' }
+    },
+    unlockSource: '中秋赏月奖励',
+    description: '月圆之夜的莲蓉月饼。'
+  },
+  {
+    id: 'la_ba_zhou',
+    name: '腊八粥',
+    ingredients: [
+      { itemId: 'rice', quantity: 2 },
+      { itemId: 'peanut', quantity: 1 },
+      { itemId: 'wild_berry', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 50,
+      healthRestore: 25
+    },
+    unlockSource: '腊八粥会奖励',
+    description: '暖胃驱寒的腊八粥。'
+  },
+  {
+    id: 'dragon_boat_zongzi',
+    name: '粽子',
+    ingredients: [
+      { itemId: 'rice', quantity: 3 },
+      { itemId: 'bamboo_shoot', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 35,
+      healthRestore: 15,
+      buff: { type: 'speed', value: 10, description: '行动速度+10%（当天）' }
+    },
+    unlockSource: '端午赛龙舟奖励',
+    description: '竹叶清香的端午粽子。'
+  },
+  {
+    id: 'qiao_guo',
+    name: '巧果',
+    ingredients: [
+      { itemId: 'winter_wheat', quantity: 2 },
+      { itemId: 'honey', quantity: 1 },
+      { itemId: 'sesame_oil', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 30,
+      healthRestore: 10,
+      buff: { type: 'fishing', value: 1, description: '钓鱼技能+1（当天）' }
+    },
+    unlockSource: '七夕猜灯谜奖励',
+    description: '七夕乞巧的传统小点。'
+  },
+  {
+    id: 'chrysanthemum_wine',
+    name: '菊花酒',
+    ingredients: [
+      { itemId: 'chrysanthemum', quantity: 3 },
+      { itemId: 'rice', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 40,
+      healthRestore: 20,
+      buff: { type: 'luck', value: 12, description: '幸运+12%（当天）' }
+    },
+    unlockSource: '重阳投壶奖励',
+    description: '重阳佳节的菊花酿。'
+  },
+  {
+    id: 'jiaozi',
+    name: '冬至饺',
+    ingredients: [
+      { itemId: 'winter_wheat', quantity: 2 },
+      { itemId: 'napa_cabbage', quantity: 2 }
+    ],
+    effect: {
+      staminaRestore: 45,
+      healthRestore: 20,
+      buff: { type: 'mining', value: 1, description: '矿工技能+1（当天）' }
+    },
+    unlockSource: '冬至包饺子奖励',
+    description: '冬至时节包的暖心饺子。'
+  },
+  {
+    id: 'tangyuan',
+    name: '汤圆',
+    ingredients: [
+      { itemId: 'rice', quantity: 3 },
+      { itemId: 'honey', quantity: 1 },
+      { itemId: 'peanut', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 50,
+      healthRestore: 25,
+      buff: { type: 'all_skills', value: 1, description: '全技能+1（当天）' }
+    },
+    unlockSource: '年末烟花会奖励',
+    description: '团团圆圆的花生汤圆。'
+  },
+
   // ==================== 成就里程碑食谱 (9) ====================
   {
     id: 'first_catch_soup',

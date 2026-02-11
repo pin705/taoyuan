@@ -258,9 +258,10 @@ export const useQuestStore = defineStore('quest', () => {
     if (completedMainQuests.value.length >= STORY_QUESTS.length) return // 全部完成
 
     // 找到下一个未完成的主线任务
-    const nextQuest = completedMainQuests.value.length === 0
-      ? getFirstStoryQuest()
-      : getNextStoryQuest(completedMainQuests.value[completedMainQuests.value.length - 1]!)
+    const nextQuest =
+      completedMainQuests.value.length === 0
+        ? getFirstStoryQuest()
+        : getNextStoryQuest(completedMainQuests.value[completedMainQuests.value.length - 1]!)
 
     if (nextQuest) {
       mainQuest.value = {

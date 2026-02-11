@@ -45,6 +45,11 @@
       <div v-if="currentFestival" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
         <FishingContestView v-if="currentFestival === 'fishing_contest'" @complete="closeFestival" />
         <HarvestFairView v-if="currentFestival === 'harvest_fair'" @complete="closeFestival" />
+        <DragonBoatView v-if="currentFestival === 'dragon_boat'" @complete="closeFestival" />
+        <LanternRiddleView v-if="currentFestival === 'lantern_riddle'" @complete="closeFestival" />
+        <PotThrowingView v-if="currentFestival === 'pot_throwing'" @complete="closeFestival" />
+        <DumplingMakingView v-if="currentFestival === 'dumpling_making'" @complete="closeFestival" />
+        <FireworkShowView v-if="currentFestival === 'firework_show'" @complete="closeFestival" />
       </div>
     </Transition>
 
@@ -79,11 +84,7 @@
 
     <!-- 休息确认 -->
     <Transition name="panel-fade">
-      <div
-        v-if="showSleepConfirm"
-        class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
-        @click.self="showSleepConfirm = false"
-      >
+      <div v-if="showSleepConfirm" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
         <div class="game-panel max-w-xs w-full text-center">
           <p class="text-accent text-sm mb-3">—— {{ sleepLabel }} ——</p>
           <p class="text-xs leading-relaxed mb-1">{{ sleepSummary }}</p>
@@ -120,6 +121,11 @@
   import PerkSelectDialog from '@/components/game/PerkSelectDialog.vue'
   import FishingContestView from '@/components/game/FishingContestView.vue'
   import HarvestFairView from '@/components/game/HarvestFairView.vue'
+  import DragonBoatView from '@/components/game/DragonBoatView.vue'
+  import LanternRiddleView from '@/components/game/LanternRiddleView.vue'
+  import PotThrowingView from '@/components/game/PotThrowingView.vue'
+  import DumplingMakingView from '@/components/game/DumplingMakingView.vue'
+  import FireworkShowView from '@/components/game/FireworkShowView.vue'
   import SettingsDialog from '@/components/game/SettingsDialog.vue'
 
   const router = useRouter()

@@ -365,7 +365,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     pendingUpgrade.value = (data as any).pendingUpgrade ?? null
 
     // 戒指系统（向后兼容旧存档）
-    ownedRings.value = (data as Record<string, unknown>).ownedRings as OwnedRing[] ?? []
+    ownedRings.value = ((data as Record<string, unknown>).ownedRings as OwnedRing[]) ?? []
     equippedRingSlot1.value = ((data as Record<string, unknown>).equippedRingSlot1 as number | undefined) ?? -1
     equippedRingSlot2.value = ((data as Record<string, unknown>).equippedRingSlot2 as number | undefined) ?? -1
     // 修复无效索引

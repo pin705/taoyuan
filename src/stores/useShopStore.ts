@@ -8,6 +8,8 @@ import { useWalletStore } from './useWalletStore'
 import { getCropsBySeason, getItemById } from '@/data'
 import { BAITS, TACKLES, FERTILIZERS } from '@/data/processing'
 import { isTravelingMerchantDay, generateMerchantStock } from '@/data/travelingMerchant'
+import { getMarketMultiplier } from '@/data/market'
+import type { MarketCategory } from '@/data/market'
 import type { TravelingMerchantStock } from '@/data/travelingMerchant'
 import type { Quality } from '@/types'
 
@@ -44,13 +46,15 @@ export const useShopStore = defineStore('shop', () => {
 
   /** 当前季节可购买的种子 */
   const availableSeeds = computed(() => {
-    return getCropsBySeason(gameStore.season).map(crop => ({
-      seedId: crop.seedId,
-      cropName: crop.name,
-      price: crop.seedPrice,
-      growthDays: crop.growthDays,
-      sellPrice: crop.sellPrice
-    }))
+    return getCropsBySeason(gameStore.season)
+      .filter(crop => crop.seedPrice > 0)
+      .map(crop => ({
+        seedId: crop.seedId,
+        cropName: crop.name,
+        price: crop.seedPrice,
+        growthDays: crop.growthDays,
+        sellPrice: crop.sellPrice
+      }))
   })
 
   /** 购买种子 */
@@ -140,8 +144,8 @@ export const useShopStore = defineStore('shop', () => {
     return true
   }
 
-  /** 计算物品售价（不执行出售，用于估价） */
-  const calculateSellPrice = (itemId: string, quantity: number, quality: Quality): number => {
+  /** 计算不含行情系数的基础售价 */
+  const _basePrice = (itemId: string, quantity: number, quality: Quality): number => {
     const itemDef = getItemById(itemId)
     if (!itemDef) return 0
     const qualityMultiplier: Record<Quality, number> = {
@@ -160,6 +164,20 @@ export const useShopStore = defineStore('shop', () => {
     if (itemDef.category === 'ore' && skillStore.getSkill('mining').perk10 === 'blacksmith') bonus *= 1.5
     const ringSelBonus = inventoryStore.getRingEffectValue('sell_price_bonus')
     return Math.floor(itemDef.sellPrice * quantity * qualityMultiplier[quality] * bonus * (1 + ringSelBonus))
+  }
+
+  /** 计算物品售价（不执行出售，用于估价） */
+  const calculateSellPrice = (itemId: string, quantity: number, quality: Quality): number => {
+    const itemDef = getItemById(itemId)
+    if (!itemDef) return 0
+    const recentVolume = getRecentShipping()[itemDef.category as MarketCategory] ?? 0
+    const marketMultiplier = getMarketMultiplier(itemDef.category, gameStore.year, gameStore.seasonIndex, gameStore.day, recentVolume)
+    return Math.floor(_basePrice(itemId, quantity, quality) * marketMultiplier)
+  }
+
+  /** 计算不含行情的基础售价（用于显示原价） */
+  const calculateBaseSellPrice = (itemId: string, quantity: number, quality: Quality): number => {
+    return _basePrice(itemId, quantity, quality)
   }
 
   /** 出售物品，返回实际售价（0表示失败） */
@@ -241,13 +259,22 @@ export const useShopStore = defineStore('shop', () => {
   /** 处理出货箱结算（日结时调用），返回总收入 */
   const processShippingBox = (): number => {
     let total = 0
+    const dayKey = `${gameStore.year}-${gameStore.seasonIndex}-${gameStore.day}`
+    const dayRecord: Record<string, number> = { ...(shippingHistory.value[dayKey] ?? {}) }
     for (const entry of shippingBox.value) {
       total += calculateSellPrice(entry.itemId, entry.quantity, entry.quality)
       // 记录出货收集
       if (!shippedItems.value.includes(entry.itemId)) {
         shippedItems.value.push(entry.itemId)
       }
+      // 记录品类出货量（供需系数用）
+      const def = getItemById(entry.itemId)
+      if (def) {
+        dayRecord[def.category] = (dayRecord[def.category] ?? 0) + entry.quantity
+      }
     }
+    shippingHistory.value[dayKey] = dayRecord
+    _pruneShippingHistory()
     shippingBox.value = []
     return total
   }
@@ -257,6 +284,41 @@ export const useShopStore = defineStore('shop', () => {
   /** 已出货过的物品 ID 集合 */
   const shippedItems = ref<string[]>([])
 
+  // === 出货历史（供需系数用） ===
+
+  /** 近期出货记录：dayKey → { category → quantity } */
+  const shippingHistory = ref<Record<string, Record<string, number>>>({})
+
+  /** 将日期转为绝对天数（用于比较距离） */
+  const _toAbsoluteDay = (year: number, seasonIndex: number, day: number): number => {
+    return (year - 1) * 112 + seasonIndex * 28 + day
+  }
+
+  /** 清理超过7天的出货记录 */
+  const _pruneShippingHistory = () => {
+    const now = _toAbsoluteDay(gameStore.year, gameStore.seasonIndex, gameStore.day)
+    const keys = Object.keys(shippingHistory.value)
+    for (const key of keys) {
+      const parts = key.split('-').map(Number)
+      const abs = _toAbsoluteDay(parts[0]!, parts[1]!, parts[2]!)
+      if (now - abs > 7) {
+        delete shippingHistory.value[key]
+      }
+    }
+  }
+
+  /** 获取近7天各品类总出货量 */
+  const getRecentShipping = (): Partial<Record<MarketCategory, number>> => {
+    _pruneShippingHistory()
+    const result: Partial<Record<MarketCategory, number>> = {}
+    for (const record of Object.values(shippingHistory.value)) {
+      for (const [cat, qty] of Object.entries(record)) {
+        result[cat as MarketCategory] = (result[cat as MarketCategory] ?? 0) + qty
+      }
+    }
+    return result
+  }
+
   // === 序列化 ===
 
   const serialize = () => ({
@@ -264,7 +326,7 @@ export const useShopStore = defineStore('shop', () => {
     travelingStock: travelingStock.value,
     shippingBox: shippingBox.value,
     shippedItems: shippedItems.value,
-    currentShopId: currentShopId.value
+    shippingHistory: shippingHistory.value
   })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -273,7 +335,8 @@ export const useShopStore = defineStore('shop', () => {
     travelingStock.value = data?.travelingStock ?? []
     shippingBox.value = data?.shippingBox ?? []
     shippedItems.value = data?.shippedItems ?? []
-    currentShopId.value = data?.currentShopId ?? null
+    shippingHistory.value = data?.shippingHistory ?? {}
+    currentShopId.value = null
   }
 
   return {
@@ -298,6 +361,7 @@ export const useShopStore = defineStore('shop', () => {
     buyItem,
     sellItem,
     calculateSellPrice,
+    calculateBaseSellPrice,
     // 旅行商人
     travelingStock,
     isMerchantHere,
@@ -310,6 +374,8 @@ export const useShopStore = defineStore('shop', () => {
     processShippingBox,
     // 出货收集
     shippedItems,
+    // 行情供需
+    getRecentShipping,
     // 序列化
     serialize,
     deserialize

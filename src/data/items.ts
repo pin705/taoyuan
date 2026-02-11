@@ -1087,7 +1087,47 @@ export const ITEMS: ItemDef[] = [
   ...INCENSE_ITEMS,
 
   // 淘金产出
-  { id: 'gold_nugget', name: '金砂', category: 'misc', description: '河中淘得的金砂，闪闪发光。', sellPrice: 80, edible: false }
+  { id: 'gold_nugget', name: '金砂', category: 'misc', description: '河中淘得的金砂，闪闪发光。', sellPrice: 80, edible: false },
+
+  // ===== 化石 (8) =====
+  { id: 'trilobite_fossil', name: '三叶虫化石', category: 'fossil', description: '远古海洋生物的化石。', sellPrice: 120, edible: false },
+  { id: 'amber', name: '琥珀', category: 'fossil', description: '凝固了万年的树脂化石。', sellPrice: 150, edible: false },
+  { id: 'ammonite_fossil', name: '菊石化石', category: 'fossil', description: '螺旋状的远古海洋化石。', sellPrice: 180, edible: false },
+  { id: 'fern_fossil', name: '蕨叶化石', category: 'fossil', description: '保存完好的远古蕨类化石。', sellPrice: 100, edible: false },
+  { id: 'shell_fossil', name: '螺壳化石', category: 'fossil', description: '古代软体动物的壳化石。', sellPrice: 90, edible: false },
+  { id: 'bone_fragment', name: '骨骸碎片', category: 'fossil', description: '不知名远古生物的骨骸碎片。', sellPrice: 200, edible: false },
+  { id: 'petrified_wood', name: '石化木', category: 'fossil', description: '被矿物质替代的远古木材。', sellPrice: 130, edible: false },
+  { id: 'dragon_tooth', name: '龙牙化石', category: 'fossil', description: '传说中龙族遗留的牙齿化石。', sellPrice: 350, edible: false },
+
+  // ===== 古物 (10) =====
+  { id: 'ancient_pottery', name: '古陶片', category: 'artifact', description: '远古文明留下的陶器碎片。', sellPrice: 100, edible: false },
+  { id: 'jade_disc', name: '玉璧残片', category: 'artifact', description: '精美的远古玉璧碎片。', sellPrice: 250, edible: false },
+  { id: 'bronze_mirror', name: '铜镜', category: 'artifact', description: '磨制精良的远古铜镜。', sellPrice: 200, edible: false },
+  { id: 'ancient_coin', name: '远古铜钱', category: 'artifact', description: '不知名朝代的古铜钱。', sellPrice: 150, edible: false },
+  { id: 'oracle_bone', name: '甲骨片', category: 'artifact', description: '刻有卜辞的远古甲骨。', sellPrice: 300, edible: false },
+  { id: 'jade_pendant', name: '玉佩', category: 'artifact', description: '温润如玉的远古佩饰。', sellPrice: 220, edible: false },
+  { id: 'ancient_seed', name: '远古种子', category: 'artifact', description: '蕴含远古生命力的神秘种子。', sellPrice: 400, edible: false },
+  { id: 'bamboo_scroll', name: '竹简', category: 'artifact', description: '刻有古文的竹简残片。', sellPrice: 180, edible: false },
+  { id: 'stone_axe_head', name: '石斧头', category: 'artifact', description: '远古先民使用的石斧头。', sellPrice: 120, edible: false },
+  { id: 'painted_pottery', name: '彩陶碎片', category: 'artifact', description: '绘有精美纹饰的彩陶碎片。', sellPrice: 200, edible: false },
+
+  // ===== 公会商店物品 =====
+  { id: 'combat_tonic', name: '战斗补剂', category: 'food', description: '恢复30点HP。', sellPrice: 100, edible: true, staminaRestore: 0, healthRestore: 30 },
+  { id: 'fortify_brew', name: '强化药水', category: 'food', description: '恢复60点HP。', sellPrice: 250, edible: true, staminaRestore: 0, healthRestore: 60 },
+  { id: 'ironhide_potion', name: '铁壁药剂', category: 'food', description: '恢复全部HP。', sellPrice: 400, edible: true, staminaRestore: 0, healthRestore: 999 },
+  { id: 'slayer_charm', name: '猎魔符', category: 'misc', description: '怪物掉落率+20%（当次探索）。', sellPrice: 750, edible: false },
+  { id: 'warriors_feast', name: '勇者盛宴', category: 'food', description: '恢复50体力和50HP。', sellPrice: 500, edible: true, staminaRestore: 50, healthRestore: 50 },
+  { id: 'monster_lure', name: '怪物诱饵', category: 'misc', description: '本层怪物数量翻倍。', sellPrice: 1000, edible: false },
+  { id: 'guild_badge', name: '公会徽章', category: 'misc', description: '攻击力永久+3。', sellPrice: 2500, edible: false },
+
+  // ===== 瀚海物品 =====
+  { id: 'hanhai_cactus_seed', name: '仙人掌种子', category: 'seed', description: '来自西域的奇特植物种子。', sellPrice: 250, edible: false },
+  { id: 'hanhai_date_seed', name: '红枣种子', category: 'seed', description: '丝绸之路带来的果树种子。', sellPrice: 200, edible: false },
+  { id: 'hanhai_spice', name: '西域香料', category: 'material', description: '异域风情的香料，烹饪佳品。', sellPrice: 150, edible: false },
+  { id: 'hanhai_silk', name: '丝绸', category: 'material', description: '细腻光滑的上等丝绸。', sellPrice: 400, edible: false },
+  { id: 'hanhai_turquoise', name: '绿松石', category: 'gem', description: '西域特产的珍贵宝石。', sellPrice: 300, edible: false },
+  { id: 'hanhai_map', name: '藏宝图', category: 'misc', description: '标记着荒原某处宝藏的地图。', sellPrice: 500, edible: false },
+  { id: 'mega_bomb_recipe', name: '巨型炸弹配方', category: 'misc', description: '据说能炸开整层矿洞的秘方。', sellPrice: 2500, edible: false }
 ]
 
 /** 根据ID查找物品 */

@@ -9,7 +9,8 @@ import { useAudio } from './useAudio'
 // 模块级单例状态
 const currentEvent = ref<SeasonEventDef | null>(null)
 const pendingHeartEvent = ref<HeartEventDef | null>(null)
-const currentFestival = ref<'fishing_contest' | 'harvest_fair' | null>(null)
+type FestivalType = 'fishing_contest' | 'harvest_fair' | 'dragon_boat' | 'lantern_riddle' | 'pot_throwing' | 'dumpling_making' | 'firework_show'
+const currentFestival = ref<FestivalType | null>(null)
 const pendingPerk = ref<{ skillType: SkillType; level: 5 | 10 } | null>(null)
 
 /** 宠物领养弹窗 */
@@ -87,7 +88,7 @@ export const closeEvent = () => {
 }
 
 /** 显示节日庆典界面 */
-export const showFestival = (type: 'fishing_contest' | 'harvest_fair') => {
+export const showFestival = (type: FestivalType) => {
   currentFestival.value = type
 }
 

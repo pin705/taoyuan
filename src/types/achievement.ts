@@ -22,6 +22,12 @@ export type AchievementCondition =
   | { type: 'animalCount'; count: number }
   | { type: 'allSkillsMax' }
   | { type: 'allBundlesComplete' }
+  | { type: 'hybridsDiscovered'; count: number }
+  | { type: 'breedingsDone'; count: number }
+  | { type: 'hybridTier'; tier: number }
+  | { type: 'hybridsShipped'; count: number }
+  | { type: 'museumDonations'; count: number }
+  | { type: 'guildGoalsCompleted'; count: number }
 
 /** 成就定义 */
 export interface AchievementDef {

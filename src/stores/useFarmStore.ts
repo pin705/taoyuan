@@ -2,6 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import type { FarmPlot, FarmSize, Season, Quality } from '@/types'
 import type { SprinklerType, FertilizerType, PlantedFruitTree, FruitTreeType, WildTreeType, PlantedWildTree } from '@/types'
+import type { SeedGenetics } from '@/types/breeding'
 import { getCropById } from '@/data'
 import { SPRINKLERS, getFertilizerById } from '@/data/processing'
 import { FRUIT_TREE_DEFS, MAX_FRUIT_TREES } from '@/data/fruitTrees'
@@ -28,7 +29,8 @@ const createPlots = (size: FarmSize): FarmPlot[] => {
     unwateredDays: 0,
     fertilizer: null,
     harvestCount: 0,
-    giantCropGroup: null
+    giantCropGroup: null,
+    seedGenetics: null
   }))
 }
 
@@ -74,6 +76,22 @@ export const useFarmStore = defineStore('farm', () => {
     plot.growthDays = 0
     plot.watered = false
     plot.unwateredDays = 0
+    plot.seedGenetics = null
+    return true
+  }
+
+  /** 种下育种种子 */
+  const plantGeneticSeed = (plotId: number, genetics: SeedGenetics): boolean => {
+    const plot = plots.value[plotId]
+    if (!plot || plot.state !== 'tilled') return false
+    const crop = getCropById(genetics.cropId)
+    if (!crop) return false
+    plot.state = 'planted'
+    plot.cropId = genetics.cropId
+    plot.growthDays = 0
+    plot.watered = false
+    plot.unwateredDays = 0
+    plot.seedGenetics = genetics
     return true
   }
 
@@ -88,11 +106,12 @@ export const useFarmStore = defineStore('farm', () => {
   }
 
   /** 收获，返回作物ID（支持再生作物） */
-  const harvestPlot = (plotId: number): string | null => {
+  const harvestPlot = (plotId: number): { cropId: string | null; genetics: SeedGenetics | null } => {
     const plot = plots.value[plotId]
-    if (!plot || plot.state !== 'harvestable') return null
+    if (!plot || plot.state !== 'harvestable') return { cropId: null, genetics: null }
     const cropId = plot.cropId
     const crop = cropId ? getCropById(cropId) : null
+    const genetics = plot.seedGenetics
 
     // 再生作物：收获后回到生长状态（有次数上限）
     if (crop && crop.regrowth && crop.regrowthDays) {
@@ -106,11 +125,13 @@ export const useFarmStore = defineStore('farm', () => {
         plot.unwateredDays = 0
         plot.harvestCount = 0
         plot.fertilizer = null
+        plot.seedGenetics = null
       } else {
         plot.state = 'growing'
         plot.growthDays = crop.growthDays - crop.regrowthDays
         plot.watered = false
         plot.unwateredDays = 0
+        // seedGenetics 保留（再生作物继续使用同一基因）
       }
     } else {
       plot.state = 'tilled'
@@ -120,9 +141,10 @@ export const useFarmStore = defineStore('farm', () => {
       plot.unwateredDays = 0
       plot.fertilizer = null
       plot.harvestCount = 0
+      plot.seedGenetics = null
     }
 
-    return cropId
+    return { cropId, genetics }
   }
 
   // === 洒水器 ===
@@ -251,7 +273,9 @@ export const useFarmStore = defineStore('farm', () => {
           plot.state = 'growing'
         }
       } else {
-        plot.unwateredDays++
+        // 抗性减缓枯萎：高抗性时 unwateredDays 增长更慢
+        const resistanceFactor = plot.seedGenetics ? 1 - plot.seedGenetics.resistance / 100 : 1
+        plot.unwateredDays += resistanceFactor
         if (plot.unwateredDays >= 2) {
           plot.state = 'tilled'
           plot.cropId = null
@@ -259,6 +283,7 @@ export const useFarmStore = defineStore('farm', () => {
           plot.unwateredDays = 0
           plot.fertilizer = null
           plot.harvestCount = 0
+          plot.seedGenetics = null
         }
       }
 
@@ -296,6 +321,7 @@ export const useFarmStore = defineStore('farm', () => {
           plot.unwateredDays = 0
           plot.harvestCount = 0
           plot.giantCropGroup = null
+          plot.seedGenetics = null
           witheredCount++
         }
       }
@@ -339,6 +365,7 @@ export const useFarmStore = defineStore('farm', () => {
     target.unwateredDays = 0
     target.harvestCount = 0
     target.giantCropGroup = null
+    target.seedGenetics = null
 
     return { hit: true, absorbed: false, cropName }
   }
@@ -359,6 +386,7 @@ export const useFarmStore = defineStore('farm', () => {
     target.unwateredDays = 0
     target.harvestCount = 0
     target.giantCropGroup = null
+    target.seedGenetics = null
     return { attacked: true, cropName }
   }
 
@@ -417,6 +445,7 @@ export const useFarmStore = defineStore('farm', () => {
       gp.fertilizer = null
       gp.harvestCount = 0
       gp.giantCropGroup = null
+      gp.seedGenetics = null
     }
     return { cropId, quantity: groupPlots.length * 2 }
   }
@@ -580,7 +609,8 @@ export const useFarmStore = defineStore('farm', () => {
       unwateredDays: 0,
       fertilizer: null,
       harvestCount: 0,
-      giantCropGroup: null
+      giantCropGroup: null,
+      seedGenetics: null
     }))
   }
 
@@ -680,7 +710,8 @@ export const useFarmStore = defineStore('farm', () => {
       ...p,
       fertilizer: migrateFertilizer(p.fertilizer),
       harvestCount: (p as any).harvestCount ?? 0,
-      giantCropGroup: (p as any).giantCropGroup ?? null
+      giantCropGroup: (p as any).giantCropGroup ?? null,
+      seedGenetics: (p as any).seedGenetics ?? null
     }))
     sprinklers.value = (data as any).sprinklers ?? []
     fruitTrees.value = ((data as any).fruitTrees ?? []).map((t: any) => ({
@@ -692,7 +723,8 @@ export const useFarmStore = defineStore('farm', () => {
       ...p,
       fertilizer: migrateFertilizer(p.fertilizer),
       harvestCount: p.harvestCount ?? 0,
-      giantCropGroup: p.giantCropGroup ?? null
+      giantCropGroup: p.giantCropGroup ?? null,
+      seedGenetics: p.seedGenetics ?? null
     }))
     lightningRods.value = (data as any).lightningRods ?? 0
     scarecrows.value = (data as any).scarecrows ?? 0
@@ -710,6 +742,7 @@ export const useFarmStore = defineStore('farm', () => {
     resetFarm,
     tillPlot,
     plantCrop,
+    plantGeneticSeed,
     waterPlot,
     harvestPlot,
     getSprinklerCoverage,

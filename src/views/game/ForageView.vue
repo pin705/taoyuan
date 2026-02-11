@@ -164,7 +164,8 @@
         item.chance * (WEATHER_FORAGE_MODIFIER[gameStore.weather] ?? 1) * herbalistBonus * (1 + cookingBuff)
       )
       if (Math.random() < adjustedChance) {
-        let quality = skillStore.rollForageQuality()
+        const forageAllSkillsBuff = cookingStore.activeBuff?.type === 'all_skills' ? cookingStore.activeBuff.value : 0
+        let quality = skillStore.rollForageQuality(forageAllSkillsBuff)
         const walletBoost = walletStore.getForageQualityBoost()
         if (walletBoost > 0) {
           const qualityOrder: Quality[] = ['normal', 'fine', 'excellent', 'supreme']
@@ -193,7 +194,8 @@
 
     if (skill.perk10 === 'tracker' && items.length > 0) {
       const randomItem = items[Math.floor(Math.random() * items.length)]!
-      const quality = skillStore.rollForageQuality()
+      const trackerAllSkillsBuff = cookingStore.activeBuff?.type === 'all_skills' ? cookingStore.activeBuff.value : 0
+      const quality = skillStore.rollForageQuality(trackerAllSkillsBuff)
       inventoryStore.addItem(randomItem.itemId, 1, quality)
       achievementStore.discoverItem(randomItem.itemId)
       const itemDef = getItemById(randomItem.itemId)

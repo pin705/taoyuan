@@ -14,13 +14,17 @@ import { useWalletStore } from '@/stores/useWalletStore'
 import { useShopStore } from '@/stores/useShopStore'
 import { useQuestStore } from '@/stores/useQuestStore'
 import { useFishingStore } from '@/stores/useFishingStore'
+import { useBreedingStore } from '@/stores/useBreedingStore'
+import { useHanhaiStore } from '@/stores/useHanhaiStore'
 import { getItemById, getTodayEvent, getNpcById, getCropById } from '@/data'
 import { RECIPES } from '@/data/recipes'
 import { CAVE_UNLOCK_EARNINGS } from '@/data/buildings'
 import { TOOL_NAMES, TIER_NAMES } from '@/data/upgrades'
 import { addLog, showFloat } from './useGameLog'
+import { getDailyMarketInfo, MARKET_CATEGORY_NAMES } from '@/data/market'
 import { showEvent, showFestival, triggerWeddingEvent, triggerPetAdoption } from './useDialogs'
 import { sfxSleep, useAudio } from './useAudio'
+import router from '@/router'
 
 const NPC_NAME_MAP: Record<string, string> = {
   chen_bo: '陈伯',
@@ -114,7 +118,17 @@ const FESTIVAL_RECIPE_MAP: Record<string, string> = {
   spring_festival: 'spring_roll',
   summer_lantern: 'lotus_lantern_cake',
   autumn_harvest: 'harvest_feast',
-  winter_new_year: 'new_year_dumpling'
+  winter_new_year: 'new_year_dumpling',
+  yuan_ri: 'nian_gao',
+  hua_chao: 'hua_gao',
+  shang_si: 'qing_tuan',
+  zhong_qiu: 'yue_bing',
+  la_ba: 'la_ba_zhou',
+  duan_wu: 'dragon_boat_zongzi',
+  qi_xi: 'qiao_guo',
+  chong_yang: 'chrysanthemum_wine',
+  dong_zhi: 'jiaozi',
+  nian_mo: 'tangyuan'
 }
 
 /** 好感度等级层级顺序 */
@@ -280,6 +294,10 @@ export const handleEndDay = () => {
   farmStore.dailyUpdate(gameStore.isRainy)
   processingStore.dailyUpdate()
 
+  // 育种台进度更新
+  const breedingStore = useBreedingStore()
+  breedingStore.dailyUpdate()
+
   // 戒指效果：作物生长加速
   const ringGrowthBonus = inventoryStore.getRingEffectValue('crop_growth_bonus')
   if (ringGrowthBonus > 0) {
@@ -357,6 +375,7 @@ export const handleEndDay = () => {
 
   npcStore.dailyReset()
   cookingStore.dailyReset()
+  useHanhaiStore().resetDailyBets()
 
   // 动物产出
   const animalProducts = animalStore.dailyUpdate()
@@ -543,7 +562,7 @@ export const handleEndDay = () => {
       inventoryStore.addItem('battery')
       addLog('避雷针吸收了一道闪电！获得了电池组。')
     } else if (strike.hit) {
-      addLog(`雷暴中一道闪电击中了你的农场，一株${strike.cropName}被毁了！`)
+      addLog(`雷暴中一道闪电击中了你的农场，一株${strike.cropName}被毁了！建造避雷针可以防护。`)
     }
   }
 
@@ -553,6 +572,17 @@ export const handleEndDay = () => {
 
   // 天气预报
   addLog(`明日天气预报：${WEATHER_NAMES[gameStore.tomorrowWeather]}`)
+
+  // 今日行情
+  const marketInfo = getDailyMarketInfo(gameStore.year, gameStore.seasonIndex, gameStore.day, shopStore.getRecentShipping())
+  const booms = marketInfo.filter(m => m.trend === 'boom')
+  const crashes = marketInfo.filter(m => m.trend === 'crash')
+  if (booms.length > 0) {
+    addLog(`今日行情：${booms.map(b => MARKET_CATEGORY_NAMES[b.category]).join('、')}价格大涨！`)
+  }
+  if (crashes.length > 0) {
+    addLog(`今日行情：${crashes.map(c => MARKET_CATEGORY_NAMES[c.category]).join('、')}价格暴跌。`)
+  }
 
   // 食谱解锁
   checkRecipeUnlocks()
@@ -599,6 +629,9 @@ export const handleEndDay = () => {
   if (gameStore.day === 7 && gameStore.year === 1 && gameStore.season === 'spring' && !animalStore.pet) {
     triggerPetAdoption()
   }
+
+  // 回到农场页面（防止留在商铺等页面继续操作）
+  router.push({ name: 'farm' })
 
   // 自动存档
   saveStore.autoSave()

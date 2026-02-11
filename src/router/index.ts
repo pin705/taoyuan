@@ -25,7 +25,11 @@ const router = createRouter({
         { path: 'achievement', name: 'achievement', component: () => import('@/views/game/AchievementView.vue') },
         { path: 'wallet', name: 'wallet', component: () => import('@/views/game/WalletView.vue') },
         { path: 'quest', name: 'quest', component: () => import('@/views/game/QuestView.vue') },
-        { path: 'charinfo', name: 'charinfo', component: () => import('@/views/game/CharInfoView.vue') }
+        { path: 'charinfo', name: 'charinfo', component: () => import('@/views/game/CharInfoView.vue') },
+        { path: 'breeding', name: 'breeding', component: () => import('@/views/game/BreedingView.vue') },
+        { path: 'museum', name: 'museum', component: () => import('@/views/game/MuseumView.vue') },
+        { path: 'guild', name: 'guild', component: () => import('@/views/game/GuildView.vue') },
+        { path: 'hanhai', name: 'hanhai', component: () => import('@/views/game/HanhaiView.vue') }
       ]
     }
   ]

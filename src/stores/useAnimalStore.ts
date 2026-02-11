@@ -46,9 +46,7 @@ export const useAnimalStore = defineStore('animal', () => {
   )
 
   /** 获取马 */
-  const getHorse = computed(() =>
-    animals.value.find(a => a.type === 'horse') ?? null
-  )
+  const getHorse = computed(() => animals.value.find(a => a.type === 'horse') ?? null)
 
   /** 是否拥有马 */
   const hasHorse = computed(() => getHorse.value !== null)

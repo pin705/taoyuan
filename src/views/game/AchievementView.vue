@@ -30,6 +30,9 @@
       <button class="btn text-xs flex-1 justify-center" :class="{ 'bg-accent! text-bg!': tab === 'shipping' }" @click="tab = 'shipping'">
         出货
       </button>
+      <button class="btn text-xs flex-1 justify-center" :class="{ 'bg-accent! text-bg!': tab === 'notes' }" @click="tab = 'notes'">
+        笔记
+      </button>
     </div>
 
     <!-- 物品图鉴 -->
@@ -260,6 +263,67 @@
       </div>
     </template>
 
+    <!-- 秘密笔记 -->
+    <template v-if="tab === 'notes'">
+      <div v-if="secretNoteStore.collectedCount === 0" class="flex flex-col items-center justify-center py-10 gap-3">
+        <ScrollText :size="48" class="text-accent/30" />
+        <p class="text-sm text-muted">尚未收集到秘密笔记</p>
+        <p class="text-xs text-muted/60 text-center max-w-60">在挖矿、钓鱼、采集时有概率获得秘密笔记</p>
+      </div>
+      <template v-else>
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-muted">收集进度</span>
+          <span class="text-xs text-accent">{{ secretNoteStore.collectedCount }}/{{ secretNoteStore.totalNotes }}</span>
+        </div>
+        <div class="grid grid-cols-3 md:grid-cols-5 gap-1 max-h-72 overflow-y-auto mb-3">
+          <div
+            v-for="note in SECRET_NOTES"
+            :key="note.id"
+            class="border rounded-xs p-1.5 text-center text-xs transition-colors truncate"
+            :class="
+              secretNoteStore.isCollected(note.id)
+                ? 'border-accent/20 cursor-pointer hover:bg-accent/5 ' + noteTypeColor(note.type)
+                : 'border-accent/10 text-muted/30'
+            "
+            @click="secretNoteStore.isCollected(note.id) ? (activeNote = note) : null"
+          >
+            {{ secretNoteStore.isCollected(note.id) ? `#${note.id} ${note.title}` : `#${note.id} ???` }}
+          </div>
+        </div>
+      </template>
+    </template>
+
+    <!-- 秘密笔记详情弹窗 -->
+    <Transition name="panel-fade">
+      <div v-if="activeNote" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" @click.self="activeNote = null">
+        <div class="game-panel max-w-xs w-full relative">
+          <button class="absolute top-2 right-2 text-muted hover:text-text" @click="activeNote = null">
+            <X :size="14" />
+          </button>
+
+          <div class="flex items-center gap-1.5 mb-2">
+            <ScrollText :size="14" class="text-accent" />
+            <p class="text-sm text-accent">#{{ activeNote.id }} {{ activeNote.title }}</p>
+          </div>
+
+          <div class="border border-accent/10 rounded-xs p-2 mb-2">
+            <p class="text-xs mb-1" :class="noteTypeColor(activeNote.type)">{{ NOTE_TYPE_LABELS[activeNote.type] ?? activeNote.type }}</p>
+            <p class="text-xs">{{ activeNote.content }}</p>
+          </div>
+
+          <div v-if="activeNote.usable && !secretNoteStore.isUsed(activeNote.id)" class="mt-2">
+            <button class="btn text-xs w-full justify-center bg-accent! text-bg!" @click="handleUseNote(activeNote.id)">使用笔记</button>
+          </div>
+          <div v-else-if="activeNote.usable && secretNoteStore.isUsed(activeNote.id)" class="border border-success/30 rounded-xs p-2">
+            <div class="flex items-center gap-1">
+              <CircleCheck :size="12" class="text-success" />
+              <span class="text-xs text-success">已使用</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <!-- 完成度 -->
     <div class="mt-3 border border-accent/20 rounded-xs p-2">
       <div class="flex items-center gap-2 text-xs mb-1.5">
@@ -294,27 +358,44 @@
           <span class="text-xs text-muted">怪物击杀</span>
           <span class="text-xs">{{ achievementStore.stats.totalMonstersKilled }}</span>
         </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-muted">育种次数</span>
+          <span class="text-xs">{{ achievementStore.stats.totalBreedingsDone }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-muted">杂交发现</span>
+          <span class="text-xs">{{ achievementStore.stats.totalHybridsDiscovered }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-muted">最高代数</span>
+          <span class="text-xs">
+            {{ achievementStore.stats.highestHybridTier > 0 ? achievementStore.stats.highestHybridTier + '代' : '-' }}
+          </span>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { BookOpen, CircleCheck, Circle, Send, X } from 'lucide-vue-next'
+  import { BookOpen, CircleCheck, Circle, Send, X, ScrollText } from 'lucide-vue-next'
   import { ref, computed } from 'vue'
-  import { useAchievementStore, useInventoryStore, useShopStore, useAnimalStore } from '@/stores'
+  import { useAchievementStore, useInventoryStore, useShopStore, useAnimalStore, useSecretNoteStore } from '@/stores'
   import { ACHIEVEMENTS, COMMUNITY_BUNDLES } from '@/data/achievements'
   import { ITEMS, getItemById } from '@/data/items'
+  import { HYBRID_DEFS } from '@/data/breeding'
+  import { SECRET_NOTES } from '@/data/secretNotes'
   import { sfxClick } from '@/composables/useAudio'
   import { addLog } from '@/composables/useGameLog'
-  import type { ItemCategory, AchievementDef, CommunityBundleDef } from '@/types'
+  import type { ItemCategory, AchievementDef, CommunityBundleDef, SecretNoteDef } from '@/types'
 
   const achievementStore = useAchievementStore()
   const inventoryStore = useInventoryStore()
   const shopStore = useShopStore()
   const animalStore = useAnimalStore()
+  const secretNoteStore = useSecretNoteStore()
 
-  type Tab = 'collection' | 'achievements' | 'bundles' | 'shipping'
+  type Tab = 'collection' | 'achievements' | 'bundles' | 'shipping' | 'notes'
   const tab = ref<Tab>('collection')
 
   const allItems = ITEMS
@@ -329,6 +410,32 @@
   const getBundleProgress = (bundle: CommunityBundleDef): string => {
     const done = bundle.requiredItems.filter(r => getSubmittedCount(bundle.id, r.itemId) >= r.quantity).length
     return `${done}/${bundle.requiredItems.length}`
+  }
+
+  /** 秘密笔记弹窗 */
+  const activeNote = ref<SecretNoteDef | null>(null)
+
+  const NOTE_TYPE_COLORS: Record<string, string> = {
+    tip: 'text-accent',
+    treasure: 'text-success',
+    npc: 'text-water',
+    story: 'text-muted'
+  }
+
+  const NOTE_TYPE_LABELS: Record<string, string> = {
+    tip: '提示',
+    treasure: '宝藏',
+    npc: '人物',
+    story: '故事'
+  }
+
+  const noteTypeColor = (type: string): string => NOTE_TYPE_COLORS[type] ?? 'text-accent'
+
+  const handleUseNote = (noteId: number) => {
+    const result = secretNoteStore.useNote(noteId)
+    if (result.success) {
+      addLog(result.message)
+    }
   }
 
   /** 图鉴详情弹窗 */
@@ -369,6 +476,7 @@
 
   const CATEGORY_NAMES: Record<string, string> = {
     crop: '农作物',
+    hybrid: '杂交作物',
     fish: '鱼类',
     animal_product: '畜产品',
     processed: '加工品',
@@ -386,11 +494,14 @@
 
   const shippableItems = computed(() => ITEMS.filter(i => SHIPPABLE_CATEGORIES.includes(i.category)))
 
+  const hybridItemIds = new Set(HYBRID_DEFS.map(h => h.resultCropId))
+
   const itemsByCategory = computed(() => {
     const groups: Record<string, typeof ITEMS> = {}
     for (const item of shippableItems.value) {
-      if (!groups[item.category]) groups[item.category] = []
-      groups[item.category]!.push(item)
+      const cat = item.category === 'crop' && hybridItemIds.has(item.id) ? 'hybrid' : item.category
+      if (!groups[cat]) groups[cat] = []
+      groups[cat]!.push(item)
     }
     return groups
   })
@@ -435,6 +546,16 @@
         return `${animalStore.animals.length}/${c.count}`
       case 'questsCompleted':
         return `${c.count}`
+      case 'hybridsDiscovered':
+        return `${s.totalHybridsDiscovered}/${c.count}`
+      case 'breedingsDone':
+        return `${s.totalBreedingsDone}/${c.count}`
+      case 'hybridTier':
+        return `${s.highestHybridTier}/${c.tier}`
+      case 'hybridsShipped': {
+        const hIds = new Set(HYBRID_DEFS.map(h => h.resultCropId))
+        return `${shopStore.shippedItems.filter(id => hIds.has(id)).length}/${c.count}`
+      }
       default:
         return ''
     }

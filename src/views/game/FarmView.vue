@@ -13,7 +13,7 @@
     </div>
 
     <!-- 批量操作按钮 -->
-    <div class="flex gap-1.5 mb-3 flex-wrap">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-1.5 mb-3">
       <button class="btn text-xs" :disabled="unwateredCount === 0" @click="doBatchWater">
         <Droplets :size="12" />
         一键浇水 ({{ unwateredCount }})
@@ -25,6 +25,10 @@
       <button class="btn text-xs" :disabled="harvestableCount === 0" @click="doBatchHarvest">
         <Wheat :size="12" />
         一键收获 ({{ harvestableCount }})
+      </button>
+      <button class="btn text-xs" :disabled="tilledEmptyCount === 0 || plantableSeeds.length === 0" @click="showBatchPlant = true">
+        <Sprout :size="12" />
+        一键种植 ({{ tilledEmptyCount }})
       </button>
     </div>
 
@@ -38,7 +42,11 @@
           :class="[
             getPlotDisplay(plot).color,
             getPlotDisplay(plot).bg,
-            needsWater(plot) ? 'border-2 border-danger/50' : 'border border-accent/15',
+            needsWater(plot)
+              ? 'border-2 border-danger/50'
+              : isSprinklerCovered(plot.id)
+                ? 'border border-water/40'
+                : 'border border-accent/15',
             plot.state === 'harvestable' ? 'hover:border-accent/60' : 'hover:border-accent/40'
           ]"
           :title="getPlotTooltip(plot)"
@@ -66,103 +74,157 @@
             <X :size="14" />
           </button>
           <p class="text-accent text-sm mb-2">地块 #{{ activePlot.id + 1 }}</p>
-
-          <!-- 状态信息 -->
-          <div class="border border-accent/10 rounded-xs p-2 mb-2">
-            <div class="flex flex-col gap-1">
-              <div class="flex items-center justify-between">
-                <span class="text-xs text-muted">状态</span>
-                <span class="text-xs">{{ plotStateLabel }}{{ activePlot.giantCropGroup !== null ? '（巨型）' : '' }}</span>
-              </div>
-              <div v-if="activePlot.cropId" class="flex items-center justify-between">
-                <span class="text-xs text-muted">作物</span>
-                <span class="text-xs">{{ activePlot.giantCropGroup !== null ? '巨型' : '' }}{{ getCropName(activePlot.cropId) }}</span>
-              </div>
-              <!-- 生长进度条 -->
-              <div v-if="activePlot.cropId && activePlot.state !== 'harvestable'" class="flex items-center gap-2">
-                <span class="text-xs text-muted shrink-0">生长</span>
-                <div class="flex-1 h-1 bg-bg rounded-xs border border-accent/10">
-                  <div
-                    class="h-full rounded-xs bg-success transition-all"
-                    :style="{ width: Math.floor((activePlot.growthDays / (Number(plotCropGrowthDays) || 1)) * 100) + '%' }"
-                  />
-                </div>
-                <span class="text-xs text-muted whitespace-nowrap">{{ activePlot.growthDays }}/{{ plotCropGrowthDays }}天</span>
-              </div>
-              <div v-if="activePlot.cropId && activePlot.giantCropGroup === null" class="flex items-center justify-between">
-                <span class="text-xs text-muted">浇水</span>
-                <span class="text-xs" :class="activePlot.watered ? 'text-success' : 'text-danger'">
-                  {{ activePlot.watered ? '已浇水' : '未浇水' }}
-                </span>
-              </div>
-              <div v-if="activePlot.fertilizer" class="flex items-center justify-between">
-                <span class="text-xs text-muted">肥料</span>
-                <span class="text-xs text-success">{{ plotFertName }}</span>
-              </div>
-              <div v-if="hasSprinkler(activePlot.id)" class="flex items-center justify-between">
-                <span class="text-xs text-muted">洒水器</span>
-                <span class="text-xs text-water">已安装</span>
-              </div>
+          <p class="text-xs text-muted mb-2">
+            {{ plotStateLabel }}
+            <template v-if="activePlot.giantCropGroup !== null">（巨型）</template>
+            <template v-if="activePlot.cropId">
+              · {{ activePlot.giantCropGroup !== null ? '巨型' : '' }}{{ getCropName(activePlot.cropId) }}
+            </template>
+            <template v-if="activePlot.cropId && activePlot.giantCropGroup === null">
+              ·
+              <span :class="activePlot.watered ? 'text-water' : 'text-danger'">{{ activePlot.watered ? '已浇水' : '未浇水' }}</span>
+            </template>
+            <template v-if="activePlot.fertilizer">
+              ·
+              <span class="text-success">{{ plotFertName }}</span>
+            </template>
+            <template v-if="hasSprinkler(activePlot.id)">
+              ·
+              <span class="text-water">洒水器</span>
+            </template>
+          </p>
+          <!-- 生长进度条 -->
+          <div v-if="activePlot.cropId && activePlot.state !== 'harvestable'" class="flex items-center gap-2 mb-2">
+            <span class="text-xs text-muted shrink-0">生长</span>
+            <div class="flex-1 h-1 bg-bg rounded-xs border border-accent/10">
+              <div
+                class="h-full rounded-xs bg-success transition-all"
+                :style="{ width: Math.floor((activePlot.growthDays / (Number(plotCropGrowthDays) || 1)) * 100) + '%' }"
+              />
             </div>
-            <p v-if="activePlot.giantCropGroup !== null" class="text-xs text-accent mt-1">收获可获得大量作物！</p>
+            <span class="text-xs text-muted whitespace-nowrap">{{ activePlot.growthDays }}/{{ plotCropGrowthDays }}天</span>
           </div>
+          <p v-if="activePlot.giantCropGroup !== null" class="text-xs text-accent mb-2">收获可获得大量作物！</p>
 
-          <!-- 操作区 -->
-          <div class="flex flex-col gap-1.5">
-            <!-- 荒地 → 开垦 -->
-            <button v-if="activePlot.state === 'wasteland'" class="btn text-xs w-full justify-center" @click="doTill">
+          <!-- 操作列表 -->
+          <div class="flex flex-col gap-1 max-h-60 overflow-y-auto">
+            <button v-if="activePlot.state === 'wasteland'" class="btn text-xs w-full justify-center shrink-0" @click="doTill">
               <Shovel :size="12" />
               开垦
             </button>
-
-            <!-- 未浇水 → 浇水 -->
-            <button v-if="canWater" class="btn text-xs w-full justify-center" @click="doWater">
+            <button v-if="canWater" class="btn text-xs w-full justify-center shrink-0" @click="doWater">
               <Droplets :size="12" />
               浇水
             </button>
-
-            <!-- 可收获 → 收获 -->
             <button
               v-if="activePlot.state === 'harvestable'"
-              class="btn text-xs w-full justify-center bg-accent! text-bg!"
+              class="btn text-xs w-full justify-center shrink-0 bg-accent! text-bg!"
               @click="doHarvest"
             >
               <Wheat :size="12" />
               收获
             </button>
-
-            <!-- 已耕 → 种植列表 -->
-            <div v-if="activePlot.state === 'tilled' && plantableSeeds.length > 0" class="border border-accent/10 rounded-xs p-2">
-              <p class="text-xs text-muted mb-1">种植</p>
-              <div class="flex flex-wrap gap-1">
-                <button v-for="seed in plantableSeeds" :key="seed.cropId" class="btn text-xs" @click="doPlant(seed.cropId)">
-                  {{ seed.name }} (×{{ seed.count }})
-                </button>
-              </div>
+            <template v-if="activePlot.state === 'tilled' && plantableSeeds.length > 0">
+              <p class="text-xs text-muted mt-1 shrink-0">— 种植 —</p>
+              <button
+                v-for="seed in plantableSeeds"
+                :key="seed.cropId"
+                class="btn text-xs w-full justify-between shrink-0"
+                @click="doPlant(seed.cropId)"
+              >
+                <span :class="seed.colorClass">{{ seed.name }}</span>
+                <span class="text-muted">×{{ seed.count }}</span>
+              </button>
+            </template>
+            <template v-if="activePlot.state === 'tilled' && plantableBreedingSeeds.length > 0">
+              <p class="text-xs text-muted mt-1 shrink-0">— 育种种子 —</p>
+              <button
+                v-for="seed in plantableBreedingSeeds"
+                :key="seed.genetics.id"
+                class="btn text-xs w-full justify-between shrink-0"
+                @click="doPlantGeneticSeed(seed.genetics.id)"
+              >
+                <span>{{ getCropName(seed.genetics.cropId) }} G{{ seed.genetics.generation }}</span>
+                <span class="text-muted">{{ getStarText(getStarRating(seed.genetics)) }}</span>
+              </button>
+            </template>
+            <!-- 种子空状态 -->
+            <div
+              v-if="activePlot.state === 'tilled' && plantableSeeds.length === 0 && plantableBreedingSeeds.length === 0"
+              class="flex flex-col items-center py-4"
+            >
+              <Sprout :size="32" class="text-muted/30" />
+              <p class="text-xs text-muted mt-2">背包中没有当季可种植的种子</p>
+              <button v-if="isWanwupuOpen" class="btn text-xs mt-2" @click="goToShop">
+                <Store :size="12" />
+                前往商店购买
+              </button>
+              <p v-else class="text-[10px] text-muted/60 mt-1">{{ wanwupuClosedReason }}</p>
             </div>
-
-            <!-- 施肥 -->
-            <div v-if="canFertilize && fertilizerItems.length > 0" class="border border-accent/10 rounded-xs p-2">
-              <p class="text-xs text-muted mb-1">施肥</p>
-              <div class="flex flex-wrap gap-1">
-                <button v-for="f in fertilizerItems" :key="f.itemId" class="btn text-xs" @click="doFertilize(f.type)">
-                  {{ f.name }} (×{{ f.count }})
-                </button>
-              </div>
-            </div>
-
-            <!-- 洒水器 -->
-            <div v-if="!hasSprinkler(activePlot.id) && sprinklerItems.length > 0" class="border border-accent/10 rounded-xs p-2">
-              <p class="text-xs text-muted mb-1">洒水器</p>
-              <div class="flex flex-wrap gap-1">
-                <button v-for="s in sprinklerItems" :key="s.itemId" class="btn text-xs" @click="doPlaceSprinkler(s.type)">
-                  {{ s.name }} (×{{ s.count }})
-                </button>
-              </div>
-            </div>
-            <button v-if="hasSprinkler(activePlot.id)" class="btn text-xs w-full justify-center" @click="doRemoveSprinkler">
+            <template v-if="canFertilize && fertilizerItems.length > 0">
+              <p class="text-xs text-muted mt-1 shrink-0">— 施肥 —</p>
+              <button
+                v-for="f in fertilizerItems"
+                :key="f.itemId"
+                class="btn text-xs w-full justify-between shrink-0"
+                @click="doFertilize(f.type)"
+              >
+                <span :class="f.colorClass">{{ f.name }}</span>
+                <span class="text-muted">×{{ f.count }}</span>
+              </button>
+            </template>
+            <template v-if="!hasSprinkler(activePlot.id) && sprinklerItems.length > 0">
+              <p class="text-xs text-muted mt-1 shrink-0">— 洒水器 —</p>
+              <button
+                v-for="s in sprinklerItems"
+                :key="s.itemId"
+                class="btn text-xs w-full justify-between shrink-0"
+                @click="doPlaceSprinkler(s.type)"
+              >
+                <span :class="s.colorClass">{{ s.name }}</span>
+                <span class="text-muted">×{{ s.count }}</span>
+              </button>
+            </template>
+            <button v-if="hasSprinkler(activePlot.id)" class="btn text-xs w-full justify-center shrink-0" @click="doRemoveSprinkler">
               拆除洒水器
             </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- 一键种植弹窗 -->
+    <Transition name="panel-fade">
+      <div
+        v-if="showBatchPlant"
+        class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+        @click.self="showBatchPlant = false"
+      >
+        <div class="game-panel max-w-xs w-full relative">
+          <button class="absolute top-2 right-2 text-muted hover:text-text" @click="showBatchPlant = false">
+            <X :size="14" />
+          </button>
+          <p class="text-accent text-sm mb-2">一键种植</p>
+          <p class="text-xs text-muted mb-2">空耕地 {{ tilledEmptyCount }} 块，选择要种植的种子：</p>
+          <div class="flex flex-col gap-1 max-h-60 overflow-y-auto">
+            <button
+              v-for="seed in plantableSeeds"
+              :key="seed.cropId"
+              class="btn text-xs w-full justify-between shrink-0"
+              @click="doBatchPlant(seed.cropId)"
+            >
+              <span :class="seed.colorClass">{{ seed.name }}</span>
+              <span class="text-muted">×{{ seed.count }}</span>
+            </button>
+          </div>
+          <div v-if="plantableSeeds.length === 0" class="flex flex-col items-center py-4">
+            <Sprout :size="32" class="text-muted/30" />
+            <p class="text-xs text-muted mt-2">没有当季可种植的种子</p>
+            <button v-if="isWanwupuOpen" class="btn text-xs mt-2" @click="goToShop">
+              <Store :size="12" />
+              前往商店购买
+            </button>
+            <p v-else class="text-[10px] text-muted/60 mt-1">{{ wanwupuClosedReason }}</p>
           </div>
         </div>
       </div>
@@ -245,6 +307,9 @@
             <span>出货箱</span>
           </div>
           <p class="text-xs text-muted mb-2">放入的物品将在次日结算。</p>
+          <p v-if="inventoryStore.getRingEffectValue('sell_price_bonus') > 0" class="text-success text-xs mb-2">
+            戒指加成中：售价 +{{ Math.round(inventoryStore.getRingEffectValue('sell_price_bonus') * 100) }}%
+          </p>
 
           <!-- 已放入的物品 -->
           <div v-if="shopStore.shippingBox.length > 0" class="border border-accent/10 rounded-xs p-2 mb-2">
@@ -277,8 +342,8 @@
             <p class="text-xs text-accent mt-1.5">预计收入：{{ shippingBoxTotal }}文</p>
           </div>
           <div v-else class="flex flex-col items-center justify-center py-4 text-muted mb-2">
-            <Package :size="24" />
-            <p class="text-xs mt-1">出货箱是空的</p>
+            <Package :size="32" class="text-muted/30" />
+            <p class="text-xs mt-2">出货箱是空的</p>
           </div>
 
           <!-- 可放入的背包物品 -->
@@ -311,6 +376,10 @@
                 </div>
               </div>
             </div>
+          </div>
+          <div v-else class="flex flex-col items-center py-3 text-muted">
+            <Wheat :size="32" class="text-muted/30" />
+            <p class="text-xs mt-2">背包中没有可出货的物品</p>
           </div>
         </div>
       </div>
@@ -348,8 +417,9 @@
         </div>
       </div>
       <div v-else class="flex flex-col items-center justify-center py-4 text-muted mb-2">
-        <TreeDeciduous :size="24" />
-        <p class="text-xs mt-1">暂无果树</p>
+        <TreeDeciduous :size="32" class="text-muted/30" />
+        <p class="text-xs mt-2">暂无果树</p>
+        <p class="text-[10px] text-muted/60 mt-0.5">可在商店购买树苗种植</p>
       </div>
       <div v-if="plantableSaplings.length > 0 && farmStore.fruitTrees.length < MAX_FRUIT_TREES" class="flex gap-1.5 flex-wrap">
         <button v-for="s in plantableSaplings" :key="s.saplingId" class="btn text-xs" @click="handlePlantTree(s.type)">
@@ -391,6 +461,10 @@
           <template v-else-if="!tree.hasTapper">
             <div class="flex items-center gap-2">
               <span class="text-xs text-success">已成熟</span>
+              <button class="btn text-xs" @click.stop="handleChopTree(tree.id)">
+                <Axe :size="12" />
+                伐木
+              </button>
               <button v-if="hasTapper" class="btn text-xs" @click.stop="handleAttachTapper(tree.id)">
                 <Wrench :size="12" />
                 装采脂器
@@ -405,16 +479,29 @@
                 <Gift :size="12" />
                 收取
               </button>
+              <button class="btn text-xs" @click.stop="handleChopTree(tree.id)">
+                <Axe :size="12" />
+                伐木
+              </button>
             </div>
           </template>
           <template v-else>
-            <span class="text-xs text-muted">采脂中 {{ tree.tapDaysElapsed }}/{{ getWildTreeDef(tree.type)?.tapCycleDays ?? '?' }}天</span>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-muted">
+                采脂中 {{ tree.tapDaysElapsed }}/{{ getWildTreeDef(tree.type)?.tapCycleDays ?? '?' }}天
+              </span>
+              <button class="btn text-xs" @click.stop="handleChopTree(tree.id)">
+                <Axe :size="12" />
+                伐木
+              </button>
+            </div>
           </template>
         </div>
       </div>
       <div v-else class="flex flex-col items-center justify-center py-4 text-muted mb-2">
-        <TreePine :size="24" />
-        <p class="text-xs mt-1">暂无野树</p>
+        <TreePine :size="32" class="text-muted/30" />
+        <p class="text-xs mt-2">暂无野树</p>
+        <p class="text-[10px] text-muted/60 mt-0.5">可使用野树种子种植</p>
       </div>
       <div v-if="plantableWildSeeds.length > 0 && farmStore.wildTrees.length < MAX_WILD_TREES" class="flex gap-1.5 flex-wrap">
         <button v-for="s in plantableWildSeeds" :key="s.type" class="btn text-xs" @click="handlePlantWildTree(s.type)">
@@ -512,6 +599,16 @@
                 </button>
               </div>
             </div>
+            <!-- 已耕无种子空状态 -->
+            <div v-else-if="activeGhPlot.state === 'tilled'" class="flex flex-col items-center py-4">
+              <Sprout :size="32" class="text-muted/30" />
+              <p class="text-xs text-muted mt-2">背包中没有种子</p>
+              <button v-if="isWanwupuOpen" class="btn text-xs mt-2" @click="goToShop">
+                <Store :size="12" />
+                前往商店购买
+              </button>
+              <p v-else class="text-[10px] text-muted/60 mt-1">{{ wanwupuClosedReason }}</p>
+            </div>
 
             <!-- 可收获 → 收获 -->
             <button
@@ -546,7 +643,9 @@
     Wheat,
     Sprout,
     Package,
-    Warehouse
+    Warehouse,
+    Store,
+    Axe
   } from 'lucide-vue-next'
   import {
     useFarmStore,
@@ -556,21 +655,26 @@
     usePlayerStore,
     useSkillStore,
     useShopStore,
+    useBreedingStore,
     SEASON_NAMES
   } from '@/stores'
   import { getCropById, getCropsBySeason, getItemById } from '@/data'
+  import { getStarRating, getStarText } from '@/data/breeding'
   import { FRUIT_TREE_DEFS, MAX_FRUIT_TREES } from '@/data/fruitTrees'
   import { WILD_TREE_DEFS, MAX_WILD_TREES, getWildTreeDef } from '@/data/wildTrees'
   import { CROPS } from '@/data/crops'
   import { FERTILIZERS, getFertilizerById } from '@/data/processing'
   import { ACTION_TIME_COSTS } from '@/data/timeConstants'
   import { addLog, showFloat } from '@/composables/useGameLog'
+  import { navigateToPanel } from '@/composables/useNavigation'
+  import { getShopById, isShopAvailable, getShopClosedReason } from '@/data/shops'
   import {
     handlePlotClick,
     useFarmActions,
     handleBatchWater,
     handleBatchTill,
     handleBatchHarvest,
+    handleBatchPlant,
     QUALITY_NAMES
   } from '@/composables/useFarmActions'
   import type { SprinklerType, FertilizerType, FruitTreeType, WildTreeType } from '@/types'
@@ -583,10 +687,33 @@
   const gameStore = useGameStore()
   const homeStore = useHomeStore()
   const shopStore = useShopStore()
+  const breedingStore = useBreedingStore()
 
   // === 出货箱 ===
 
   const showShippingBox = ref(false)
+  const showBatchPlant = ref(false)
+
+  const goToShop = () => {
+    if (!isWanwupuOpen.value) {
+      showFloat(wanwupuClosedReason.value, 'danger')
+      return
+    }
+    activePlotId.value = null
+    activeGhPlotId.value = null
+    showBatchPlant.value = false
+    navigateToPanel('shop')
+  }
+
+  const wanwupu = getShopById('wanwupu')!
+
+  const isWanwupuOpen = computed(() => {
+    return isShopAvailable(wanwupu, gameStore.day, gameStore.hour, gameStore.weather, gameStore.season)
+  })
+
+  const wanwupuClosedReason = computed(() => {
+    return '万物铺' + getShopClosedReason(wanwupu, gameStore.day, gameStore.hour, gameStore.weather, gameStore.season)
+  })
 
   const getItemName = (itemId: string): string => getItemById(itemId)?.name ?? itemId
 
@@ -663,10 +790,10 @@
   // === 背包物品列表 ===
 
   const sprinklerItems = computed(() => {
-    const types: { type: SprinklerType; itemId: string; name: string }[] = [
-      { type: 'bamboo_sprinkler', itemId: 'bamboo_sprinkler', name: '竹筒洒水器' },
-      { type: 'copper_sprinkler', itemId: 'copper_sprinkler', name: '铜管洒水器' },
-      { type: 'gold_sprinkler', itemId: 'gold_sprinkler', name: '金管洒水器' }
+    const types: { type: SprinklerType; itemId: string; name: string; colorClass: string }[] = [
+      { type: 'bamboo_sprinkler', itemId: 'bamboo_sprinkler', name: '竹筒洒水器', colorClass: '' },
+      { type: 'copper_sprinkler', itemId: 'copper_sprinkler', name: '铜管洒水器', colorClass: 'text-quality-fine' },
+      { type: 'gold_sprinkler', itemId: 'gold_sprinkler', name: '金管洒水器', colorClass: 'text-quality-supreme' }
     ]
     return types.map(s => ({ ...s, count: inventoryStore.getItemCount(s.itemId) })).filter(s => s.count > 0)
   })
@@ -676,7 +803,8 @@
       type: f.id as FertilizerType,
       itemId: f.id,
       name: f.name,
-      count: inventoryStore.getItemCount(f.id)
+      count: inventoryStore.getItemCount(f.id),
+      colorClass: itemValueColor(f.shopPrice ?? 0)
     })).filter(f => f.count > 0)
   })
 
@@ -687,9 +815,36 @@
         cropId: crop.id,
         seedId: crop.seedId,
         name: crop.name,
-        count: inventoryStore.getItemCount(crop.seedId)
+        count: inventoryStore.getItemCount(crop.seedId),
+        colorClass: cropValueColor(crop.sellPrice)
       }))
   })
+
+  /** 当季可种的育种种子 */
+  const plantableBreedingSeeds = computed(() => {
+    const season = gameStore.season
+    return breedingStore.breedingBox.filter(seed => {
+      const crop = getCropById(seed.genetics.cropId)
+      if (!crop) return false
+      return crop.season.includes(season)
+    })
+  })
+
+  /** 根据作物售价返回品质颜色 */
+  const cropValueColor = (sellPrice: number): string => {
+    if (sellPrice >= 180) return 'text-quality-supreme'
+    if (sellPrice >= 100) return 'text-quality-excellent'
+    if (sellPrice >= 60) return 'text-quality-fine'
+    return ''
+  }
+
+  /** 根据道具价格返回品质颜色 */
+  const itemValueColor = (price: number): string => {
+    if (price >= 100) return 'text-quality-supreme'
+    if (price >= 75) return 'text-quality-excellent'
+    if (price >= 40) return 'text-quality-fine'
+    return ''
+  }
 
   // === 地块显示 ===
 
@@ -702,6 +857,15 @@
     return farmStore.sprinklers.some(s => s.plotId === plotId)
   }
 
+  /** 洒水器覆盖范围（含放置洒水器的地块自身） */
+  const sprinklerCoverage = computed(() => {
+    const set = farmStore.getAllWateredBySprinklers()
+    for (const s of farmStore.sprinklers) set.add(s.plotId)
+    return set
+  })
+
+  const isSprinklerCovered = (plotId: number): boolean => sprinklerCoverage.value.has(plotId)
+
   const needsWater = (plot: (typeof farmStore.plots)[number]): boolean => {
     return (plot.state === 'planted' || plot.state === 'growing') && !plot.watered
   }
@@ -709,10 +873,15 @@
   const unwateredCount = computed(() => farmStore.plots.filter(needsWater).length)
   const wastelandCount = computed(() => farmStore.plots.filter(p => p.state === 'wasteland').length)
   const harvestableCount = computed(() => farmStore.plots.filter(p => p.state === 'harvestable' && p.giantCropGroup === null).length)
+  const tilledEmptyCount = computed(() => farmStore.plots.filter(p => p.state === 'tilled').length)
 
   const doBatchWater = () => handleBatchWater()
   const doBatchTill = () => handleBatchTill()
   const doBatchHarvest = () => handleBatchHarvest()
+  const doBatchPlant = (cropId: string) => {
+    handleBatchPlant(cropId)
+    showBatchPlant.value = false
+  }
 
   const getPlotDisplay = (plot: (typeof farmStore.plots)[number]): { text: string; color: string; bg: string } => {
     // 巨型作物特殊显示
@@ -782,6 +951,19 @@
     activePlotId.value = null
   }
 
+  const doPlantGeneticSeed = (seedId: string) => {
+    if (activePlotId.value === null) return
+    const seed = breedingStore.breedingBox.find(s => s.genetics.id === seedId)
+    if (!seed) return
+    if (farmStore.plantGeneticSeed(activePlotId.value, seed.genetics)) {
+      breedingStore.removeFromBox(seedId)
+      addLog(`种下了育种种子：${getCropName(seed.genetics.cropId)} G${seed.genetics.generation}。`)
+      const tr = gameStore.advanceTime(ACTION_TIME_COSTS.plant)
+      if (tr.message) addLog(tr.message)
+    }
+    activePlotId.value = null
+  }
+
   const doWater = () => {
     if (activePlotId.value === null) return
     selectedSeed.value = null
@@ -842,10 +1024,16 @@
 
   const doRemoveSprinkler = () => {
     if (activePlotId.value === null) return
-    const type = farmStore.removeSprinkler(activePlotId.value)
+    const plotId = activePlotId.value
+    const type = farmStore.removeSprinkler(plotId)
     if (type) {
-      inventoryStore.addItem(type)
-      addLog('拆除了洒水器，已回收到背包。')
+      if (inventoryStore.addItem(type)) {
+        addLog('拆除了洒水器，已回收到背包。')
+      } else {
+        // 背包满，放回原处
+        farmStore.placeSprinkler(plotId, type)
+        addLog('背包已满，无法回收洒水器。')
+      }
     }
     activePlotId.value = null
   }
@@ -942,6 +1130,34 @@
       const def = WILD_TREE_DEFS.find(d => d.tapProduct === productId)
       addLog(`收取了${def?.tapProductName ?? productId}！`)
     }
+  }
+
+  const handleChopTree = (_treeId: number) => {
+    if (gameStore.isPastBedtime) {
+      addLog('太晚了，没法伐木了。')
+      return
+    }
+    if (!inventoryStore.isToolAvailable('axe')) {
+      addLog('斧头正在升级中，无法伐木。')
+      return
+    }
+    const playerStore = usePlayerStore()
+    const skillStore = useSkillStore()
+    const cost = Math.max(
+      1,
+      Math.floor(5 * inventoryStore.getToolStaminaMultiplier('axe') * (1 - skillStore.getStaminaReduction('foraging')))
+    )
+    if (!playerStore.consumeStamina(cost)) {
+      addLog('体力不足，无法伐木。')
+      return
+    }
+    const baseQty = 2
+    const hasLumberjack = skillStore.getSkill('foraging').perk5 === 'lumberjack' || skillStore.getSkill('foraging').perk10 === 'forester'
+    const qty = baseQty + (hasLumberjack ? 2 : Math.random() < 0.5 ? 1 : 0)
+    inventoryStore.addItem('wood', qty)
+    addLog(`伐木获得了${qty}个木材。（体力-${cost}）`)
+    const tr = gameStore.advanceTime(ACTION_TIME_COSTS.chopTree)
+    if (tr.message) addLog(tr.message)
   }
 
   // === 温室 ===

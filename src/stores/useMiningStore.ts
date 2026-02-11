@@ -30,10 +30,12 @@ import { usePlayerStore } from './usePlayerStore'
 import { useInventoryStore } from './useInventoryStore'
 import { useSkillStore } from './useSkillStore'
 import { useAchievementStore } from './useAchievementStore'
+import { useGuildStore } from './useGuildStore'
 import { useQuestStore } from './useQuestStore'
 import { useCookingStore } from './useCookingStore'
 import { useGameStore } from './useGameStore'
 import { useWalletStore } from './useWalletStore'
+import { useSecretNoteStore } from './useSecretNoteStore'
 import type { SkullCavernFloorDef } from '@/data/mine'
 
 const DEFEAT_MONEY_PENALTY_RATE = 0.1
@@ -208,10 +210,23 @@ export const useMiningStore = defineStore('mining', () => {
     const ringGlobalReduction = inventoryStore.getRingEffectValue('stamina_reduction')
     const staminaCost = Math.max(
       1,
-      Math.floor(2 * pickaxeMultiplier * (1 - skillStore.getStaminaReduction('mining')) * (1 - miningBuff) * (1 - walletMiningReduction) * (1 - ringMiningReduction) * (1 - ringGlobalReduction))
+      Math.floor(
+        2 *
+          pickaxeMultiplier *
+          (1 - skillStore.getStaminaReduction('mining')) *
+          (1 - miningBuff) *
+          (1 - walletMiningReduction) *
+          (1 - ringMiningReduction) *
+          (1 - ringGlobalReduction)
+      )
     )
     if (!playerStore.consumeStamina(staminaCost)) {
       return { success: false, message: '体力不足，无法探索。', startsCombat: false }
+    }
+
+    // 3% 概率获得秘密笔记
+    if (Math.random() < 0.03) {
+      useSecretNoteStore().tryCollectNote()
     }
 
     // 根据类型处理
@@ -464,6 +479,7 @@ export const useMiningStore = defineStore('mining', () => {
             tile.state = 'defeated'
             monstersDefeatedCount.value++
             useAchievementStore().recordMonsterKill()
+            useGuildStore().recordKill(monster.id)
             monstersKilled++
           } else {
             // 爆竹只翻开，不杀怪物
@@ -617,7 +633,10 @@ export const useMiningStore = defineStore('mining', () => {
       const enchant = owned.enchantmentId ? getEnchantmentById(owned.enchantmentId) : null
       const sturdyReduction = enchant?.special === 'sturdy' ? 0.85 : 1.0
       const ringDefenseBonus = inventoryStore.getRingEffectValue('defense_bonus')
-      const damage = Math.max(1, Math.floor(monster.attack * (1 - tankReduction) * (1 - defenseReduction) * sturdyReduction * (1 - ringDefenseBonus)))
+      const damage = Math.max(
+        1,
+        Math.floor(monster.attack * (1 - tankReduction) * (1 - defenseReduction) * sturdyReduction * (1 - ringDefenseBonus))
+      )
       playerStore.takeDamage(damage)
       let defendMsg = `你举盾防御，受到${damage}点伤害。`
 
@@ -636,13 +655,15 @@ export const useMiningStore = defineStore('mining', () => {
     }
 
     // === 攻击 ===
+    const cookingStore = useCookingStore()
     const owned = inventoryStore.getEquippedWeapon()
     const weaponDef = getWeaponById(owned.defId)
     const enchant = owned.enchantmentId ? getEnchantmentById(owned.enchantmentId) : null
 
-    // 基础攻击力（含戒指加成）
+    // 基础攻击力（含戒指加成 + 料理全技能加成）
     const ringAttackBonus = inventoryStore.getRingEffectValue('attack_bonus')
-    const baseAttack = inventoryStore.getWeaponAttack() + skillStore.combatLevel * 2 + ringAttackBonus
+    const allSkillsBuff = cookingStore.activeBuff?.type === 'all_skills' ? cookingStore.activeBuff.value : 0
+    const baseAttack = inventoryStore.getWeaponAttack() + (skillStore.combatLevel + allSkillsBuff) * 2 + ringAttackBonus
     const bruteBonus = skillStore.getSkill('combat').perk10 === 'brute' ? 1.25 : 1.0
 
     // 暴击判定（含戒指加成 + 幸运加成）
@@ -701,12 +722,14 @@ export const useMiningStore = defineStore('mining', () => {
     }
 
     // 怪物反击（含戒指减伤）
-    const cookingStore = useCookingStore()
     const defenseReduction = cookingStore.activeBuff?.type === 'defense' ? cookingStore.activeBuff.value / 100 : 0
     const fighterReduction = skillStore.getSkill('combat').perk5 === 'fighter' ? 0.15 : 0
     const sturdyReduction = enchant?.special === 'sturdy' ? 0.85 : 1.0
     const ringDefenseBonus = inventoryStore.getRingEffectValue('defense_bonus')
-    const monsterDamage = Math.max(1, Math.floor(monster.attack * (1 - fighterReduction) * (1 - defenseReduction) * sturdyReduction * (1 - ringDefenseBonus)))
+    const monsterDamage = Math.max(
+      1,
+      Math.floor(monster.attack * (1 - fighterReduction) * (1 - defenseReduction) * sturdyReduction * (1 - ringDefenseBonus))
+    )
     playerStore.takeDamage(monsterDamage)
     msg += ` ${monster.name}反击，你受到${monsterDamage}点伤害。`
     combatLog.value.push(msg)
@@ -857,6 +880,9 @@ export const useMiningStore = defineStore('mining', () => {
     }
     monstersDefeatedCount.value++
     useAchievementStore().recordMonsterKill()
+    if (combatMonster.value) {
+      useGuildStore().recordKill(combatMonster.value.id)
+    }
 
     // 检查感染/BOSS层清除条件
     if (monstersDefeatedCount.value >= totalMonstersOnFloor.value && totalMonstersOnFloor.value > 0) {

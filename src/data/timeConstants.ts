@@ -74,6 +74,7 @@ export const ACTION_TIME_COSTS = {
   revealTile: 0.1,
   // 采集
   forage: 1,
+  chopTree: 1,
   // 烹饪
   cook: 0.5,
   eat: 0,
@@ -106,7 +107,9 @@ export const ACTION_TIME_COSTS = {
   // UI
   checkInventory: 0,
   checkSkills: 0,
-  checkAchievement: 0
+  checkAchievement: 0,
+  // 育种
+  breeding: 0.17
 } as const
 
 // === 地点分组映射 ===
@@ -118,6 +121,7 @@ export const TAB_TO_LOCATION_GROUP: Record<string, LocationGroup | null> = {
   shop: 'village_area',
   cooking: 'village_area',
   workshop: 'farm',
+  breeding: 'farm',
   upgrade: 'village_area',
   forage: 'nature',
   fishing: 'nature',
@@ -125,7 +129,10 @@ export const TAB_TO_LOCATION_GROUP: Record<string, LocationGroup | null> = {
   inventory: null,
   skills: null,
   achievement: null,
-  charinfo: null
+  charinfo: null,
+  museum: 'village_area',
+  guild: 'village_area',
+  hanhai: 'hanhai'
 }
 
 // === 移动时间 ===
@@ -141,14 +148,23 @@ export const TRAVEL_TIME: Record<string, number> = {
   'nature->mine': 1,
   'mine->farm': 1,
   'mine->village_area': 1,
-  'mine->nature': 1
+  'mine->nature': 1,
+  'farm->hanhai': 2,
+  'hanhai->farm': 2,
+  'village_area->hanhai': 2,
+  'hanhai->village_area': 2,
+  'nature->hanhai': 2,
+  'hanhai->nature': 2,
+  'mine->hanhai': 1.5,
+  'hanhai->mine': 1.5
 }
 
 const LOCATION_GROUP_NAMES: Record<LocationGroup, string> = {
   farm: '农场',
   village_area: '桃源村',
   nature: '野外',
-  mine: '矿洞'
+  mine: '矿洞',
+  hanhai: '瀚海'
 }
 
 export const getLocationGroupName = (group: LocationGroup): string => {

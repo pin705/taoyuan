@@ -1,4 +1,5 @@
 import type { FertilizerType } from './processing'
+import type { SeedGenetics } from './breeding'
 
 /** 地块状态 */
 export type PlotState = 'wasteland' | 'tilled' | 'planted' | 'growing' | 'harvestable'
@@ -21,6 +22,8 @@ export interface FarmPlot {
   harvestCount: number
   /** 巨型作物组 ID，非 null 表示属于巨型作物 */
   giantCropGroup: number | null
+  /** 育种种子的基因属性 */
+  seedGenetics: SeedGenetics | null
 }
 
 /** 作物定义（配置数据用） */

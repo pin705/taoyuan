@@ -10,7 +10,6 @@
         <span class="text-muted hidden md:inline">({{ gameStore.weekdayName }})</span>
         <span :class="{ 'text-danger': gameStore.isLateNight }">{{ gameStore.timeDisplay }}</span>
         <span class="text-muted">{{ WEATHER_NAMES[gameStore.weather] }}</span>
-        <span class="text-muted/60 text-xs hidden md:inline">→{{ WEATHER_NAMES[gameStore.tomorrowWeather] }}</span>
       </div>
       <span class="text-accent shrink-0">
         <Coins :size="12" class="inline" />

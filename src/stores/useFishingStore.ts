@@ -23,6 +23,7 @@ import { useAchievementStore } from './useAchievementStore'
 import { useQuestStore } from './useQuestStore'
 import { useCookingStore } from './useCookingStore'
 import { useWalletStore } from './useWalletStore'
+import { useSecretNoteStore } from './useSecretNoteStore'
 
 const STAMINA_COST = 4
 const MAX_CRAB_POTS = 10
@@ -146,7 +147,14 @@ export const useFishingStore = defineStore('fishing', () => {
     const ringGlobalReduction = inventoryStore.getRingEffectValue('stamina_reduction')
     const staminaCost = Math.max(
       1,
-      Math.floor(STAMINA_COST * rodMultiplier * (1 - skillStore.getStaminaReduction('fishing')) * (1 - tackleStaminaReduction) * (1 - ringFishingReduction) * (1 - ringGlobalReduction))
+      Math.floor(
+        STAMINA_COST *
+          rodMultiplier *
+          (1 - skillStore.getStaminaReduction('fishing')) *
+          (1 - tackleStaminaReduction) *
+          (1 - ringFishingReduction) *
+          (1 - ringGlobalReduction)
+      )
     )
     if (!playerStore.consumeStamina(staminaCost)) {
       return { success: false, message: '体力不足，无法钓鱼。' }
@@ -216,11 +224,11 @@ export const useFishingStore = defineStore('fishing', () => {
     // 物理参数
     let gravity = 1.5
     let scoreGain = 0.15
-    let scoreLoss = 0.10
+    let scoreLoss = 0.1
 
     // 鱼饵效果
     if (activeBaitDef.value?.behaviorModifier) {
-      fishSpeed *= (1 - activeBaitDef.value.behaviorModifier.calm * 0.3)
+      fishSpeed *= 1 - activeBaitDef.value.behaviorModifier.calm * 0.3
     }
     if (activeBaitDef.value?.struggleBonus) {
       fishSpeed *= 0.9
@@ -229,7 +237,7 @@ export const useFishingStore = defineStore('fishing', () => {
     // 浮漂效果
     if (activeTackleDef.value) {
       // 旋转浮漂：重力减免（下落更慢）
-      if (activeTackleDef.value.staminaReduction) gravity *= (1 - activeTackleDef.value.staminaReduction)
+      if (activeTackleDef.value.staminaReduction) gravity *= 1 - activeTackleDef.value.staminaReduction
       // 陷阱浮漂：进度流失减半
       if (activeTackleDef.value.extraBreakChance) scoreLoss *= 0.5
       // 软木浮漂：钩子高度+15
@@ -242,13 +250,13 @@ export const useFishingStore = defineStore('fishing', () => {
     const walletStore = useWalletStore()
     const calmBonus = walletStore.getFishingCalmBonus()
     if (calmBonus > 0) {
-      fishSpeed *= (1 - calmBonus)
+      fishSpeed *= 1 - calmBonus
     }
 
     // 戒指效果：鱼速度降低
     const ringCalmBonus = inventoryStore.getRingEffectValue('fishing_calm')
     if (ringCalmBonus > 0) {
-      fishSpeed *= (1 - ringCalmBonus)
+      fishSpeed *= 1 - ringCalmBonus
     }
 
     return {
@@ -269,7 +277,8 @@ export const useFishingStore = defineStore('fishing', () => {
   const pickRandomFish = (pool?: FishDef[]): FishDef => {
     const fishPool = pool ?? availableFish.value
     const cookingStore = useCookingStore()
-    const fishingBuff = cookingStore.activeBuff?.type === 'fishing' ? cookingStore.activeBuff.value : 0
+    const fishingBuff =
+      cookingStore.activeBuff?.type === 'fishing' || cookingStore.activeBuff?.type === 'all_skills' ? cookingStore.activeBuff.value : 0
     const luckBuff = cookingStore.activeBuff?.type === 'luck' ? cookingStore.activeBuff.value / 100 : 0
     const effectiveLevel = skillStore.fishingLevel + fishingBuff
     const rodTier = inventoryStore.getTool('fishingRod')?.tier ?? 'basic'
@@ -347,11 +356,16 @@ export const useFishingStore = defineStore('fishing', () => {
     const doubleCatchChance = (activeBaitDef.value?.doubleCatchChance ?? 0) * luremasterCatchMult
     const catchQty = doubleCatchChance > 0 && Math.random() < doubleCatchChance ? 2 : 1
 
-    inventoryStore.addItem(currentFish.value.id, catchQty, quality)
+    const added = inventoryStore.addItem(currentFish.value.id, catchQty, quality)
     const achievementStore = useAchievementStore()
     achievementStore.discoverItem(currentFish.value.id)
     achievementStore.recordFishCaught()
     useQuestStore().onItemObtained(currentFish.value.id, catchQty)
+
+    // 4% 概率获得秘密笔记
+    if (Math.random() < 0.04) {
+      useSecretNoteStore().tryCollectNote()
+    }
 
     // 经验
     const difficultyExpMult: Record<string, number> = { easy: 1, normal: 1.5, hard: 2, legendary: 3 }
@@ -361,9 +375,15 @@ export const useFishingStore = defineStore('fishing', () => {
     skillStore.addExp('fishing', Math.floor(expGain * riverlandBonus * perfectMult))
 
     const ratingTag = rating === 'perfect' ? ' [完美!]' : ''
-    let message = catchQty > 1
-      ? `成功钓上了${catchQty}条${currentFish.value.name}！${ratingTag}`
-      : `成功钓上了${currentFish.value.name}！${ratingTag}`
+    let message = ''
+    if (!added) {
+      message = `钓上了${currentFish.value.name}，但背包已满，鱼丢失了！`
+    } else {
+      message =
+        catchQty > 1
+          ? `成功钓上了${catchQty}条${currentFish.value.name}！${ratingTag}`
+          : `成功钓上了${currentFish.value.name}！${ratingTag}`
+    }
 
     // 宝箱
     const treasure = rollTreasureChest()

@@ -192,6 +192,10 @@
                 <template v-if="activeItemDef.healthRestore">/ +{{ activeItemDef.healthRestore }}HP</template>
               </span>
             </div>
+            <div v-if="activeItemBuff" class="flex items-center justify-between mt-0.5">
+              <span class="text-xs text-muted">增益</span>
+              <span class="text-xs text-accent">{{ activeItemBuff.description }}</span>
+            </div>
           </div>
 
           <div class="flex flex-col gap-1.5">
@@ -221,8 +225,9 @@
 <script setup lang="ts">
   import { ref, computed } from 'vue'
   import { Apple, Package, X, Zap } from 'lucide-vue-next'
-  import { useInventoryStore, usePlayerStore, useSkillStore, useGameStore } from '@/stores'
+  import { useInventoryStore, usePlayerStore, useSkillStore, useGameStore, useCookingStore } from '@/stores'
   import { getItemById, TOOL_NAMES, TIER_NAMES } from '@/data'
+  import { getRecipeById } from '@/data/recipes'
   import { getWeaponDisplayName } from '@/data/weapons'
   import { getRingById } from '@/data/rings'
   import { QUALITY_NAMES } from '@/composables/useFarmActions'
@@ -233,6 +238,7 @@
   const playerStore = usePlayerStore()
   const skillStore = useSkillStore()
   const gameStore = useGameStore()
+  const cookingStore = useCookingStore()
 
   // === 页签 ===
 
@@ -278,6 +284,15 @@
     return getItemById(activeItem.value.itemId) ?? null
   })
 
+  /** 烹饪品的buff描述 */
+  const activeItemBuff = computed(() => {
+    if (!activeItem.value) return null
+    const itemId = activeItem.value.itemId
+    if (!itemId.startsWith('food_')) return null
+    const recipe = getRecipeById(itemId.slice(5))
+    return recipe?.effect.buff ?? null
+  })
+
   const isEdible = (itemId: string): boolean => {
     const def = getItemById(itemId)
     return !!def?.edible && !!def.staminaRestore
@@ -292,6 +307,23 @@
       addLog('体力和生命值都已满，不需要食用。')
       return
     }
+
+    // 烹饪品走 cookingStore.eat()，以正确应用buff、厨房加成等
+    if (itemId.startsWith('food_')) {
+      const recipeId = itemId.slice(5) // 去掉 'food_' 前缀
+      const result = cookingStore.eat(recipeId)
+      if (result.success) {
+        addLog(result.message)
+      } else {
+        addLog(result.message)
+      }
+      // 物品消耗完则关闭弹窗
+      if (!inventoryStore.items.find(i => i.itemId === itemId && i.quality === quality)) {
+        activeItemKey.value = null
+      }
+      return
+    }
+
     if (!inventoryStore.removeItem(itemId, 1, quality)) return
     // 炼金师专精：食物恢复+50%
     const alchemistBonus = skillStore.getSkill('foraging').perk10 === 'alchemist' ? 1.5 : 1.0

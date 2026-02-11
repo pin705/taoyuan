@@ -635,6 +635,9 @@
         if (tr.message) addLog(tr.message)
         if (tr.passedOut) handleEndDay()
       }
+    } else {
+      exploreLog.value.push(result.message)
+      addLog(result.message)
     }
   }
 

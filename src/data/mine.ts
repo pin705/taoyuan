@@ -72,8 +72,27 @@ export const getTreasureRewards = (floor: number): { items: { itemId: string; qu
     abyss: { qty: 3, minMoney: 800, maxMoney: 1500 }
   }
   const r = rewardTable[zone]!
+  const items: { itemId: string; quantity: number }[] = [{ itemId: ore, quantity: r.qty }]
+
+  // 化石/古物掉落（20%概率，按区域抽取）
+  if (Math.random() < 0.2) {
+    const ZONE_TREASURE_DROPS: Record<string, string[]> = {
+      shallow: ['trilobite_fossil', 'shell_fossil'],
+      frost: ['trilobite_fossil', 'shell_fossil'],
+      lava: ['ammonite_fossil', 'bronze_mirror', 'painted_pottery'],
+      crystal: ['ammonite_fossil', 'jade_disc', 'jade_pendant'],
+      shadow: ['oracle_bone', 'amber', 'ancient_coin'],
+      abyss: ['dragon_tooth', 'bone_fragment', 'ancient_seed']
+    }
+    const pool = ZONE_TREASURE_DROPS[zone]
+    if (pool && pool.length > 0) {
+      const drop = pool[Math.floor(Math.random() * pool.length)]!
+      items.push({ itemId: drop, quantity: 1 })
+    }
+  }
+
   return {
-    items: [{ itemId: ore, quantity: r.qty }],
+    items,
     money: r.minMoney + Math.floor(Math.random() * (r.maxMoney - r.minMoney + 1))
   }
 }
@@ -795,10 +814,7 @@ export const generateFloorGrid = (
   let totalMonsters = 0
   if (bossCount > 0) {
     // 中心 2×2 区域（行2-3，列2-3）
-    const centerCandidates = [
-      2 * GRID_SIZE + 2, 2 * GRID_SIZE + 3,
-      3 * GRID_SIZE + 2, 3 * GRID_SIZE + 3
-    ].filter(i => !used.has(i))
+    const centerCandidates = [2 * GRID_SIZE + 2, 2 * GRID_SIZE + 3, 3 * GRID_SIZE + 2, 3 * GRID_SIZE + 3].filter(i => !used.has(i))
 
     if (centerCandidates.length > 0) {
       const bossIdx = randPick(centerCandidates)

@@ -11,10 +11,7 @@
     <p class="text-xs text-muted mb-3">消耗金属锭和金币升级工具，需等待2天。</p>
 
     <!-- 正在升级提示 -->
-    <div
-      v-if="inventoryStore.pendingUpgrade"
-      class="border border-accent/30 rounded-xs px-3 py-2 mb-3 flex items-center justify-between"
-    >
+    <div v-if="inventoryStore.pendingUpgrade" class="border border-accent/30 rounded-xs px-3 py-2 mb-3 flex items-center justify-between">
       <div class="flex items-center gap-1.5">
         <Clock :size="12" class="text-accent shrink-0" />
         <span class="text-xs text-accent">
@@ -66,6 +63,20 @@
               <span class="text-xs text-muted">当前等级</span>
               <span class="text-xs">{{ TIER_NAMES[selectedToolObj!.tier] }}</span>
             </div>
+            <div class="flex items-center justify-between mt-0.5">
+              <span class="text-xs text-muted">体力减免</span>
+              <span class="text-xs">{{ staminaText(selectedToolObj!.tier) }}</span>
+            </div>
+            <template v-if="selectedTool === 'fishingRod'">
+              <div class="flex items-center justify-between mt-0.5">
+                <span class="text-xs text-muted">钩子范围</span>
+                <span class="text-xs">{{ ROD_HOOK[selectedToolObj!.tier] }}</span>
+              </div>
+              <div class="flex items-center justify-between mt-0.5">
+                <span class="text-xs text-muted">钓鱼时限</span>
+                <span class="text-xs">{{ ROD_TIME[selectedToolObj!.tier] }}秒</span>
+              </div>
+            </template>
             <div v-if="isUpgrading(selectedTool)" class="flex items-center justify-between mt-1">
               <span class="text-xs text-muted">锻造目标</span>
               <span class="text-xs text-accent">{{ TIER_NAMES[inventoryStore.pendingUpgrade!.targetTier] }}</span>
@@ -106,6 +117,34 @@
                     :class="meetsLevel(npcStore.getFriendshipLevel('xiao_man'), selectedFriendshipReq) ? '' : 'text-danger'"
                   >
                     {{ LEVEL_NAMES[npcStore.getFriendshipLevel('xiao_man')] }} / {{ LEVEL_NAMES[selectedFriendshipReq] }}
+                  </span>
+                </div>
+              </template>
+            </div>
+
+            <!-- 升级效果预览 -->
+            <div class="border border-success/20 rounded-xs p-2 mb-2">
+              <p class="text-xs text-muted mb-1">升级效果</p>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-muted">体力减免</span>
+                <span class="text-xs">
+                  {{ staminaText(selectedToolObj!.tier) }} →
+                  <span class="text-success">{{ staminaText(selectedUpgradeCost.toTier) }}</span>
+                </span>
+              </div>
+              <template v-if="selectedTool === 'fishingRod'">
+                <div class="flex items-center justify-between mt-0.5">
+                  <span class="text-xs text-muted">钩子范围</span>
+                  <span class="text-xs">
+                    {{ ROD_HOOK[selectedToolObj!.tier] }} →
+                    <span class="text-success">{{ ROD_HOOK[selectedUpgradeCost.toTier] }}</span>
+                  </span>
+                </div>
+                <div class="flex items-center justify-between mt-0.5">
+                  <span class="text-xs text-muted">钓鱼时限</span>
+                  <span class="text-xs">
+                    {{ ROD_TIME[selectedToolObj!.tier] }}秒 →
+                    <span class="text-success">{{ ROD_TIME[selectedUpgradeCost.toTier] }}秒</span>
                   </span>
                 </div>
               </template>
@@ -154,6 +193,16 @@
     iron: 'acquaintance',
     steel: 'friendly',
     iridium: 'bestFriend'
+  }
+
+  /** 各等级体力消耗倍率（与 useInventoryStore 一致） */
+  const STAMINA_MULTIPLIERS: Record<ToolTier, number> = { basic: 1.0, iron: 0.8, steel: 0.6, iridium: 0.4 }
+  const ROD_HOOK: Record<ToolTier, number> = { basic: 40, iron: 45, steel: 50, iridium: 60 }
+  const ROD_TIME: Record<ToolTier, number> = { basic: 30, iron: 33, steel: 36, iridium: 40 }
+
+  const staminaText = (tier: ToolTier): string => {
+    const r = Math.round((1 - STAMINA_MULTIPLIERS[tier]) * 100)
+    return r > 0 ? `-${r}%` : '无加成'
   }
   const LEVEL_ORDER: FriendshipLevel[] = ['stranger', 'acquaintance', 'friendly', 'bestFriend']
   const LEVEL_NAMES: Record<FriendshipLevel, string> = {
