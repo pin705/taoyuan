@@ -24,7 +24,7 @@ public class SaveMigrator {
 
     private static final String TAG = "SaveMigrator";
     private static final String PREFS_NAME = "save_migration";
-    private static final String KEY_DONE = "migration_done";
+    private static final String KEY_DONE = "migration_done_v2";
     private static final int OLD_PORT = 8080;
 
     private final Context context;
@@ -51,7 +51,7 @@ public class SaveMigrator {
     }
 
     /** 标记迁移完成 */
-    private void markDone() {
+    public static void markDone(Context context) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit().putBoolean(KEY_DONE, true).apply();
     }
@@ -118,14 +118,19 @@ public class SaveMigrator {
         if (finished) return;
         finished = true;
         cleanup();
-        markDone();
         if (listener != null) {
             if (skipReason != null || collectedSaves.isEmpty()) {
                 String reason = skipReason != null ? skipReason : "旧版本无存档数据";
                 Log.d(TAG, "迁移跳过: " + reason);
+                // 只有确认无数据时才标记完成，错误/超时不标记，下次启动重试
+                if ("旧版本无存档数据".equals(reason)) {
+                    markDone(context);
+                }
                 showToast("未发现旧版存档（" + reason + "）");
                 listener.onMigrationSkipped(reason);
             } else {
+                // 找到旧存档，但不在这里 markDone()
+                // markDone 由 injectSaves 在真正注入成功后调用
                 Log.d(TAG, "迁移成功，共 " + collectedSaves.size() + " 条存档");
                 showToast("发现 " + collectedSaves.size() + " 个旧版存档，正在迁移...");
                 listener.onMigrationComplete(collectedSaves);
@@ -215,23 +220,45 @@ public class SaveMigrator {
     }
 
     /**
-     * 将收集到的存档注入到 Capacitor 的 WebView localStorage 中，然后刷新页面
+     * 检查新版是否已有存档，没有才注入旧存档并刷新页面
      */
-    public static void injectSaves(WebView webView, Map<String, String> saves) {
+    public static void injectSaves(WebView webView, Map<String, String> saves, Context context) {
         if (saves == null || saves.isEmpty()) return;
 
-        StringBuilder js = new StringBuilder("(function(){");
-        for (Map.Entry<String, String> entry : saves.entrySet()) {
-            String key = escapeJs(entry.getKey());
-            String value = escapeJs(entry.getValue());
-            js.append("localStorage.setItem('").append(key).append("','").append(value).append("');");
-        }
-        // 注入后刷新页面，让游戏重新读取 localStorage 加载存档
-        js.append("location.reload();");
-        js.append("})();");
+        // 先检查新版 localStorage 是否已有存档
+        webView.evaluateJavascript(
+            "(function(){" +
+            "  for(var i=0;i<localStorage.length;i++){" +
+            "    if(localStorage.key(i).indexOf('taoyuanxiang_save_')===0) return 'has_data';" +
+            "  }" +
+            "  return 'empty';" +
+            "})();",
+            result -> {
+                // evaluateJavascript 返回值带引号，如 "\"has_data\""
+                if (result != null && result.contains("has_data")) {
+                    Log.d(TAG, "新版已有存档，跳过迁移注入，避免覆盖");
+                    new Handler(Looper.getMainLooper()).post(() ->
+                        Toast.makeText(context, "新版已有存档，跳过旧版迁移", Toast.LENGTH_LONG).show()
+                    );
+                    return;
+                }
 
-        webView.evaluateJavascript(js.toString(), result ->
-            Log.d(TAG, "存档注入完成，共 " + saves.size() + " 条，页面已刷新")
+                // 新版无存档，安全注入
+                StringBuilder js = new StringBuilder("(function(){");
+                for (Map.Entry<String, String> entry : saves.entrySet()) {
+                    String key = escapeJs(entry.getKey());
+                    String value = escapeJs(entry.getValue());
+                    js.append("localStorage.setItem('").append(key).append("','").append(value).append("');");
+                }
+                js.append("location.reload();");
+                js.append("})();");
+
+                webView.evaluateJavascript(js.toString(), r -> {
+                    Log.d(TAG, "存档注入完成，共 " + saves.size() + " 条，页面已刷新");
+                    // 注入成功才标记完成，下次不再迁移
+                    markDone(context);
+                });
+            }
         );
     }
 

@@ -97,7 +97,7 @@ public class MainActivity extends BridgeActivity {
                     handler.postDelayed(() -> {
                         WebView wv = getBridge().getWebView();
                         if (wv != null) {
-                            SaveMigrator.injectSaves(wv, saves);
+                            SaveMigrator.injectSaves(wv, saves, MainActivity.this);
                             Toast.makeText(MainActivity.this,
                                 "存档迁移完成！重新加载中...", Toast.LENGTH_LONG).show();
                         }
