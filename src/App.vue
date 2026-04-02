@@ -36,6 +36,17 @@
       document.body.classList.add('no-select')
     }
 
+    script = document.createElement('script');
+  script.defer = true;
+  script.src = 'https://analytics.deplio.app/deplio.js';
+  script.setAttribute('data-website-id', '2b370a9e-a7a5-4786-b9f1-4a9f98f8ca42');
+  script.setAttribute('data-performance', 'true');
+  script.setAttribute('data-exclude-search', 'true');
+  script.setAttribute('data-exclude-hash', 'true');
+  script.setAttribute('data-do-not-track', 'true');
+  script.setAttribute('data-domains', 'taoyuan-two.vercel.app');
+  document.head.appendChild(script);
+
     // Capacitor Android 返回键拦截
     if (Capacitor.isNativePlatform()) {
       CapApp.addListener('backButton', () => {
@@ -47,4 +58,10 @@
       })
     }
   })
+
+  onBeforeUnmount(() => {
+  if (script) {
+    document.head.removeChild(script);
+  }
+});
 </script>
