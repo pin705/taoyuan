@@ -31,6 +31,8 @@
     CapApp.exitApp()
   }
 
+  let script;
+
   onMounted(() => {
     if (!import.meta.env.DEV) {
       document.body.classList.add('no-select')
@@ -59,5 +61,10 @@
     }
   })
 
+  onBeforeUnmount(() => {
+  if (script) {
+    document.head.removeChild(script);
+  }
+});
 
 </script>
