@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
   import { RouterView } from 'vue-router'
-  import { ref, onMounted } from 'vue'
+  import { ref, onMounted, onBeforeUnmount } from 'vue'
   import { Capacitor } from '@capacitor/core'
   import { App as CapApp } from '@capacitor/app'
 
@@ -31,7 +31,7 @@
     CapApp.exitApp()
   }
 
-  let script;
+  let script: any;
 
   onMounted(() => {
     if (!import.meta.env.DEV) {
