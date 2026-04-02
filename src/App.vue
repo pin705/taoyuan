@@ -57,12 +57,6 @@
         }
       })
     }
-
-      onBeforeUnmount(() => {
-  if (script) {
-    document.head.removeChild(script);
-  }
-});
   })
 
 
