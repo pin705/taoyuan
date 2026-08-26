@@ -19,7 +19,8 @@
         <span v-if="miningStore.skullCavernBestFloor > 0" class="text-xs text-muted">最深 第{{ miningStore.skullCavernBestFloor }}层</span>
         <span v-else class="text-xs text-muted/40">未探索</span>
       </div>
-      <p class="text-xs text-muted">无限层 · 无安全点 · 铱矿来源 · 怪物随深度增强</p>
+      <p class="text-xs text-muted">无限层 · 每10层安全点 · 铱矿来源 · 怪物随深度增强</p>
+      <p v-if="miningStore.skullSafePointFloor > 0" class="text-xs text-muted mt-0.5">安全点：第{{ miningStore.skullSafePointFloor }}层</p>
     </div>
 
     <!-- 装备与状态 -->
@@ -185,16 +186,28 @@
           </div>
 
           <!-- 骷髅矿穴 -->
-          <div
-            v-if="miningStore.isSkullCavernUnlocked()"
-            class="flex items-center justify-between border border-danger/30 rounded-xs px-3 py-1.5 cursor-pointer hover:bg-danger/5"
-            @click="handleEnterSkullCavern"
-          >
-            <span class="text-xs text-danger">
-              <Skull :size="12" class="inline" />
-              进入骷髅矿穴
-            </span>
-            <span class="text-xs text-muted">无限层</span>
+          <div v-if="miningStore.isSkullCavernUnlocked()">
+            <div
+              class="flex items-center justify-between border border-danger/30 rounded-xs px-3 py-1.5 mb-2 cursor-pointer hover:bg-danger/5"
+              @click="handleEnterSkullCavern(undefined)"
+            >
+              <span class="text-xs text-danger">
+                <Skull :size="12" class="inline" />
+                进入骷髅矿穴
+              </span>
+              <span class="text-xs text-muted">第{{ miningStore.skullSafePointFloor + 1 }}层</span>
+            </div>
+            <!-- 骷髅矿穴安全点楼层 -->
+            <div v-if="skullElevatorFloors.length > 0" class="max-h-48 overflow-y-auto grid-cols-5 grid m">
+              <Button
+                v-for="sp in skullElevatorFloors"
+                :key="sp"
+                class="py-0.5 px-0 min-w-9 justify-center !border-danger/30 !text-danger mb-1 mr-1"
+                @click="handleEnterSkullCavern(sp)"
+              >
+                {{ sp + 1 }}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -531,9 +544,45 @@
               <span class="text-xs">×{{ pendingItem.count }}</span>
             </div>
           </div>
+          <!-- 批量数量选择（仅永久增益类道具） -->
+          <div v-if="pendingCanBatch && pendingItem.count > 1" class="border border-accent/10 rounded-xs p-2 mb-2">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs text-muted">使用数量</span>
+              <div class="flex items-center space-x-1">
+                <Button class="h-6 px-1.5 py-0.5 text-xs justify-center" :disabled="pendingUseQty <= 1" @click="addUseQty(-1)">-</Button>
+                <input
+                  type="number"
+                  :value="pendingUseQty"
+                  min="1"
+                  :max="pendingItem.count"
+                  class="w-24 h-6 px-2 py-0.5 bg-bg border border-accent/30 rounded-xs text-xs text-center text-accent outline-none focus:border-accent transition-colors"
+                  @input="onUseQtyInput"
+                />
+                <Button
+                  class="h-6 px-1.5 py-0.5 text-xs justify-center"
+                  :disabled="pendingUseQty >= pendingItem.count"
+                  @click="addUseQty(1)"
+                >
+                  +
+                </Button>
+              </div>
+            </div>
+            <div class="flex space-x-1">
+              <Button class="flex-1 justify-center" :disabled="pendingUseQty <= 1" @click="pendingUseQty = 1">最少</Button>
+              <Button
+                class="flex-1 justify-center"
+                :disabled="pendingUseQty >= pendingItem.count"
+                @click="pendingUseQty = pendingItem.count"
+              >
+                最多
+              </Button>
+            </div>
+          </div>
           <div class="flex space-x-1.5">
             <Button class="flex-1 justify-center" @click="pendingItemId = null">取消</Button>
-            <Button class="flex-1 justify-center !bg-accent !text-bg" @click="handleConfirmUseItem">确认使用</Button>
+            <Button class="flex-1 justify-center !bg-accent !text-bg" @click="handleConfirmUseItem">
+              确认使用{{ pendingCanBatch && pendingUseQty > 1 ? ` ×${pendingUseQty}` : '' }}
+            </Button>
           </div>
         </div>
       </div>
@@ -548,7 +597,7 @@
       >
         <div class="game-panel max-w-xs w-full">
           <p class="text-sm text-accent mb-2">确认离开</p>
-          <p class="text-xs text-muted mb-3">确定要离开{{ miningStore.isInSkullCavern ? '骷髅矿穴' : '矿洞' }}吗？当前进度不会保留。</p>
+          <p class="text-xs text-muted mb-3">确定要离开{{ miningStore.isInSkullCavern ? '骷髅矿穴' : '矿洞' }}吗？{{ leaveHint }}</p>
           <div class="flex space-x-1.5">
             <Button class="flex-1 justify-center" @click="showLeaveConfirm = false">继续探索</Button>
             <Button class="flex-1 justify-center btn-danger" :icon="LogOut" @click="confirmLeave">确认离开</Button>
@@ -770,11 +819,24 @@
   const showCombatItems = ref(false)
 
   /** 道具使用确认 */
+  const BATCH_USABLE_ITEMS = new Set(['guild_badge', 'life_talisman', 'lucky_coin', 'defense_charm'])
   const pendingItemId = ref<string | null>(null)
+  const pendingUseQty = ref(1)
   const pendingItem = computed(() => {
     if (!pendingItemId.value) return null
     return availableCombatItems.value.find(i => i.itemId === pendingItemId.value) ?? null
   })
+  const pendingCanBatch = computed(() => pendingItemId.value !== null && BATCH_USABLE_ITEMS.has(pendingItemId.value))
+
+  const addUseQty = (delta: number) => {
+    const max = pendingItem.value?.count ?? 1
+    pendingUseQty.value = Math.max(1, Math.min(max, pendingUseQty.value + delta))
+  }
+  const onUseQtyInput = (e: Event) => {
+    const val = parseInt((e.target as HTMLInputElement).value) || 1
+    const max = pendingItem.value?.count ?? 1
+    pendingUseQty.value = Math.max(1, Math.min(max, val))
+  }
 
   /** 离开矿洞确认 */
   const showLeaveConfirm = ref(false)
@@ -993,6 +1055,22 @@
       .filter(z => z.floors.length > 0)
   })
 
+  /** 离开矿洞提示文案 */
+  const leaveHint = computed(() => {
+    if (miningStore.isInSkullCavern) {
+      const floorData = miningStore.getActiveFloorData()
+      if (floorData?.isSafePoint) return `当前为安全点，进度将保存至第${miningStore.skullCavernFloor}层。`
+      const lastSafe = miningStore.skullSafePointFloor
+      return lastSafe > 0 ? `下次将从第${lastSafe + 1}层开始。` : '当前进度不会保留。'
+    }
+    return '当前进度不会保留。'
+  })
+
+  /** 骷髅矿穴可选安全点楼层（排除最高安全点，因为主按钮已默认从那里开始） */
+  const skullElevatorFloors = computed(() => {
+    return miningStore.getUnlockedSkullSafePoints().filter(sp => sp < miningStore.skullSafePointFloor)
+  })
+
   // ==================== 格子 UI 辅助 ====================
 
   /** 格子样式 */
@@ -1141,10 +1219,10 @@
     addLog(msg)
   }
 
-  const handleEnterSkullCavern = () => {
+  const handleEnterSkullCavern = (startFrom?: number) => {
     showElevatorModal.value = false
     showCombatItems.value = false
-    const msg = miningStore.enterSkullCavern()
+    const msg = miningStore.enterSkullCavern(startFrom)
     exploreLog.value = [msg]
     sfxClick()
     addLog(msg)
@@ -1193,24 +1271,20 @@
     }, 400)
   }
 
-  /** 使用战斗道具 */
-  const handleUseCombatItem = (itemId: string) => {
-    const result = miningStore.useCombatItem(itemId)
+  const handleConfirmUseItem = () => {
+    if (!pendingItemId.value) return
+    const result = miningStore.useCombatItem(pendingItemId.value, pendingCanBatch.value ? pendingUseQty.value : 1)
     sfxClick()
     addLog(result.message)
     if (result.success) {
       exploreLog.value.push(result.message)
     }
-  }
-
-  const handleConfirmUseItem = () => {
-    if (!pendingItemId.value) return
-    handleUseCombatItem(pendingItemId.value)
     pendingItemId.value = null
   }
 
   const handlePendingItem = (itemId: string) => {
     pendingItemId.value = itemId
+    pendingUseQty.value = 1
     showCombatItems.value = false
   }
 

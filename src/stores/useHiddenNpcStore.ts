@@ -338,6 +338,34 @@ export const useHiddenNpcStore = defineStore('hiddenNpc', () => {
     return { success: true, message: `与${def.name}的缘分已解。` }
   }
 
+  // ==================== 仙灵物品制作 ====================
+
+  const craftSpiritItem = (npcId: string, type: 'courtship' | 'bond'): { success: boolean; message: string } => {
+    const def = getHiddenNpcById(npcId)
+    if (!def) return { success: false, message: '找不到此仙灵。' }
+
+    const costs = type === 'courtship' ? def.courtshipCraftCost : def.bondCraftCost
+    const outputItemId = type === 'courtship' ? def.courtshipItemId : def.bondItemId
+
+    const inventoryStore = useInventoryStore()
+
+    // 检查材料
+    for (const cost of costs) {
+      if (inventoryStore.getItemCount(cost.itemId) < cost.quantity) {
+        return { success: false, message: '材料不足。' }
+      }
+    }
+
+    // 扣除材料
+    for (const cost of costs) {
+      inventoryStore.removeItem(cost.itemId, cost.quantity)
+    }
+
+    // 添加产物
+    inventoryStore.addItem(outputItemId, 1)
+    return { success: true, message: '制作成功！' }
+  }
+
   // ==================== 心事件 ====================
 
   const checkHeartEvent = (npcId: string): HeartEventDef | null => {
@@ -568,6 +596,7 @@ export const useHiddenNpcStore = defineStore('hiddenNpc', () => {
     startCourting,
     formBond,
     dissolveBond,
+    craftSpiritItem,
     checkHeartEvent,
     markHeartEventTriggered,
     checkAbilityUnlocks,

@@ -303,12 +303,23 @@
                 <Divider label="种植" />
                 <button
                   v-for="seed in plantableSeeds"
-                  :key="seed.cropId"
+                  :key="seed.cropId + ':' + seed.quality"
                   class="btn text-xs justify-between mr-1 shrink-0"
-                  @click="doPlant(seed.cropId)"
+                  @click="doPlant(seed.cropId, seed.quality)"
                 >
                   <span :class="seed.colorClass">
                     {{ seed.name }}
+                    <span
+                      v-if="seed.quality !== 'normal'"
+                      :class="{
+                        'text-quality-fine': seed.quality === 'fine',
+                        'text-quality-excellent': seed.quality === 'excellent',
+                        'text-quality-supreme': seed.quality === 'supreme'
+                      }"
+                      class="ml-0.5"
+                    >
+                      [{{ QUALITY_NAMES[seed.quality] }}]
+                    </span>
                     <span v-if="seed.regrowth" class="text-success ml-1">[多茬]</span>
                   </span>
                   <span class="text-muted">×{{ seed.count }}</span>
@@ -547,7 +558,7 @@
                   :key="item.itemId + item.quality"
                   class="flex items-center justify-between border border-accent/10 rounded-xs px-2 py-1 mr-1"
                 >
-                  <div class="min-w-0">
+                  <div class="min-w-0 flex items-center space-x-1">
                     <span
                       class="text-xs"
                       :class="{
@@ -558,7 +569,8 @@
                     >
                       {{ item.def?.name }}
                     </span>
-                    <span class="text-muted text-xs ml-1">×{{ item.quantity }}</span>
+                    <span class="text-muted text-xs">×{{ item.quantity }}</span>
+                    <span v-if="shopStore.shippedItems.includes(item.itemId)" class="text-[10px] text-success/60">[已出货]</span>
                   </div>
                   <div class="flex space-x-1">
                     <Button @click="handleAddToBox(item.itemId, 1, item.quality)">放入1</Button>
@@ -970,6 +982,15 @@
                 <span class="text-xs text-muted">特性</span>
                 <span class="text-xs text-water">自动浇水 · 无季节限制</span>
               </div>
+              <div v-if="activeGhPlot.seedGenetics" class="flex items-center justify-between">
+                <span class="text-xs text-muted">育种</span>
+                <span class="text-xs text-accent">
+                  G{{ activeGhPlot.seedGenetics.generation }} 甜{{ activeGhPlot.seedGenetics.sweetness }} 产{{
+                    activeGhPlot.seedGenetics.yield
+                  }}
+                  抗{{ activeGhPlot.seedGenetics.resistance }}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -986,8 +1007,23 @@
                 </Button>
               </div>
             </div>
+            <!-- 已耕 → 育种种子种植 -->
+            <template v-if="activeGhPlot.state === 'tilled' && ghPlantableBreedingSeeds.length > 0">
+              <Divider label="育种种子" class="!my-2" />
+              <button
+                v-for="seed in ghPlantableBreedingSeeds"
+                :key="seed.genetics.id"
+                class="btn text-xs justify-between mr-1 shrink-0"
+                @click="doGhPlantGeneticSeed(seed.genetics.id)"
+              >
+                <span>{{ getCropName(seed.genetics.cropId) }} G{{ seed.genetics.generation }}</span>
+                <span class="text-muted flex items-center space-x-px">
+                  <Star v-for="n in getStarRating(seed.genetics)" :key="n" :size="10" />
+                </span>
+              </button>
+            </template>
             <!-- 已耕无种子空状态 -->
-            <div v-else-if="activeGhPlot.state === 'tilled'" class="flex flex-col items-center py-4">
+            <div v-else-if="activeGhPlot.state === 'tilled' && allSeeds.length === 0" class="flex flex-col items-center py-4">
               <Sprout :size="32" class="text-muted/30" />
               <p class="text-xs text-muted mt-2">背包中没有种子</p>
               <Button v-if="isWanwupuOpen" class="mt-2" :icon-size="12" :icon="Store" @click="goToShop">前往商店购买</Button>
@@ -1053,7 +1089,7 @@
   import { useTutorialStore } from '@/stores/useTutorialStore'
   import { useWalletStore } from '@/stores/useWalletStore'
   import { getCropById, getCropsBySeason, getItemById } from '@/data'
-  import { getStarRating } from '@/data/breeding'
+  import { getStarRating, shouldReturnBreedingSeed, generateGeneticsId } from '@/data/breeding'
   import { FRUIT_TREE_DEFS, MAX_FRUIT_TREES } from '@/data/fruitTrees'
   import { GREENHOUSE_UPGRADES } from '@/data/buildings'
   import { WILD_TREE_DEFS, MAX_WILD_TREES, getWildTreeDef } from '@/data/wildTrees'
@@ -1081,6 +1117,7 @@
     applyCropBlessing
   } from '@/composables/useFarmActions'
   import type { SprinklerType, FertilizerType, FruitTreeType, WildTreeType, Quality } from '@/types'
+  import type { SeedGenetics } from '@/types/breeding'
   import { sfxHarvest, sfxPlant } from '@/composables/useAudio'
 
   const { selectedSeed } = useFarmActions()
@@ -1319,18 +1356,37 @@
     })).filter(f => f.count > 0)
   })
 
+  const QUALITY_ORDER: Quality[] = ['normal', 'fine', 'excellent', 'supreme']
+
   const plantableSeeds = computed(() => {
-    return getCropsBySeason(gameStore.season)
-      .filter(crop => inventoryStore.hasItem(crop.seedId))
-      .map(crop => ({
-        cropId: crop.id,
-        seedId: crop.seedId,
-        name: crop.name,
-        count: inventoryStore.getItemCount(crop.seedId),
-        colorClass: cropValueColor(crop.sellPrice),
-        regrowth: crop.regrowth ?? false,
-        regrowthDays: crop.regrowthDays
-      }))
+    const result: {
+      cropId: string
+      seedId: string
+      name: string
+      quality: Quality
+      count: number
+      colorClass: string
+      regrowth: boolean
+      regrowthDays?: number
+    }[] = []
+    for (const crop of getCropsBySeason(gameStore.season)) {
+      for (const q of QUALITY_ORDER) {
+        const count = inventoryStore.getItemCount(crop.seedId, q)
+        if (count > 0) {
+          result.push({
+            cropId: crop.id,
+            seedId: crop.seedId,
+            name: crop.name,
+            quality: q,
+            count,
+            colorClass: cropValueColor(crop.sellPrice),
+            regrowth: crop.regrowth ?? false,
+            regrowthDays: crop.regrowthDays
+          })
+        }
+      }
+    }
+    return result
   })
 
   /** 当季可种的育种种子 */
@@ -1582,9 +1638,9 @@
     activePlotId.value = null
   }
 
-  const doPlant = (cropId: string) => {
+  const doPlant = (cropId: string, quality?: Quality) => {
     if (activePlotId.value === null) return
-    selectedSeed.value = cropId
+    selectedSeed.value = { cropId, quality }
     handlePlotClick(activePlotId.value)
     selectedSeed.value = null
     activePlotId.value = null
@@ -1893,17 +1949,46 @@
       addLog('体力不足，无法收获。')
       return
     }
-    const cropId = farmStore.greenhouseHarvestPlot(activeGhPlotId.value)
-    if (cropId) {
+    const result = farmStore.greenhouseHarvestPlot(activeGhPlotId.value)
+    if (result.cropId) {
+      const cropId = result.cropId
+      const genetics = result.genetics
       const cropDef = getCropById(cropId)
       const skillStore = useSkillStore()
       let quality = skillStore.rollCropQualityWithBonus(0)
       quality = applyCropBlessing(quality)
-      inventoryStore.addItem(cropId, 1, quality)
+      // 育种产量加成
+      const yieldDouble = genetics && Math.random() < (genetics.yield / 100) * 0.3
+      const harvestQty = yieldDouble ? 2 : 1
+      inventoryStore.addItem(cropId, harvestQty, quality)
       const qualityLabel = quality !== 'normal' ? `(${QUALITY_NAMES[quality]})` : ''
+      const qtyLabel = yieldDouble ? '×2' : ''
       sfxHarvest()
-      showFloat(`+${cropDef?.name ?? cropId}${qualityLabel}`, 'success')
-      addLog(`在温室收获了${cropDef?.name ?? cropId}${qualityLabel}！(-1体力)`)
+      showFloat(`+${cropDef?.name ?? cropId}${qtyLabel}${qualityLabel}`, 'success')
+      let msg = `在温室收获了${cropDef?.name ?? cropId}${qtyLabel}${qualityLabel}！(-1体力)`
+      if (yieldDouble) msg += ' 育种产量加成！'
+      // 育种甜度加成
+      if (genetics && genetics.sweetness > 0 && cropDef) {
+        const bonusMoney = Math.floor((cropDef.sellPrice * harvestQty * genetics.sweetness) / 200)
+        if (bonusMoney > 0) {
+          playerStore.earnMoney(bonusMoney)
+          msg += ` 甜度加成+${bonusMoney}文`
+        }
+      }
+      // 杂交种记录
+      if (genetics?.isHybrid && genetics.hybridId) {
+        breedingStore.recordHybridGrown(genetics.hybridId)
+      }
+      // 育种种子回收
+      if (genetics && shouldReturnBreedingSeed(quality)) {
+        const returned: SeedGenetics = { ...genetics, id: generateGeneticsId() }
+        if (breedingStore.addToBox(returned)) {
+          msg += ' 育种种子已回收。'
+        } else {
+          msg += ' 种子箱已满，育种种子丢失！'
+        }
+      }
+      addLog(msg)
     }
     activeGhPlotId.value = null
   }
@@ -1913,18 +1998,66 @@
     const results = farmStore.greenhouseBatchHarvest()
     if (results.length === 0) return
     let harvested = 0
-    for (const { cropId } of results) {
+    let seedsReturned = 0
+    let totalBonusMoney = 0
+    for (const { cropId, genetics } of results) {
       if (!playerStore.consumeStamina(1)) break
       harvested++
       let quality = skillStore.rollCropQualityWithBonus(0)
       quality = applyCropBlessing(quality)
-      inventoryStore.addItem(cropId, 1, quality)
+      const yieldDouble = genetics && Math.random() < (genetics.yield / 100) * 0.3
+      const harvestQty = yieldDouble ? 2 : 1
+      inventoryStore.addItem(cropId, harvestQty, quality)
+      // 育种甜度加成
+      if (genetics && genetics.sweetness > 0) {
+        const cropDef = getCropById(cropId)
+        if (cropDef) {
+          const bonusMoney = Math.floor((cropDef.sellPrice * harvestQty * genetics.sweetness) / 200)
+          if (bonusMoney > 0) {
+            playerStore.earnMoney(bonusMoney)
+            totalBonusMoney += bonusMoney
+          }
+        }
+      }
+      // 杂交种记录
+      if (genetics?.isHybrid && genetics.hybridId) {
+        breedingStore.recordHybridGrown(genetics.hybridId)
+      }
+      // 育种种子回收
+      if (genetics && shouldReturnBreedingSeed(quality)) {
+        const returned: SeedGenetics = { ...genetics, id: generateGeneticsId() }
+        if (breedingStore.addToBox(returned)) seedsReturned++
+      }
     }
     if (harvested > 0) {
       sfxHarvest()
       showFloat(`温室收获 ×${harvested}`, 'success')
-      addLog(`在温室一键收获了${harvested}株作物。(-${harvested}体力)`)
+      let msg = `在温室一键收获了${harvested}株作物。(-${harvested}体力)`
+      if (totalBonusMoney > 0) msg += ` 甜度加成+${totalBonusMoney}文`
+      addLog(msg)
     }
+    if (seedsReturned > 0) {
+      addLog(`${seedsReturned}颗育种种子已回收到种子箱。`)
+    }
+  }
+
+  /** 温室可种育种种子（温室无季节限制，所有育种种子都可种） */
+  const ghPlantableBreedingSeeds = computed(() => {
+    return breedingStore.breedingBox.filter(seed => {
+      const crop = getCropById(seed.genetics.cropId)
+      return !!crop
+    })
+  })
+
+  const doGhPlantGeneticSeed = (seedId: string) => {
+    if (activeGhPlotId.value === null) return
+    const seed = breedingStore.breedingBox.find(s => s.genetics.id === seedId)
+    if (!seed) return
+    if (farmStore.greenhousePlantGeneticSeed(activeGhPlotId.value, seed.genetics)) {
+      breedingStore.removeFromBox(seedId)
+      addLog(`在温室种下了育种种子：${getCropName(seed.genetics.cropId)} G${seed.genetics.generation}。`)
+    }
+    activeGhPlotId.value = null
   }
 
   const doGhBatchPlant = (cropId: string) => {

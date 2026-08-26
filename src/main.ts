@@ -12,7 +12,7 @@ const pinia = createPinia()
 pinia.use(({ store }) => {
   const initialState = JSON.parse(JSON.stringify(toRaw(store.$state)))
   store.$reset = () => {
-    store.$patch(($state) => {
+    store.$patch($state => {
       Object.assign($state, JSON.parse(JSON.stringify(initialState)))
     })
   }

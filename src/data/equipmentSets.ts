@@ -135,6 +135,42 @@ export const EQUIPMENT_SETS: EquipmentSetDef[] = [
     ]
   },
 
+  // === 竹林猎手（竹林野兽材料合成） ===
+  {
+    id: 'forest_hunter_set',
+    name: '竹林猎手套装',
+    description: '以竹林猛兽的皮骨打造的猎人装备',
+    pieces: { ring: 'wolf_fang_pendant', hat: 'wolf_pelt_hood', shoe: 'bear_pelt_boots' },
+    bonuses: [
+      { count: 2, effects: [{ type: 'attack_bonus', value: 3 }], description: '攻击力+3' },
+      {
+        count: 3,
+        effects: [
+          { type: 'crit_rate_bonus', value: 0.08 },
+          { type: 'monster_drop_bonus', value: 0.1 }
+        ],
+        description: '暴击率+8%，掉落率+10%'
+      }
+    ]
+  },
+  {
+    id: 'beast_king_set',
+    name: '兽王套装',
+    description: '竹林之王的战利品，尽显猎手荣耀',
+    pieces: { ring: 'tiger_fang_ring', hat: 'tiger_pelt_cape', shoe: 'bear_pelt_boots' },
+    bonuses: [
+      { count: 2, effects: [{ type: 'attack_bonus', value: 5 }], description: '攻击力+5' },
+      {
+        count: 3,
+        effects: [
+          { type: 'vampiric', value: 0.06 },
+          { type: 'defense_bonus', value: 0.08 }
+        ],
+        description: '吸血+6%，防御+8%'
+      }
+    ]
+  },
+
   // === 公会专属 ===
   {
     id: 'guild_champion_set',
@@ -165,7 +201,5 @@ export const EQUIPMENT_SETS: EquipmentSetDef[] = [
 
 /** 根据装备ID查找所属套装 */
 export const getSetByPieceId = (defId: string): EquipmentSetDef | undefined => {
-  return EQUIPMENT_SETS.find(
-    s => s.pieces.weapon === defId || s.pieces.ring === defId || s.pieces.hat === defId || s.pieces.shoe === defId
-  )
+  return EQUIPMENT_SETS.find(s => s.pieces.weapon === defId || s.pieces.ring === defId || s.pieces.hat === defId || s.pieces.shoe === defId)
 }

@@ -23,7 +23,7 @@ const webdavProxy = (): Plugin => ({
           if (typeof v === 'string') fwdHeaders[k] = v
         }
         fwdHeaders.host = url.host
-        const proxyReq = mod.request(url, { method: req.method, headers: fwdHeaders }, (proxyRes) => {
+        const proxyReq = mod.request(url, { method: req.method, headers: fwdHeaders }, proxyRes => {
           // 剥离 WWW-Authenticate 防止浏览器弹出原生认证对话框
           const respHeaders = { ...proxyRes.headers }
           delete respHeaders['www-authenticate']

@@ -479,6 +479,53 @@ export const RINGS: RingDef[] = [
     recipeMoney: 0,
     obtainSource: '公会商店',
     sellPrice: 800
+  },
+  // === 通商兑换 ===
+  {
+    id: 'trade_turquoise_pendant',
+    name: '绿松石吊坠',
+    description: '西域绿松石打磨而成的精致吊坠，蕴含沙漠之力。',
+    effects: [
+      { type: 'attack_bonus', value: 2 },
+      { type: 'defense_bonus', value: 0.03 }
+    ],
+    recipe: null,
+    recipeMoney: 0,
+    obtainSource: '通商积分兑换',
+    sellPrice: 600
+  },
+  // === 竹林野兽材料制作 ===
+  {
+    id: 'wolf_fang_pendant',
+    name: '狼牙坠',
+    description: '以狼牙和铜丝编成的护身坠，佩戴者出手更为凌厉。',
+    effects: [
+      { type: 'attack_bonus', value: 4 },
+      { type: 'crit_rate_bonus', value: 0.05 }
+    ],
+    recipe: [
+      { itemId: 'wolf_fang', quantity: 3 },
+      { itemId: 'copper_bar', quantity: 2 }
+    ],
+    recipeMoney: 500,
+    obtainSource: '铁匠铺合成',
+    sellPrice: 300
+  },
+  {
+    id: 'tiger_fang_ring',
+    name: '虎牙戒',
+    description: '猛虎獠牙镶嵌的金戒，散发着野兽的威压。',
+    effects: [
+      { type: 'attack_bonus', value: 6 },
+      { type: 'monster_drop_bonus', value: 0.15 }
+    ],
+    recipe: [
+      { itemId: 'tiger_fang', quantity: 3 },
+      { itemId: 'gold_bar', quantity: 2 }
+    ],
+    recipeMoney: 1500,
+    obtainSource: '铁匠铺合成',
+    sellPrice: 700
   }
 ]
 

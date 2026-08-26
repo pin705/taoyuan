@@ -3,23 +3,23 @@ import type { PondBreedDef } from '@/types/fishPond'
 // === 品种分布 ===
 // 13个基础鱼种，共5代400品种
 // Gen1=200, Gen2=100, Gen3=50, Gen4=30, Gen5=20
-// 层级链条：Gen N 的父本来自 Gen N-1，父本组合无重复
+// 层级链条：Gen N 的亲本来自 Gen N-1，亲本组合无重复
 
 // [baseFishId, suffix, gen1, gen2, gen3, gen4, gen5]
 const SPECIES_CFG: [string, string, number, number, number, number, number][] = [
-  ['crucian',        '鲫',   16, 8, 4, 3, 2],
-  ['carp',           '鲤',   16, 8, 4, 3, 2],
-  ['grass_carp',     '草鱼', 16, 8, 4, 3, 2],
-  ['golden_carp',    '金鲤', 16, 8, 4, 3, 2],
-  ['koi',            '锦鲤', 16, 8, 4, 3, 2],
-  ['pond_turtle',    '龟',   15, 8, 4, 3, 2],
-  ['bass',           '鲈',   15, 8, 4, 3, 2],
-  ['catfish',        '鲶',   15, 8, 4, 3, 2],
-  ['yellow_eel',     '鳝',   15, 8, 4, 3, 2],
-  ['rainbow_trout',  '鳟',   15, 7, 4, 3, 2],
-  ['mud_loach',      '泥鳅', 15, 7, 4, 0, 0],
-  ['pond_snail',     '螺',   15, 7, 3, 0, 0],
-  ['cave_blindfish', '盲鱼', 15, 7, 3, 0, 0],
+  ['crucian', '鲫', 16, 8, 4, 3, 2],
+  ['carp', '鲤', 16, 8, 4, 3, 2],
+  ['grass_carp', '草鱼', 16, 8, 4, 3, 2],
+  ['golden_carp', '金鲤', 16, 8, 4, 3, 2],
+  ['koi', '锦鲤', 16, 8, 4, 3, 2],
+  ['pond_turtle', '龟', 15, 8, 4, 3, 2],
+  ['bass', '鲈', 15, 8, 4, 3, 2],
+  ['catfish', '鲶', 15, 8, 4, 3, 2],
+  ['yellow_eel', '鳝', 15, 8, 4, 3, 2],
+  ['rainbow_trout', '鳟', 15, 7, 4, 3, 2],
+  ['mud_loach', '泥鳅', 15, 7, 4, 0, 0],
+  ['pond_snail', '螺', 15, 7, 3, 0, 0],
+  ['cave_blindfish', '盲鱼', 15, 7, 3, 0, 0]
 ]
 
 // === 命名前缀 ===
@@ -31,7 +31,7 @@ const G4_PREFIXES = ['太古', '鸿蒙', '混沌']
 const G5_PREFIXES = ['化龙', '浴火']
 
 // === 配对算法 ===
-// 从 parentCount 个父本中生成 childCount 个唯一配对
+// 从 parentCount 个亲本中生成 childCount 个唯一配对
 
 const makePairs = (parentCount: number, childCount: number): [number, number][] => {
   const pairs: [number, number][] = []
@@ -166,26 +166,22 @@ const buildAllBreeds = (): PondBreedDef[] => {
 export const POND_BREEDS: PondBreedDef[] = buildAllBreeds()
 
 /** 根据品种ID查找 */
-export const getBreedById = (breedId: string): PondBreedDef | undefined =>
-  POND_BREEDS.find(b => b.breedId === breedId)
+export const getBreedById = (breedId: string): PondBreedDef | undefined => POND_BREEDS.find(b => b.breedId === breedId)
 
 /** 获取指定代数的所有品种 */
-export const getBreedsByGeneration = (gen: 1 | 2 | 3 | 4 | 5): PondBreedDef[] =>
-  POND_BREEDS.filter(b => b.generation === gen)
+export const getBreedsByGeneration = (gen: 1 | 2 | 3 | 4 | 5): PondBreedDef[] => POND_BREEDS.filter(b => b.generation === gen)
 
 /** 获取指定鱼种的所有品种 */
-export const getBreedsBySpecies = (baseFishId: string): PondBreedDef[] =>
-  POND_BREEDS.filter(b => b.baseFishId === baseFishId)
+export const getBreedsBySpecies = (baseFishId: string): PondBreedDef[] => POND_BREEDS.filter(b => b.baseFishId === baseFishId)
 
 /** 获取指定鱼种的 Gen1 品种列表 */
 export const getGen1BreedsForFish = (fishId: string): PondBreedDef[] =>
   POND_BREEDS.filter(b => b.generation === 1 && b.baseFishId === fishId)
 
-/** 根据父本品种ID查找子代品种（顺序无关） */
+/** 根据亲本品种ID查找子代品种（顺序无关） */
 export const findBreedByParents = (breedIdA: string, breedIdB: string): PondBreedDef | undefined =>
-  POND_BREEDS.find(b =>
-    (b.parentBreedA === breedIdA && b.parentBreedB === breedIdB) ||
-    (b.parentBreedA === breedIdB && b.parentBreedB === breedIdA)
+  POND_BREEDS.find(
+    b => (b.parentBreedA === breedIdA && b.parentBreedB === breedIdB) || (b.parentBreedA === breedIdB && b.parentBreedB === breedIdA)
   )
 
 /** 各代品种数量 */

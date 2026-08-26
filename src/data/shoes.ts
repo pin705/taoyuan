@@ -424,6 +424,24 @@ export const SHOES: ShoeDef[] = [
     recipeMoney: 0,
     obtainSource: '公会商店',
     sellPrice: 800
+  },
+  // === 竹林野兽材料制作 ===
+  {
+    id: 'bear_pelt_boots',
+    name: '熊皮靴',
+    description: '厚实的熊皮缝制的战靴，坚韧无比，穿着者更加强壮。',
+    effects: [
+      { type: 'defense_bonus', value: 0.1 },
+      { type: 'max_hp_bonus', value: 15 }
+    ],
+    shopPrice: null,
+    recipe: [
+      { itemId: 'bear_pelt', quantity: 3 },
+      { itemId: 'iron_bar', quantity: 2 }
+    ],
+    recipeMoney: 1200,
+    obtainSource: '铁匠铺合成',
+    sellPrice: 600
   }
 ]
 

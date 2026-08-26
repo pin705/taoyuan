@@ -1663,6 +1663,559 @@ export const RECIPES: RecipeDef[] = [
     },
     unlockSource: '收获椰枣后解锁',
     description: '甜蜜软糯的枣糕，补气养血。'
+  },
+  // === 瀚海拓展食谱 ===
+  {
+    id: 'cactus_salad',
+    name: '仙人掌沙拉',
+    ingredients: [
+      { itemId: 'hanhai_cactus', quantity: 1 },
+      { itemId: 'hanhai_spice', quantity: 1 }
+    ],
+    effect: { staminaRestore: 40, healthRestore: 20 },
+    unlockSource: '解锁瀚海后自动获得',
+    description: '清爽可口的仙人掌沙拉，搭配西域香料别有风味。'
+  },
+  {
+    id: 'spice_fried_rice',
+    name: '香料炒饭',
+    ingredients: [
+      { itemId: 'hanhai_spice', quantity: 1 },
+      { itemId: 'rice', quantity: 3 }
+    ],
+    effect: {
+      staminaRestore: 55,
+      healthRestore: 25,
+      buff: { type: 'farming', value: 1, description: '种植技能+1（当天）' }
+    },
+    unlockSource: '解锁瀚海后自动获得',
+    description: '西域香料翻炒的米饭，粒粒喷香，干活有劲。'
+  },
+  {
+    id: 'turquoise_tea',
+    name: '绿松石养生茶',
+    ingredients: [
+      { itemId: 'hanhai_turquoise', quantity: 1 },
+      { itemId: 'tea', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 60,
+      healthRestore: 30,
+      buff: { type: 'mining', value: 2, description: '采矿技能+2（当天）' }
+    },
+    unlockSource: '解锁瀚海后自动获得',
+    description: '以绿松石粉入茶，据说能增强矿石感应力。'
+  },
+  {
+    id: 'silk_tofu',
+    name: '丝绸豆腐',
+    ingredients: [
+      { itemId: 'hanhai_silk', quantity: 1 },
+      { itemId: 'tofu', quantity: 2 }
+    ],
+    effect: {
+      staminaRestore: 45,
+      healthRestore: 20,
+      buff: { type: 'fishing', value: 1, description: '钓鱼技能+1（当天）' }
+    },
+    unlockSource: '解锁瀚海后自动获得',
+    description: '用丝绸包裹蒸制的嫩滑豆腐，口感如丝绸般细腻。'
+  },
+  {
+    id: 'date_porridge',
+    name: '枣泥粥',
+    ingredients: [
+      { itemId: 'hanhai_date', quantity: 2 },
+      { itemId: 'rice', quantity: 2 }
+    ],
+    effect: { staminaRestore: 50, healthRestore: 25 },
+    unlockSource: '解锁瀚海后自动获得',
+    description: '温热滋补的枣泥粥，暖胃养身。'
+  },
+  {
+    id: 'desert_feast',
+    name: '西域盛宴',
+    ingredients: [
+      { itemId: 'hanhai_cactus', quantity: 2 },
+      { itemId: 'hanhai_spice', quantity: 2 },
+      { itemId: 'hanhai_date', quantity: 2 }
+    ],
+    effect: {
+      staminaRestore: 80,
+      healthRestore: 50,
+      buff: { type: 'all_skills', value: 1, description: '全技能+1（当天）' }
+    },
+    unlockSource: '通商等级3解锁',
+    description: '集西域精华于一桌的豪华宴席，食之精力充沛。'
+  },
+  {
+    id: 'brocade_dumpling',
+    name: '锦缎御饺',
+    ingredients: [
+      { itemId: 'brocade', quantity: 1 },
+      { itemId: 'rice', quantity: 2 },
+      { itemId: 'hanhai_spice', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 75,
+      healthRestore: 40,
+      buff: { type: 'giftBonus', value: 5, description: '送礼好感×5（当天）' }
+    },
+    unlockSource: '通商等级5解锁',
+    description: '以锦缎为皮的极品饺子，御赐级别的送礼佳品。'
+  },
+
+  // === 加工品菜谱 ===
+
+  {
+    id: 'vinegar_cabbage',
+    name: '醋溜白菜',
+    ingredients: [
+      { itemId: 'rice_vinegar', quantity: 1 },
+      { itemId: 'cabbage', quantity: 2 }
+    ],
+    effect: { staminaRestore: 30, healthRestore: 10 },
+    unlockSource: '烹饪等级3',
+    requiredSkill: { type: 'farming', level: 3 },
+    description: '酸爽开胃的家常菜，米醋的妙用。'
+  },
+  {
+    id: 'cheese_baked_rice',
+    name: '奶酪焗饭',
+    ingredients: [
+      { itemId: 'cheese', quantity: 1 },
+      { itemId: 'rice', quantity: 2 }
+    ],
+    effect: {
+      staminaRestore: 45,
+      healthRestore: 20,
+      buff: { type: 'farming', value: 1, description: '农耕技能+1（当天）' }
+    },
+    unlockSource: '烹饪等级5',
+    requiredSkill: { type: 'farming', level: 5 },
+    description: '浓郁奶酪与米饭的完美融合。'
+  },
+  {
+    id: 'goat_cheese_salad',
+    name: '山羊奶酪沙拉',
+    ingredients: [
+      { itemId: 'goat_cheese', quantity: 1 },
+      { itemId: 'wild_berry', quantity: 2 }
+    ],
+    effect: {
+      staminaRestore: 35,
+      healthRestore: 15,
+      buff: { type: 'luck', value: 1, description: '幸运+1（当天）' }
+    },
+    unlockSource: '烹饪等级6',
+    requiredSkill: { type: 'farming', level: 6 },
+    description: '清爽酸甜，搭配山羊奶酪恰到好处。'
+  },
+  {
+    id: 'mayo_noodles',
+    name: '蛋黄酱拌面',
+    ingredients: [
+      { itemId: 'mayonnaise', quantity: 1 },
+      { itemId: 'wheat_flour', quantity: 2 }
+    ],
+    effect: { staminaRestore: 25, healthRestore: 10 },
+    unlockSource: '烹饪等级2',
+    requiredSkill: { type: 'farming', level: 2 },
+    description: '简单却美味的拌面，蛋黄酱的浓郁令人回味。'
+  },
+  {
+    id: 'smoked_fish_platter',
+    name: '烟熏鱼拼盘',
+    ingredients: [
+      { itemId: 'smoked_carp', quantity: 1 },
+      { itemId: 'smoked_bass', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 50,
+      healthRestore: 25,
+      buff: { type: 'fishing', value: 2, description: '钓鱼技能+2（当天）' }
+    },
+    unlockSource: '秋月好感「知己」',
+    description: '精心摆盘的双色烟熏鱼，鲜香四溢。'
+  },
+  {
+    id: 'dried_fruit_mix',
+    name: '果脯什锦',
+    ingredients: [
+      { itemId: 'dried_peach', quantity: 1 },
+      { itemId: 'dried_hawthorn', quantity: 1 },
+      { itemId: 'dried_apricot', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 40,
+      healthRestore: 15,
+      buff: { type: 'luck', value: 2, description: '幸运+2（当天）' }
+    },
+    unlockSource: '烹饪等级4',
+    requiredSkill: { type: 'farming', level: 4 },
+    description: '三种果脯的酸甜组合，行路必备干粮。'
+  },
+  {
+    id: 'pickled_veggie_fried_rice',
+    name: '腌菜炒饭',
+    ingredients: [
+      { itemId: 'pickled_cabbage', quantity: 1 },
+      { itemId: 'rice', quantity: 2 },
+      { itemId: 'egg', quantity: 1 }
+    ],
+    effect: { staminaRestore: 35, healthRestore: 15 },
+    unlockSource: '烹饪等级3',
+    requiredSkill: { type: 'farming', level: 3 },
+    description: '腌白菜的咸香与蛋炒饭完美结合。'
+  },
+  {
+    id: 'pickled_chili_fish',
+    name: '泡椒鱼',
+    ingredients: [
+      { itemId: 'pickled_chili', quantity: 2 },
+      { itemId: 'crucian', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 40,
+      healthRestore: 30,
+      buff: { type: 'defense', value: 15, description: '受到伤害-15%（当天）' }
+    },
+    unlockSource: '烹饪等级5',
+    requiredSkill: { type: 'farming', level: 5 },
+    description: '麻辣鲜香的泡椒鱼，吃了浑身充满力量。'
+  },
+  {
+    id: 'honey_cake',
+    name: '花蜜糕',
+    ingredients: [
+      { itemId: 'osmanthus_honey', quantity: 1 },
+      { itemId: 'wheat_flour', quantity: 2 }
+    ],
+    effect: {
+      staminaRestore: 30,
+      healthRestore: 10,
+      buff: { type: 'giftBonus', value: 3, description: '送礼好感×3（当天）' }
+    },
+    unlockSource: '柳娘好感「知己」',
+    description: '桂花蜜制成的精致糕点，送礼上佳。'
+  },
+  {
+    id: 'antler_tonic',
+    name: '鹿茸补汤',
+    ingredients: [
+      { itemId: 'antler_powder', quantity: 1 },
+      { itemId: 'jujube', quantity: 2 }
+    ],
+    effect: {
+      staminaRestore: 60,
+      healthRestore: 40,
+      buff: { type: 'mining', value: 2, description: '采矿技能+2（当天）' }
+    },
+    unlockSource: '林老好感「知己」',
+    description: '珍贵的滋补汤品，喝后精力充沛。'
+  },
+  {
+    id: 'tea_oil_fried_egg',
+    name: '茶油煎蛋',
+    ingredients: [
+      { itemId: 'tea_oil', quantity: 1 },
+      { itemId: 'egg', quantity: 2 }
+    ],
+    effect: {
+      staminaRestore: 35,
+      healthRestore: 15,
+      buff: { type: 'speed', value: 1, description: '旅行加速+1（当天）' }
+    },
+    unlockSource: '烹饪等级4',
+    requiredSkill: { type: 'farming', level: 4 },
+    description: '山茶油煎出的金黄蛋饼，清香扑鼻。'
+  },
+  {
+    id: 'truffle_oil_risotto',
+    name: '松露油炒饭',
+    ingredients: [
+      { itemId: 'truffle_oil', quantity: 1 },
+      { itemId: 'rice', quantity: 2 },
+      { itemId: 'wild_mushroom', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 70,
+      healthRestore: 30,
+      buff: { type: 'all_skills', value: 1, description: '全技能+1（当天）' }
+    },
+    unlockSource: '烹饪等级8',
+    requiredSkill: { type: 'farming', level: 8 },
+    description: '奢侈的松露油炒饭，每一口都是享受。'
+  },
+  {
+    id: 'sesame_paste_noodles',
+    name: '麻酱凉面',
+    ingredients: [
+      { itemId: 'sesame_paste', quantity: 1 },
+      { itemId: 'wheat_flour', quantity: 2 }
+    ],
+    effect: {
+      staminaRestore: 30,
+      healthRestore: 10,
+      buff: { type: 'stamina', value: 15, description: '体力消耗-15%（当天）' }
+    },
+    unlockSource: '烹饪等级3',
+    requiredSkill: { type: 'farming', level: 3 },
+    description: '浓香麻酱配上劲道凉面，夏日消暑佳品。'
+  },
+  {
+    id: 'peanut_tofu_soup',
+    name: '花生豆腐羹',
+    ingredients: [
+      { itemId: 'peanut_tofu', quantity: 1 },
+      { itemId: 'peanut', quantity: 2 }
+    ],
+    effect: {
+      staminaRestore: 40,
+      healthRestore: 20,
+      buff: { type: 'defense', value: 15, description: '受到伤害-15%（当天）' }
+    },
+    unlockSource: '烹饪等级5',
+    requiredSkill: { type: 'farming', level: 5 },
+    description: '绵密顺滑的花生豆腐羹，暖胃养身。'
+  },
+  {
+    id: 'pumpkin_preserve_cake',
+    name: '南瓜酱饼',
+    ingredients: [
+      { itemId: 'pumpkin_preserve', quantity: 1 },
+      { itemId: 'wheat_flour', quantity: 2 }
+    ],
+    effect: {
+      staminaRestore: 35,
+      healthRestore: 15,
+      buff: { type: 'farming', value: 1, description: '农耕技能+1（当天）' }
+    },
+    unlockSource: '烹饪等级4',
+    requiredSkill: { type: 'farming', level: 4 },
+    description: '香甜的南瓜酱夹心饼，田间劳作的好伙伴。'
+  },
+  {
+    id: 'dried_mushroom_stew',
+    name: '干蘑菇炖鸡',
+    ingredients: [
+      { itemId: 'dried_mushroom', quantity: 2 },
+      { itemId: 'egg', quantity: 2 }
+    ],
+    effect: {
+      staminaRestore: 55,
+      healthRestore: 30,
+      buff: { type: 'mining', value: 1, description: '采矿技能+1（当天）' }
+    },
+    unlockSource: '烹饪等级6',
+    requiredSkill: { type: 'farming', level: 6 },
+    description: '干蘑菇的鲜味在慢炖中完全释放。'
+  },
+  {
+    id: 'ginger_green_tea',
+    name: '姜茶',
+    ingredients: [
+      { itemId: 'pickled_ginger', quantity: 1 },
+      { itemId: 'green_tea_drink', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 25,
+      healthRestore: 10,
+      buff: { type: 'speed', value: 1, description: '旅行加速+1（当天）' }
+    },
+    unlockSource: '烹饪等级3',
+    requiredSkill: { type: 'farming', level: 3 },
+    description: '腌姜与绿茶的搭配，暖身又提神。'
+  },
+  {
+    id: 'snow_lotus_honey_paste',
+    name: '雪莲蜜膏',
+    ingredients: [
+      { itemId: 'snow_lotus_honey', quantity: 1 },
+      { itemId: 'ginseng_extract', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 80,
+      healthRestore: 50
+    },
+    unlockSource: '林老好感「挚友」',
+    description: '极品滋补圣品，雪莲蜜与人参精的至高结合。'
+  },
+  {
+    id: 'buffalo_cheese_pizza',
+    name: '水牛奶酪烤饼',
+    ingredients: [
+      { itemId: 'buffalo_cheese', quantity: 1 },
+      { itemId: 'wheat_flour', quantity: 2 },
+      { itemId: 'chili', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 55,
+      healthRestore: 35,
+      buff: { type: 'defense', value: 20, description: '受到伤害-20%（当天）' }
+    },
+    unlockSource: '烹饪等级7',
+    requiredSkill: { type: 'farming', level: 7 },
+    description: '厚实的水牛奶酪配上辣椒，战斗前的最佳选择。'
+  },
+  {
+    id: 'yak_cheese_hotpot',
+    name: '牦牛奶酪锅',
+    ingredients: [
+      { itemId: 'yak_cheese', quantity: 1 },
+      { itemId: 'potato', quantity: 2 },
+      { itemId: 'dried_radish', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 65,
+      healthRestore: 35,
+      buff: { type: 'defense', value: 25, description: '受到伤害-25%（当天）' }
+    },
+    unlockSource: '烹饪等级8',
+    requiredSkill: { type: 'farming', level: 8 },
+    description: '浓厚的牦牛奶酪与萝卜干炖煮，冬日暖食。'
+  },
+  {
+    id: 'herbal_healing_soup',
+    name: '草药疗伤汤',
+    ingredients: [
+      { itemId: 'herbal_paste', quantity: 1 },
+      { itemId: 'herb', quantity: 2 }
+    ],
+    effect: {
+      staminaRestore: 50,
+      healthRestore: 45
+    },
+    unlockSource: '林老好感「相熟」',
+    description: '草药膏熬成的汤剂，恢复力极强。'
+  },
+  {
+    id: 'chrysanthemum_jelly',
+    name: '菊花冻',
+    ingredients: [
+      { itemId: 'chrysanthemum_honey', quantity: 1 },
+      { itemId: 'chrysanthemum_tea', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 30,
+      healthRestore: 10,
+      buff: { type: 'luck', value: 2, description: '幸运+2（当天）' }
+    },
+    unlockSource: '烹饪等级5',
+    requiredSkill: { type: 'farming', level: 5 },
+    description: '清凉透亮的菊花冻，吃后心旷神怡。'
+  },
+  {
+    id: 'watermelon_wine_sorbet',
+    name: '西瓜酒冰沙',
+    ingredients: [
+      { itemId: 'watermelon_wine', quantity: 1 },
+      { itemId: 'watermelon', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 35,
+      healthRestore: 15,
+      buff: { type: 'speed', value: 2, description: '旅行加速+2（当天）' }
+    },
+    unlockSource: '烹饪等级5',
+    requiredSkill: { type: 'farming', level: 5 },
+    description: '冰爽的西瓜酒冰沙，夏日消暑极品。'
+  },
+  {
+    id: 'jujube_wine_stew',
+    name: '红枣酒炖梨',
+    ingredients: [
+      { itemId: 'jujube_wine', quantity: 1 },
+      { itemId: 'jujube', quantity: 2 }
+    ],
+    effect: {
+      staminaRestore: 45,
+      healthRestore: 25,
+      buff: { type: 'stamina', value: 20, description: '体力消耗-20%（当天）' }
+    },
+    unlockSource: '红豆好感「知己」',
+    description: '红枣酒炖煮的甜品，补气养血。'
+  },
+  {
+    id: 'osmanthus_wine_chicken',
+    name: '桂花酒蒸鸡',
+    ingredients: [
+      { itemId: 'osmanthus_wine', quantity: 1 },
+      { itemId: 'egg', quantity: 2 },
+      { itemId: 'ginger', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 55,
+      healthRestore: 30,
+      buff: { type: 'giftBonus', value: 2, description: '送礼好感×2（当天）' }
+    },
+    unlockSource: '柳娘好感「相熟」',
+    description: '桂花酒的幽香渗入鸡肉，雅致非凡。'
+  },
+  {
+    id: 'smoked_eel_rice',
+    name: '烟熏鳗鱼饭',
+    ingredients: [
+      { itemId: 'smoked_eel', quantity: 1 },
+      { itemId: 'rice', quantity: 2 },
+      { itemId: 'sesame_oil', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 60,
+      healthRestore: 25,
+      buff: { type: 'fishing', value: 1, description: '钓鱼技能+1（当天）' }
+    },
+    unlockSource: '烹饪等级6',
+    requiredSkill: { type: 'farming', level: 6 },
+    description: '烟熏鳗鱼铺在热饭上，淋上麻油，鲜美无比。'
+  },
+  {
+    id: 'rapeseed_honey_bread',
+    name: '菜花蜜面包',
+    ingredients: [
+      { itemId: 'rapeseed_honey', quantity: 1 },
+      { itemId: 'wheat_flour', quantity: 2 }
+    ],
+    effect: {
+      staminaRestore: 30,
+      healthRestore: 10,
+      buff: { type: 'luck', value: 1, description: '幸运+1（当天）' }
+    },
+    unlockSource: '烹饪等级3',
+    requiredSkill: { type: 'farming', level: 3 },
+    description: '菜花蜜香甜的面包，出门采集前来一块。'
+  },
+  {
+    id: 'corn_wine_braised_pork',
+    name: '玉米酒烧肉',
+    ingredients: [
+      { itemId: 'corn_wine', quantity: 1 },
+      { itemId: 'corn', quantity: 2 }
+    ],
+    effect: {
+      staminaRestore: 50,
+      healthRestore: 30,
+      buff: { type: 'defense', value: 15, description: '受到伤害-15%（当天）' }
+    },
+    unlockSource: '烹饪等级5',
+    requiredSkill: { type: 'farming', level: 5 },
+    description: '玉米酒焖出的浓香肉菜，力气十足。'
+  },
+  {
+    id: 'ginseng_tea_rice',
+    name: '参茶泡饭',
+    ingredients: [
+      { itemId: 'ginseng_tea', quantity: 1 },
+      { itemId: 'rice', quantity: 1 }
+    ],
+    effect: {
+      staminaRestore: 45,
+      healthRestore: 20,
+      buff: { type: 'mining', value: 1, description: '采矿技能+1（当天）' }
+    },
+    unlockSource: '烹饪等级6',
+    requiredSkill: { type: 'farming', level: 6 },
+    description: '用人参茶泡饭，简单却元气满满。'
   }
 ]
 

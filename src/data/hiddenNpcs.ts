@@ -109,6 +109,17 @@ export const HIDDEN_NPCS: HiddenNpcDef[] = [
       '「凡人的心意，吾虽不懂，却……不讨厌。」',
       '「{player}，今日可以多坐一会儿吗？」'
     ],
+    courtshipCraftCost: [
+      { itemId: 'dragon_jade', quantity: 5 },
+      { itemId: 'moonstone', quantity: 8 },
+      { itemId: 'gold_bar', quantity: 5 }
+    ],
+    bondCraftCost: [
+      { itemId: 'dragon_jade', quantity: 8 },
+      { itemId: 'prismatic_shard', quantity: 5 },
+      { itemId: 'moonstone', quantity: 10 },
+      { itemId: 'gold_bar', quantity: 8 }
+    ],
     bondBonuses: [
       { type: 'weather_control', chance: 0.3 },
       { type: 'fish_attraction', chance: 0.5 }
@@ -231,6 +242,19 @@ export const HIDDEN_NPCS: HiddenNpcDef[] = [
       '「{player}，今天有只蝴蝶停在你肩上，一定是好兆头！」',
       '「我偷偷在你的桃树上施了法，明天会结出最甜的果子哦。」'
     ],
+    courtshipCraftCost: [
+      { itemId: 'peach', quantity: 25 },
+      { itemId: 'honey', quantity: 15 },
+      { itemId: 'osmanthus', quantity: 15 },
+      { itemId: 'jade', quantity: 5 }
+    ],
+    bondCraftCost: [
+      { itemId: 'peach', quantity: 50 },
+      { itemId: 'honey', quantity: 25 },
+      { itemId: 'chrysanthemum', quantity: 25 },
+      { itemId: 'prismatic_shard', quantity: 3 },
+      { itemId: 'moonstone', quantity: 8 }
+    ],
     bondBonuses: [{ type: 'crop_blessing', chance: 0.2 }],
     abilities: [
       { id: 'tao_yao_1', affinityRequired: 600, name: '花泽', description: '果树每次+1产量', passive: { type: 'quality_boost', value: 1 } },
@@ -275,7 +299,7 @@ export const HIDDEN_NPCS: HiddenNpcDef[] = [
           { type: 'day', day: 14 },
           { type: 'timeRange', minHour: 20, maxHour: 24 },
           { type: 'weather', weather: 'sunny' },
-          { type: 'location', panel: 'foraging' }
+          { type: 'location', panel: 'forage' }
         ],
         scenes: [
           { text: '满月之夜，月华如银洒满竹林。你听到远处传来"咚、咚、咚"的有节奏的声响。' },
@@ -290,7 +314,7 @@ export const HIDDEN_NPCS: HiddenNpcDef[] = [
         conditions: [
           { type: 'item', itemId: 'ginseng', quantity: 1 },
           { type: 'item', itemId: 'herb', quantity: 5 },
-          { type: 'location', panel: 'foraging' }
+          { type: 'location', panel: 'forage' }
         ],
         scenes: [
           { text: '你带着人参和草药来到竹林。刚放下草药，一个声音从头顶传来——' },
@@ -356,6 +380,18 @@ export const HIDDEN_NPCS: HiddenNpcDef[] = [
       '「{player}，我做了新的草药丸子，味道可好了，你一定要尝！」',
       '「和你一起看月亮的时候，不会想念月宫了呢。」'
     ],
+    courtshipCraftCost: [
+      { itemId: 'moonstone', quantity: 8 },
+      { itemId: 'jade', quantity: 5 },
+      { itemId: 'ginseng', quantity: 5 },
+      { itemId: 'herb', quantity: 50 }
+    ],
+    bondCraftCost: [
+      { itemId: 'ginseng', quantity: 10 },
+      { itemId: 'snow_lotus', quantity: 8 },
+      { itemId: 'moonstone', quantity: 10 },
+      { itemId: 'prismatic_shard', quantity: 3 }
+    ],
     bondBonuses: [{ type: 'stamina_restore', amount: 15 }],
     abilities: [
       {
@@ -399,7 +435,7 @@ export const HIDDEN_NPCS: HiddenNpcDef[] = [
         phase: 'glimpse',
         conditions: [
           { type: 'timeRange', minHour: 17, maxHour: 19 },
-          { type: 'location', panel: 'npc' }
+          { type: 'location', panel: 'village' }
         ],
         scenes: [
           { text: '黄昏时分，你在村中散步。余晖将一切染成金色。' },
@@ -466,6 +502,17 @@ export const HIDDEN_NPCS: HiddenNpcDef[] = [
       '狐仙接过狐火灯笼，眼中闪过一丝惊讶后笑了：「你这是……在向一只狐狸求缘？」',
       '「{player}，今晚做了个有你的梦。什么内容？秘密。」',
       '「以前觉得人类短暂得可怜。现在觉得……正因短暂，才格外珍贵。」'
+    ],
+    courtshipCraftCost: [
+      { itemId: 'ruby', quantity: 8 },
+      { itemId: 'gold_bar', quantity: 8 },
+      { itemId: 'moonstone', quantity: 5 }
+    ],
+    bondCraftCost: [
+      { itemId: 'ruby', quantity: 12 },
+      { itemId: 'gold_bar', quantity: 12 },
+      { itemId: 'moonstone', quantity: 8 },
+      { itemId: 'prismatic_shard', quantity: 3 }
     ],
     bondBonuses: [{ type: 'sell_bonus', percent: 15 }],
     abilities: [
@@ -575,6 +622,17 @@ export const HIDDEN_NPCS: HiddenNpcDef[] = [
       '「{player}，今日的功课你做得不错。来，喝杯热茶。」',
       '「你知道吗，五百年前老夫也曾年轻过。那时候……算了，不说了。」'
     ],
+    courtshipCraftCost: [
+      { itemId: 'jade', quantity: 8 },
+      { itemId: 'gold_bar', quantity: 8 },
+      { itemId: 'ginseng', quantity: 5 }
+    ],
+    bondCraftCost: [
+      { itemId: 'ginseng', quantity: 10 },
+      { itemId: 'antler_velvet', quantity: 8 },
+      { itemId: 'iridium_bar', quantity: 5 },
+      { itemId: 'moonstone', quantity: 8 }
+    ],
     bondBonuses: [{ type: 'spirit_shield', staminaSave: 20, hpBonus: 30 }],
     abilities: [
       {
@@ -631,7 +689,7 @@ export const HIDDEN_NPCS: HiddenNpcDef[] = [
         conditions: [
           { type: 'timeRange', minHour: 22, maxHour: 24 },
           { type: 'item', itemId: 'silk', quantity: 1 },
-          { type: 'location', panel: 'npc' }
+          { type: 'location', panel: 'village' }
         ],
         scenes: [
           { text: '深夜的村庄万籁俱寂。你路过旧屋时，果然听到了那个声音——吱呀，吱呀。' },
@@ -675,7 +733,10 @@ export const HIDDEN_NPCS: HiddenNpcDef[] = [
       {
         id: 'gui_nv_revealed',
         phase: 'revealed',
-        conditions: [{ type: 'npcFriendship', npcId: 'su_su', minFriendship: 2000 }],
+        conditions: [
+          { type: 'npcFriendship', npcId: 'su_su', minFriendship: 3500 },
+          { type: 'questComplete', questId: 'main_2_4' }
+        ],
         scenes: [
           { text: '你连续多日来到旧屋陪伴织女。今夜，她的身影比以往更加清晰。' },
           { text: '「你的陪伴让我想起了很多事。」她放下梭子，第一次离开织机走到你面前。' },
@@ -705,6 +766,17 @@ export const HIDDEN_NPCS: HiddenNpcDef[] = [
       '归女接过银丝戒指，手指微微颤抖：「这是……给我的？活人也愿意和我……」她没有说完，眼眶泛红。',
       '「{player}，我今天在你的梦里织了一片星空。看到了吗？」',
       '「有时候我在想，是不是因为遇见了你，我才没有消散。」'
+    ],
+    courtshipCraftCost: [
+      { itemId: 'silk', quantity: 25 },
+      { itemId: 'moonstone', quantity: 8 },
+      { itemId: 'gold_bar', quantity: 5 }
+    ],
+    bondCraftCost: [
+      { itemId: 'silk', quantity: 50 },
+      { itemId: 'moonstone', quantity: 12 },
+      { itemId: 'prismatic_shard', quantity: 5 },
+      { itemId: 'gold_bar', quantity: 8 }
     ],
     bondBonuses: [{ type: 'animal_blessing', chance: 0.25 }],
     abilities: [

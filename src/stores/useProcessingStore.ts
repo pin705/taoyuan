@@ -164,8 +164,8 @@ export const useProcessingStore = defineStore('processing', () => {
     return getLowestCombinedQuality(itemId)
   }
 
-  /** 向已放置的机器投入原料开始加工 */
-  const startProcessing = (slotIndex: number, recipeId: string): boolean => {
+  /** 向已放置的机器投入原料开始加工。specifiedQuality 可指定消耗的品质 */
+  const startProcessing = (slotIndex: number, recipeId: string, specifiedQuality?: Quality): boolean => {
     const slot = machines.value[slotIndex]
     if (!slot || slot.recipeId !== null) return false // 正在加工中
     const recipe = getProcessingRecipeById(recipeId)
@@ -174,9 +174,13 @@ export const useProcessingStore = defineStore('processing', () => {
     // 消耗输入材料（蜂箱无需输入），记录投入品质
     let quality: Quality = 'normal'
     if (recipe.inputItemId !== null) {
-      quality = getLowestQuality(recipe.inputItemId)
-      // 不指定品质消耗，允许混合品质投入（按normal→supreme顺序消耗）
-      if (!removeCombinedItem(recipe.inputItemId, recipe.inputQuantity)) return false
+      if (specifiedQuality !== undefined) {
+        quality = specifiedQuality
+        if (!removeCombinedItem(recipe.inputItemId, recipe.inputQuantity, specifiedQuality)) return false
+      } else {
+        quality = getLowestQuality(recipe.inputItemId)
+        if (!removeCombinedItem(recipe.inputItemId, recipe.inputQuantity)) return false
+      }
     }
 
     slot.recipeId = recipeId
@@ -342,6 +346,15 @@ export const useProcessingStore = defineStore('processing', () => {
               }
               collected.push(recipe.name)
 
+              // 种子制造机额外触发育种种子生成
+              if (slot.machineType === 'seed_maker' && slot.inputItemId) {
+                const breedingStore = useBreedingStore()
+                const farmingLevel = skillStore.farmingLevel
+                if (breedingStore.trySeedMakerGeneticSeed(slot.inputItemId, farmingLevel)) {
+                  addLog('种子制造机额外产出了一颗育种种子！')
+                }
+              }
+
               // 尝试从虚空原料箱取材料开始下一轮
               const available = warehouseStore.getChestItemCount(voidInput.id, recipe.inputItemId)
               if (available >= recipe.inputQuantity) {
@@ -412,15 +425,31 @@ export const useProcessingStore = defineStore('processing', () => {
     return WORKSHOP_UPGRADES.find(u => u.level === next) ?? null
   }
 
+  /** 工坊分组折叠状态（参与存档） */
+  const collapsedGroups = ref(new Set<MachineType>())
+
+  const toggleGroup = (type: MachineType) => {
+    if (collapsedGroups.value.has(type)) {
+      collapsedGroups.value.delete(type)
+    } else {
+      collapsedGroups.value.add(type)
+    }
+  }
+
   // === 序列化 ===
 
   const serialize = () => {
-    return { machines: machines.value, workshopLevel: workshopLevel.value }
+    return {
+      machines: machines.value,
+      workshopLevel: workshopLevel.value,
+      collapsedGroups: [...collapsedGroups.value]
+    }
   }
 
   const deserialize = (data: ReturnType<typeof serialize>) => {
     machines.value = data.machines ?? []
     workshopLevel.value = (data as any).workshopLevel ?? 0
+    collapsedGroups.value = new Set((data as any).collapsedGroups ?? [])
   }
 
   return {
@@ -447,6 +476,8 @@ export const useProcessingStore = defineStore('processing', () => {
     upgradeWorkshop,
     getNextUpgrade,
     WORKSHOP_UPGRADES,
+    collapsedGroups,
+    toggleGroup,
     serialize,
     deserialize
   }

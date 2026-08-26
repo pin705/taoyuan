@@ -99,8 +99,23 @@
               <CircleCheck v-if="inventoryStore.hasItem(npcDef.bondItemId)" :size="10" />
               <Circle v-else :size="10" />
               持有{{ getItemById(npcDef.bondItemId)?.name ?? npcDef.bondItemId }}
-              <span class="text-muted/40">— 需制作</span>
             </span>
+          </div>
+          <!-- 结缘物品制作 -->
+          <div v-if="!inventoryStore.hasItem(npcDef.bondItemId)" class="border border-accent/10 rounded-xs p-1.5 mb-1.5">
+            <p class="text-[10px] text-muted/60 mb-1">制作{{ getItemById(npcDef.bondItemId)?.name }}：</p>
+            <div class="flex flex-col space-y-0.5 mb-1">
+              <span
+                v-for="cost in npcDef.bondCraftCost"
+                :key="cost.itemId"
+                class="text-[10px]"
+                :class="inventoryStore.getItemCount(cost.itemId) >= cost.quantity ? 'text-success' : 'text-muted/50'"
+              >
+                {{ getItemById(cost.itemId)?.name ?? cost.itemId }} ×{{ cost.quantity }}
+                <span class="text-muted/30">（持有{{ inventoryStore.getItemCount(cost.itemId) }}）</span>
+              </span>
+            </div>
+            <Button class="w-full" :disabled="!canCraftBond" @click="handleCraft('bond')">制作</Button>
           </div>
           <Button class="w-full text-accent border-accent/40" :disabled="!canBond" @click="handleBond">结缘</Button>
         </template>
@@ -122,8 +137,23 @@
               <CircleCheck v-if="inventoryStore.hasItem(npcDef.courtshipItemId)" :size="10" />
               <Circle v-else :size="10" />
               持有{{ getItemById(npcDef.courtshipItemId)?.name ?? npcDef.courtshipItemId }}
-              <span class="text-muted/40">— 需制作</span>
             </span>
+          </div>
+          <!-- 求缘物品制作 -->
+          <div v-if="!inventoryStore.hasItem(npcDef.courtshipItemId)" class="border border-accent/10 rounded-xs p-1.5 mb-1.5">
+            <p class="text-[10px] text-muted/60 mb-1">制作{{ getItemById(npcDef.courtshipItemId)?.name }}：</p>
+            <div class="flex flex-col space-y-0.5 mb-1">
+              <span
+                v-for="cost in npcDef.courtshipCraftCost"
+                :key="cost.itemId"
+                class="text-[10px]"
+                :class="inventoryStore.getItemCount(cost.itemId) >= cost.quantity ? 'text-success' : 'text-muted/50'"
+              >
+                {{ getItemById(cost.itemId)?.name ?? cost.itemId }} ×{{ cost.quantity }}
+                <span class="text-muted/30">（持有{{ inventoryStore.getItemCount(cost.itemId) }}）</span>
+              </span>
+            </div>
+            <Button class="w-full" :disabled="!canCraftCourtship" @click="handleCraft('courtship')">制作</Button>
           </div>
           <Button class="w-full text-accent border-accent/40" :disabled="!canCourt" @click="handleCourt">求缘</Button>
         </template>
@@ -291,6 +321,16 @@
     return true
   })
 
+  const canCraftCourtship = computed(() => {
+    const d = npcDef.value
+    return d.courtshipCraftCost.every(c => inventoryStore.getItemCount(c.itemId) >= c.quantity)
+  })
+
+  const canCraftBond = computed(() => {
+    const d = npcDef.value
+    return d.bondCraftCost.every(c => inventoryStore.getItemCount(c.itemId) >= c.quantity)
+  })
+
   const canBond = computed(() => {
     const s = state.value
     const d = npcDef.value
@@ -352,6 +392,15 @@
     if (success) {
       checkAndTriggerHeartEvent()
       checkPassout()
+    }
+  }
+
+  const handleCraft = (type: 'courtship' | 'bond') => {
+    const result = hiddenNpcStore.craftSpiritItem(props.npcId, type)
+    if (result.success) {
+      addLog(
+        `制作了${type === 'courtship' ? getItemById(npcDef.value.courtshipItemId)?.name : getItemById(npcDef.value.bondItemId)?.name}。`
+      )
     }
   }
 

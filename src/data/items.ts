@@ -1349,6 +1349,194 @@ export const ITEMS: ItemDef[] = [
     sellPrice: 2500,
     edible: false
   },
+  // --- 新增西域商品 ---
+  { id: 'hanhai_incense', name: '瀚海沉香', category: 'gift', description: '西域珍贵香料，送礼佳品。', sellPrice: 250, edible: false },
+  {
+    id: 'hanhai_carpet',
+    name: '飞毯碎片',
+    category: 'misc',
+    description: '传说中飞毯的残片，珍贵的收藏品。',
+    sellPrice: 600,
+    edible: false
+  },
+  { id: 'hanhai_amber', name: '戈壁琥珀', category: 'gem', description: '戈壁滩的天然琥珀。', sellPrice: 220, edible: false },
+  {
+    id: 'hanhai_dried_fruit',
+    name: '西域干果',
+    category: 'food',
+    description: '甜蜜的异域干果，恢复体力。',
+    sellPrice: 100,
+    edible: true,
+    staminaRestore: 20
+  },
+  { id: 'hanhai_pottery', name: '彩陶', category: 'gift', description: '精致的西域彩陶，送礼佳品。', sellPrice: 175, edible: false },
+  {
+    id: 'hanhai_saddle_leather',
+    name: '鞍具皮革',
+    category: 'material',
+    description: '上等的西域马具皮革。',
+    sellPrice: 350,
+    edible: false
+  },
+  { id: 'hanhai_lapis', name: '青金石', category: 'gem', description: '深蓝色的珍贵宝石。', sellPrice: 275, edible: false },
+  // --- 加工产出 ---
+  { id: 'spice_oil', name: '香料油', category: 'processed', description: '浓郁的异域风味油脂。', sellPrice: 350, edible: false },
+  {
+    id: 'cactus_jam',
+    name: '仙人掌果酱',
+    category: 'processed',
+    description: '酸甜可口的沙漠果酱。',
+    sellPrice: 400,
+    edible: true,
+    staminaRestore: 35,
+    healthRestore: 15
+  },
+  {
+    id: 'cactus_wine',
+    name: '仙人掌酒',
+    category: 'processed',
+    description: '西域特色佳酿。',
+    sellPrice: 800,
+    edible: true,
+    staminaRestore: 30,
+    healthRestore: 20
+  },
+  {
+    id: 'date_wine',
+    name: '椰枣酒',
+    category: 'processed',
+    description: '甘醇滋补的枣酿。',
+    sellPrice: 650,
+    edible: true,
+    staminaRestore: 25,
+    healthRestore: 15
+  },
+  {
+    id: 'turquoise_accessory',
+    name: '绿松石饰品',
+    category: 'gift',
+    description: '精致的绿松石首饰，送礼极佳。',
+    sellPrice: 650,
+    edible: false
+  },
+  { id: 'brocade', name: '锦缎', category: 'material', description: '上等华丽的锦缎。', sellPrice: 900, edible: false },
+  {
+    id: 'spice_tea',
+    name: '香料茶',
+    category: 'processed',
+    description: '异域风味的香茶。',
+    sellPrice: 350,
+    edible: true,
+    staminaRestore: 20,
+    healthRestore: 10
+  },
+  // --- 积分兑换物品 ---
+  {
+    id: 'trade_star_fragment',
+    name: '星辰碎片',
+    category: 'material',
+    description: '稀有材料，用于高级制作。',
+    sellPrice: 500,
+    edible: false
+  },
+  // { id: 'trade_golden_coconut', name: '金椰子', category: 'misc', description: '打开可获得随机稀有物品。', sellPrice: 800, edible: false },
+  // {
+  //   id: 'trade_desert_totem',
+  //   name: '沙漠图腾',
+  //   category: 'misc',
+  //   description: '立即传送至瀚海（不消耗时间）。',
+  //   sellPrice: 300,
+  //   edible: false
+  // },
+  { id: 'trade_spice_bundle', name: '香料礼包', category: 'misc', description: '内含西域香料×5。', sellPrice: 750, edible: false },
+  {
+    id: 'trade_turquoise_pendant',
+    name: '绿松石吊坠',
+    category: 'gem',
+    description: '西域绿松石打磨而成的精致吊坠。',
+    sellPrice: 600,
+    edible: false
+  },
+  { id: 'trade_silk_robe', name: '丝绸长袍', category: 'misc', description: '西域丝绸织就的华美长袍。', sellPrice: 750, edible: false },
+  {
+    id: 'trade_desert_blade',
+    name: '沙漠弯刀',
+    category: 'misc',
+    description: '西域锻造的弯刀，锋利无比。',
+    sellPrice: 2000,
+    edible: false
+  },
+  // --- 瀚海拓展料理 ---
+  {
+    id: 'cactus_salad',
+    name: '仙人掌沙拉',
+    category: 'food',
+    description: '清爽可口的仙人掌沙拉。',
+    sellPrice: 250,
+    edible: true,
+    staminaRestore: 40,
+    healthRestore: 20
+  },
+  {
+    id: 'spice_fried_rice',
+    name: '香料炒饭',
+    category: 'food',
+    description: '西域香料翻炒的米饭。',
+    sellPrice: 300,
+    edible: true,
+    staminaRestore: 55,
+    healthRestore: 25
+  },
+  {
+    id: 'turquoise_tea',
+    name: '绿松石养生茶',
+    category: 'food',
+    description: '以绿松石粉入茶的养生饮品。',
+    sellPrice: 400,
+    edible: true,
+    staminaRestore: 60,
+    healthRestore: 30
+  },
+  {
+    id: 'silk_tofu',
+    name: '丝绸豆腐',
+    category: 'food',
+    description: '用丝绸包裹蒸制的嫩滑豆腐。',
+    sellPrice: 280,
+    edible: true,
+    staminaRestore: 45,
+    healthRestore: 20
+  },
+  {
+    id: 'date_porridge',
+    name: '枣泥粥',
+    category: 'food',
+    description: '温热滋补的枣泥粥。',
+    sellPrice: 260,
+    edible: true,
+    staminaRestore: 50,
+    healthRestore: 25
+  },
+  {
+    id: 'desert_feast',
+    name: '西域盛宴',
+    category: 'food',
+    description: '集西域精华于一桌的豪华宴席。',
+    sellPrice: 800,
+    edible: true,
+    staminaRestore: 80,
+    healthRestore: 50
+  },
+  {
+    id: 'brocade_dumpling',
+    name: '锦缎御饺',
+    category: 'food',
+    description: '以锦缎为皮的极品饺子。',
+    sellPrice: 700,
+    edible: true,
+    staminaRestore: 75,
+    healthRestore: 40
+  },
 
   // ==================== 仙灵物品 ====================
   // 发现线索
@@ -1452,7 +1640,36 @@ export const ITEMS: ItemDef[] = [
     healthRestore: 30
   },
   { id: 'moon_herb', name: '月草', category: 'material', description: '沐浴月华而生的灵草，药效极佳。', sellPrice: 300, edible: false },
-  { id: 'dream_silk', name: '梦丝', category: 'material', description: '归女织出的银白丝线，闪烁着星光。', sellPrice: 500, edible: false }
+  { id: 'dream_silk', name: '梦丝', category: 'material', description: '归女织出的银白丝线，闪烁着星光。', sellPrice: 500, edible: false },
+  // --- 竹林野兽掉落 ---
+  { id: 'wolf_pelt', name: '狼皮', category: 'material', description: '竹林灰狼的毛皮，柔韧耐磨。', sellPrice: 200, edible: false },
+  { id: 'wolf_fang', name: '狼牙', category: 'material', description: '锋利的狼牙，可作装饰。', sellPrice: 150, edible: false },
+  { id: 'bear_pelt', name: '熊皮', category: 'material', description: '厚实的黑熊皮毛，御寒极佳。', sellPrice: 400, edible: false },
+  { id: 'bear_gall', name: '熊胆', category: 'material', description: '珍贵的药材，苦寒入肝。', sellPrice: 600, edible: false },
+  { id: 'tiger_pelt', name: '虎皮', category: 'material', description: '稀有的虎皮，价值连城。', sellPrice: 800, edible: false },
+  { id: 'tiger_bone', name: '虎骨', category: 'material', description: '传统名贵药材。', sellPrice: 500, edible: false },
+  { id: 'tiger_fang', name: '虎牙', category: 'material', description: '猛虎獠牙，可作护身符。', sellPrice: 350, edible: false },
+  // --- 竹林野兽掉落加工品 ---
+  {
+    id: 'bear_gall_pill',
+    name: '熊胆丸',
+    category: 'food',
+    description: '熊胆研磨制成的苦寒丸药，服后神清气爽。',
+    sellPrice: 450,
+    edible: true,
+    staminaRestore: 55,
+    healthRestore: 30
+  },
+  {
+    id: 'tiger_bone_tonic',
+    name: '虎骨酒',
+    category: 'food',
+    description: '虎骨浸泡的药酒，饮后气血翻涌。',
+    sellPrice: 700,
+    edible: true,
+    staminaRestore: 70,
+    healthRestore: 40
+  }
 ]
 
 /** 根据ID查找物品 */
@@ -1590,6 +1807,34 @@ const ITEM_SOURCE_OVERRIDES: Record<string, string> = {
   hanhai_map: '瀚海沙漠',
   hanhai_fossil: '瀚海沙漠',
   mega_bomb_recipe: '瀚海沙漠',
+  hanhai_incense: '瀚海沙漠商人',
+  hanhai_carpet: '瀚海沙漠商人',
+  hanhai_amber: '瀚海沙漠商人',
+  hanhai_dried_fruit: '瀚海沙漠商人',
+  hanhai_pottery: '瀚海沙漠商人',
+  hanhai_saddle_leather: '瀚海沙漠商人',
+  hanhai_lapis: '瀚海沙漠商人',
+  spice_oil: '加工制作',
+  cactus_jam: '加工制作',
+  cactus_wine: '加工制作',
+  date_wine: '加工制作',
+  turquoise_accessory: '加工制作',
+  brocade: '加工制作',
+  spice_tea: '加工制作',
+  trade_star_fragment: '通商积分兑换',
+  // trade_golden_coconut: '通商积分兑换',
+  // trade_desert_totem: '通商积分兑换',
+  trade_spice_bundle: '通商积分兑换',
+  trade_turquoise_pendant: '通商积分兑换',
+  trade_silk_robe: '通商积分兑换',
+  trade_desert_blade: '通商积分兑换',
+  cactus_salad: '烹饪',
+  spice_fried_rice: '烹饪',
+  turquoise_tea: '烹饪',
+  silk_tofu: '烹饪',
+  date_porridge: '烹饪',
+  desert_feast: '烹饪',
+  brocade_dumpling: '烹饪',
   // 远古种子
   ancient_seed: '矿洞挖掘（可种植）',
   // 草药加工品
@@ -1613,7 +1858,17 @@ const ITEM_SOURCE_OVERRIDES: Record<string, string> = {
   moon_elixir: '制作（月兔结缘信物）',
   fox_spirit_bead: '制作（狐仙结缘信物）',
   immortal_gourd: '制作（山翁结缘信物）',
-  starlight_loom: '制作（归女结缘信物）'
+  starlight_loom: '制作（归女结缘信物）',
+  // 竹林野兽掉落
+  wolf_pelt: '竹林野兽掉落',
+  wolf_fang: '竹林野兽掉落',
+  bear_pelt: '竹林野兽掉落',
+  bear_gall: '竹林野兽掉落',
+  tiger_pelt: '竹林野兽掉落',
+  tiger_bone: '竹林野兽掉落',
+  tiger_fang: '竹林野兽掉落',
+  bear_gall_pill: '加工制作',
+  tiger_bone_tonic: '加工制作'
 }
 
 /** 获取物品来源描述 */

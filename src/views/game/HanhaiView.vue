@@ -28,6 +28,9 @@
         <Button class="flex-1 justify-center" :class="{ '!bg-accent !text-bg': activeTab === 'shop' }" @click="activeTab = 'shop'">
           驿站商店
         </Button>
+        <Button class="flex-1 justify-center" :class="{ '!bg-accent !text-bg': activeTab === 'trade' }" @click="activeTab = 'trade'">
+          通商
+        </Button>
         <Button class="flex-1 justify-center" :class="{ '!bg-accent !text-bg': activeTab === 'casino' }" @click="activeTab = 'casino'">
           瀚海赌坊
         </Button>
@@ -36,8 +39,33 @@
       <!-- 驿站商店 -->
       <template v-if="activeTab === 'shop'">
         <div class="flex flex-col space-y-1 max-h-80 overflow-y-auto">
+          <!-- 固定商品 -->
+          <p class="text-xs text-muted mb-0.5">常驻商品</p>
           <div
-            v-for="item in HANHAI_SHOP_ITEMS"
+            v-for="item in HANHAI_FIXED_ITEMS"
+            :key="item.itemId"
+            class="flex items-center justify-between border border-accent/20 rounded-xs px-3 py-2 cursor-pointer hover:bg-accent/5 transition-colors mr-1"
+            @click="shopModalItem = item"
+          >
+            <div class="flex-1 min-w-0">
+              <p class="text-xs truncate">{{ item.name }}</p>
+              <p class="text-xs text-muted truncate">{{ item.description }}</p>
+            </div>
+            <div class="flex flex-col items-end ml-2 shrink-0">
+              <span class="text-xs text-accent">{{ item.price }}文</span>
+              <span
+                v-if="item.weeklyLimit"
+                class="text-[10px]"
+                :class="hanhaiStore.getWeeklyRemaining(item.itemId) > 0 ? 'text-muted' : 'text-danger'"
+              >
+                限购 {{ hanhaiStore.getWeeklyRemaining(item.itemId) }}/{{ item.weeklyLimit }}
+              </span>
+            </div>
+          </div>
+          <!-- 轮换商品 -->
+          <p class="text-xs text-muted mt-2 mb-0.5">本周轮换</p>
+          <div
+            v-for="item in hanhaiStore.weeklyRotatingStock"
             :key="item.itemId"
             class="flex items-center justify-between border border-accent/20 rounded-xs px-3 py-2 cursor-pointer hover:bg-accent/5 transition-colors mr-1"
             @click="shopModalItem = item"
@@ -62,6 +90,101 @@
         <Button v-if="treasureMapCount > 0" :icon="Map" :icon-size="12" class="w-full justify-center mt-2" @click="handleUseTreasureMap">
           使用藏宝图寻宝（{{ treasureMapCount }}张）
         </Button>
+      </template>
+
+      <!-- 通商 -->
+      <template v-if="activeTab === 'trade'">
+        <!-- 通商积分 -->
+        <div class="border border-accent/20 rounded-xs p-2 mb-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-muted">通商积分</span>
+            <span class="text-xs text-accent">{{ hanhaiStore.tradePoints }}</span>
+          </div>
+          <div class="flex items-center justify-between mt-0.5">
+            <span class="text-xs text-muted">店铺等级</span>
+            <span class="text-xs">{{ hanhaiStore.tradeShopConfig.name }}（Lv.{{ hanhaiStore.tradeShopLevel }}）</span>
+          </div>
+        </div>
+
+        <!-- 售货槽位 -->
+        <div class="mb-3">
+          <div class="flex items-center justify-between mb-1">
+            <p class="text-xs text-accent flex items-center space-x-1">
+              <Store :size="12" />
+              <span>售货摊位</span>
+            </p>
+            <span class="text-xs text-muted">{{ hanhaiStore.tradeSlots.length }}/{{ hanhaiStore.tradeShopConfig.maxSlots }}</span>
+          </div>
+          <!-- 已有槽位 -->
+          <div v-for="(slot, idx) in hanhaiStore.tradeSlots" :key="idx" class="border border-accent/10 rounded-xs px-2 py-1.5 mb-1">
+            <div class="flex items-center justify-between">
+              <span class="text-xs">{{ getItemName(slot.itemId) }}×{{ slot.quantity }}</span>
+              <span class="text-xs text-muted">{{ slot.daysRemaining }}天后售出</span>
+            </div>
+            <div class="flex items-center justify-between mt-0.5">
+              <span class="text-[10px] text-muted">{{ qualityLabel(slot.quality) }}</span>
+              <span class="text-[10px] text-accent">+{{ slot.pointsReward }}积分</span>
+            </div>
+          </div>
+          <!-- 上架按钮 -->
+          <Button
+            v-if="hanhaiStore.tradeSlots.length < hanhaiStore.tradeShopConfig.maxSlots"
+            class="w-full justify-center mt-1"
+            @click="showTradeAddModal = true"
+          >
+            上架物品
+          </Button>
+        </div>
+
+        <!-- 店铺升级 -->
+        <div v-if="hanhaiStore.nextTradeShopUpgrade" class="border border-accent/20 rounded-xs p-2 mb-3">
+          <p class="text-xs text-accent mb-1">店铺升级</p>
+          <p class="text-xs text-muted mb-1">
+            下一级：{{ hanhaiStore.nextTradeShopUpgrade.name }}（槽位{{ hanhaiStore.nextTradeShopUpgrade.maxSlots }}·{{
+              hanhaiStore.nextTradeShopUpgrade.sellDays
+            }}天）
+          </p>
+          <p class="text-xs text-muted mb-1">
+            费用：{{ hanhaiStore.nextTradeShopUpgrade.cost }}文
+            <template v-for="mat in hanhaiStore.nextTradeShopUpgrade.materialCost" :key="mat.itemId">
+              + {{ getItemName(mat.itemId) }}×{{ mat.quantity }}
+            </template>
+          </p>
+          <Button class="w-full justify-center" @click="handleUpgradeTrade">升级</Button>
+        </div>
+        <div v-else class="text-xs text-muted text-center mb-3">店铺已满级</div>
+
+        <!-- 积分兑换商店 -->
+        <div class="mb-2">
+          <p class="text-xs text-accent mb-1 flex items-center space-x-1">
+            <Gift :size="12" />
+            <span>积分兑换</span>
+          </p>
+          <div class="flex flex-col space-y-1 max-h-60 overflow-y-auto">
+            <div
+              v-for="exItem in TRADE_EXCHANGE_ITEMS"
+              :key="exItem.itemId"
+              class="flex items-center justify-between border border-accent/10 rounded-xs px-2 py-1.5 cursor-pointer hover:bg-accent/5 transition-colors mr-1"
+              @click="exchangeModalItem = exItem"
+            >
+              <div class="flex-1 min-w-0">
+                <p class="text-xs truncate">{{ exItem.name }}</p>
+                <p class="text-[10px] text-muted truncate">{{ exItem.description }}</p>
+              </div>
+              <div class="flex flex-col items-end ml-2 shrink-0">
+                <span class="text-xs text-accent">{{ exItem.pointsCost }}积分</span>
+                <span v-if="exItem.weeklyLimit" class="text-[10px] text-muted">周限{{ getExchangeWeeklyRemaining(exItem) }}</span>
+                <span
+                  v-if="exItem.totalLimit"
+                  class="text-[10px]"
+                  :class="getExchangeTotalRemaining(exItem) > 0 ? 'text-muted' : 'text-danger'"
+                >
+                  {{ getExchangeTotalRemaining(exItem) > 0 ? '可兑换' : '已兑换' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </template>
 
       <!-- 赌坊 -->
@@ -224,8 +347,16 @@
             <span class="text-xs">{{ playerStore.money }}文</span>
           </div>
           <div class="flex items-center justify-between">
+            <span class="text-xs text-muted">通商积分</span>
+            <span class="text-xs text-accent">{{ hanhaiStore.tradePoints }}</span>
+          </div>
+          <div class="flex items-center justify-between">
             <span class="text-xs text-muted">今日赌博</span>
             <span class="text-xs">{{ MAX_DAILY_BETS - hanhaiStore.betsRemaining }}/{{ MAX_DAILY_BETS }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-muted">店铺等级</span>
+            <span class="text-xs">{{ hanhaiStore.tradeShopConfig.name }}</span>
           </div>
         </div>
       </div>
@@ -586,18 +717,172 @@
         <BuckshotRouletteGame :setup="buckshotSetup" @complete="handleBuckshotComplete" />
       </div>
     </Transition>
+
+    <!-- 通商上架弹窗：物品列表 -->
+    <Transition name="panel-fade">
+      <div
+        v-if="showTradeAddModal && !tradeSelectedItem"
+        class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+        @click.self="showTradeAddModal = false"
+      >
+        <div class="game-panel max-w-xs w-full relative">
+          <button class="absolute top-2 right-2 text-muted hover:text-text" @click="showTradeAddModal = false">
+            <X :size="14" />
+          </button>
+          <p class="text-sm text-accent mb-2">上架物品</p>
+          <p class="text-xs text-muted mb-2">选择背包中的物品放到通商摊位售卖</p>
+          <div class="flex flex-col space-y-1 max-h-60 overflow-y-auto">
+            <div
+              v-for="inv in sellableItems"
+              :key="inv.id + '-' + inv.quality"
+              class="flex items-center justify-between border border-accent/10 rounded-xs px-2 py-1.5 cursor-pointer hover:bg-accent/5"
+              @click="selectTradeItem(inv)"
+            >
+              <div class="flex-1 min-w-0">
+                <span class="text-xs">{{ inv.name }}</span>
+                <span v-if="inv.quality !== 'normal'" class="text-[10px] ml-1" :class="qualityColor(inv.quality)">
+                  {{ qualityLabel(inv.quality) }}
+                </span>
+                <span class="text-[10px] text-muted ml-1">×{{ inv.quantity }}</span>
+              </div>
+              <span class="text-[10px] text-accent shrink-0">~{{ calcPreviewPoints(inv) }}积分</span>
+            </div>
+          </div>
+          <p v-if="sellableItems.length === 0" class="text-xs text-muted text-center py-4">背包中没有可售物品</p>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- 通商上架弹窗：数量选择 -->
+    <Transition name="panel-fade">
+      <div
+        v-if="tradeSelectedItem"
+        class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+        @click.self="tradeSelectedItem = null"
+      >
+        <div class="game-panel max-w-xs w-full relative">
+          <button class="absolute top-2 right-2 text-muted hover:text-text" @click="tradeSelectedItem = null">
+            <X :size="14" />
+          </button>
+          <p class="text-sm text-accent mb-2">上架：{{ tradeSelectedItem.name }}</p>
+
+          <div class="border border-accent/10 rounded-xs p-2 mb-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-muted">品质</span>
+              <span class="text-xs" :class="qualityColor(tradeSelectedItem.quality)">{{ qualityLabel(tradeSelectedItem.quality) }}</span>
+            </div>
+            <div class="flex items-center justify-between mt-0.5">
+              <span class="text-xs text-muted">持有</span>
+              <span class="text-xs">{{ tradeSelectedItem.quantity }}</span>
+            </div>
+            <div class="flex items-center justify-between mt-0.5">
+              <span class="text-xs text-muted">售卖周期</span>
+              <span class="text-xs">{{ hanhaiStore.tradeShopConfig.sellDays }}天</span>
+            </div>
+          </div>
+
+          <!-- 数量选择器 -->
+          <div class="border border-accent/10 rounded-xs p-2 mb-2">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs text-muted">数量</span>
+              <div class="flex items-center space-x-1">
+                <Button class="h-6 px-1.5 py-0.5 text-xs justify-center" :disabled="tradeQuantity <= 1" @click="tradeQuantity--">-</Button>
+                <input
+                  type="number"
+                  :value="tradeQuantity"
+                  min="1"
+                  :max="tradeSelectedItem.quantity"
+                  class="w-24 h-6 px-2 py-0.5 bg-bg border border-accent/30 rounded-xs text-xs text-center text-accent outline-none focus:border-accent transition-colors"
+                  @input="onTradeQuantityInput"
+                />
+                <Button
+                  class="h-6 px-1.5 py-0.5 text-xs justify-center"
+                  :disabled="tradeQuantity >= tradeSelectedItem.quantity"
+                  @click="tradeQuantity++"
+                >
+                  +
+                </Button>
+              </div>
+            </div>
+            <div class="flex space-x-1">
+              <Button class="flex-1 justify-center" :disabled="tradeQuantity <= 1" @click="tradeQuantity = 1">最少</Button>
+              <Button
+                class="flex-1 justify-center"
+                :disabled="tradeQuantity >= tradeSelectedItem.quantity"
+                @click="tradeQuantity = tradeSelectedItem.quantity"
+              >
+                最多
+              </Button>
+            </div>
+            <div class="flex items-center justify-between mt-1.5">
+              <span class="text-xs text-muted">预计积分</span>
+              <span class="text-xs text-accent">~{{ tradePreviewPoints }}积分</span>
+            </div>
+          </div>
+
+          <Button class="w-full justify-center !bg-accent !text-bg" @click="handleConfirmTradeSlot">上架 ×{{ tradeQuantity }}</Button>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- 积分兑换弹窗 -->
+    <Transition name="panel-fade">
+      <div
+        v-if="exchangeModalItem"
+        class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+        @click.self="exchangeModalItem = null"
+      >
+        <div class="game-panel max-w-xs w-full relative">
+          <button class="absolute top-2 right-2 text-muted hover:text-text" @click="exchangeModalItem = null">
+            <X :size="14" />
+          </button>
+          <p class="text-sm text-accent mb-2">{{ exchangeModalItem.name }}</p>
+          <div class="border border-accent/10 rounded-xs p-2 mb-2">
+            <p class="text-xs text-muted">{{ exchangeModalItem.description }}</p>
+          </div>
+          <div class="border border-accent/10 rounded-xs p-2 mb-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-muted">所需积分</span>
+              <span class="text-xs text-accent">{{ exchangeModalItem.pointsCost }}</span>
+            </div>
+            <div class="flex items-center justify-between mt-0.5">
+              <span class="text-xs text-muted">持有积分</span>
+              <span class="text-xs">{{ hanhaiStore.tradePoints }}</span>
+            </div>
+            <div v-if="exchangeModalItem.weeklyLimit" class="flex items-center justify-between mt-0.5">
+              <span class="text-xs text-muted">本周剩余</span>
+              <span class="text-xs">{{ getExchangeWeeklyRemaining(exchangeModalItem) }}</span>
+            </div>
+            <div v-if="exchangeModalItem.totalLimit" class="flex items-center justify-between mt-0.5">
+              <span class="text-xs text-muted">总限购</span>
+              <span class="text-xs" :class="getExchangeTotalRemaining(exchangeModalItem) > 0 ? '' : 'text-danger'">
+                剩余 {{ getExchangeTotalRemaining(exchangeModalItem) }}
+              </span>
+            </div>
+          </div>
+          <Button
+            class="w-full justify-center !bg-accent !text-bg"
+            :disabled="!canExchange(exchangeModalItem)"
+            @click="handleExchange(exchangeModalItem.itemId)"
+          >
+            {{ canExchange(exchangeModalItem) ? '兑换' : '无法兑换' }}
+          </Button>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
   import { ref, computed, onMounted, onUnmounted } from 'vue'
-  import { Tent, X, Dices, Trophy, Bug, Gem, Check, CircleDot, Spade, Crosshair, Map } from 'lucide-vue-next'
+  import { Tent, X, Dices, Trophy, Bug, Gem, Check, CircleDot, Spade, Crosshair, Map, Store, Gift } from 'lucide-vue-next'
   import { useHanhaiStore } from '@/stores/useHanhaiStore'
   import { useInventoryStore } from '@/stores/useInventoryStore'
   import { useMiningStore } from '@/stores/useMiningStore'
   import { usePlayerStore } from '@/stores/usePlayerStore'
+  import { useWalletStore } from '@/stores/useWalletStore'
   import {
-    HANHAI_SHOP_ITEMS,
+    HANHAI_FIXED_ITEMS,
     ROULETTE_BET_TIERS,
     ROULETTE_OUTCOMES,
     DICE_BET_AMOUNT,
@@ -613,9 +898,12 @@
     CARD_TREASURE_COUNT,
     TEXAS_TIERS,
     BUCKSHOT_BET_AMOUNT,
-    BUCKSHOT_WIN_MULTIPLIER
+    BUCKSHOT_WIN_MULTIPLIER,
+    TRADE_EXCHANGE_ITEMS,
+    calcTradePoints
   } from '@/data/hanhai'
-  import type { HanhaiShopItemDef, CricketDef, TexasSetup, TexasTierId, BuckshotSetup } from '@/types'
+  import { getItemById } from '@/data/items'
+  import type { HanhaiShopItemDef, CricketDef, TexasSetup, TexasTierId, BuckshotSetup, TradeExchangeItemDef } from '@/types'
   import { addLog } from '@/composables/useGameLog'
   import { useAudio } from '@/composables/useAudio'
   import {
@@ -647,8 +935,9 @@
 
   const hanhaiStore = useHanhaiStore()
   const playerStore = usePlayerStore()
+  const walletStore = useWalletStore()
   const { startHanhaiBgm, endHanhaiBgm } = useAudio()
-  const activeTab = ref<'shop' | 'casino'>('shop')
+  const activeTab = ref<'shop' | 'casino' | 'trade'>('shop')
   const shopModalItem = ref<HanhaiShopItemDef | null>(null)
 
   onMounted(() => {
@@ -984,6 +1273,122 @@
   const handleBuckshotComplete = (won: boolean, draw: boolean) => {
     hanhaiStore.endBuckshot(won, draw)
     showBuckshotModal.value = false
+  }
+
+  // === 通商系统 ===
+  const showTradeAddModal = ref(false)
+  const exchangeModalItem = ref<TradeExchangeItemDef | null>(null)
+
+  const getItemName = (itemId: string): string => {
+    return getItemById(itemId)?.name ?? itemId
+  }
+
+  const QUALITY_LABELS: Record<string, string> = {
+    normal: '普通',
+    fine: '优良',
+    excellent: '卓越',
+    supreme: '极品'
+  }
+
+  const qualityLabel = (quality: string): string => QUALITY_LABELS[quality] ?? quality
+
+  const qualityColor = (quality: string): string => {
+    if (quality === 'fine') return 'text-quality-fine'
+    if (quality === 'excellent') return 'text-quality-excellent'
+    if (quality === 'supreme') return 'text-quality-supreme'
+    return ''
+  }
+
+  /** 背包中可上架的物品（有售价的物品） */
+  const sellableItems = computed(() => {
+    const result: { id: string; name: string; quality: string; quantity: number; sellPrice: number }[] = []
+    for (const item of inventoryStore.items) {
+      const def = getItemById(item.itemId)
+      if (def && def.sellPrice > 0) {
+        result.push({
+          id: item.itemId,
+          name: def.name,
+          quality: item.quality ?? 'normal',
+          quantity: item.quantity,
+          sellPrice: def.sellPrice
+        })
+      }
+    }
+    return result
+  })
+
+  /** 计算积分预览（含钱袋加成） */
+  const calcPreviewPoints = (inv: { sellPrice: number; quality: string; quantity: number }): number => {
+    const base = calcTradePoints(inv.sellPrice * inv.quantity, inv.quality)
+    return Math.ceil(base * (1 + walletStore.getTradeBonus()))
+  }
+
+  // 数量选择相关
+  const tradeSelectedItem = ref<{ id: string; name: string; quality: string; quantity: number; sellPrice: number } | null>(null)
+  const tradeQuantity = ref(1)
+
+  const selectTradeItem = (inv: { id: string; name: string; quality: string; quantity: number; sellPrice: number }) => {
+    tradeSelectedItem.value = inv
+    tradeQuantity.value = 1
+  }
+
+  const tradePreviewPoints = computed(() => {
+    if (!tradeSelectedItem.value) return 0
+    const base = calcTradePoints(tradeSelectedItem.value.sellPrice * tradeQuantity.value, tradeSelectedItem.value.quality)
+    return Math.ceil(base * (1 + walletStore.getTradeBonus()))
+  })
+
+  const onTradeQuantityInput = (e: Event) => {
+    const target = e.target as HTMLInputElement
+    let v = parseInt(target.value, 10)
+    if (isNaN(v) || v < 1) v = 1
+    if (tradeSelectedItem.value && v > tradeSelectedItem.value.quantity) v = tradeSelectedItem.value.quantity
+    tradeQuantity.value = v
+  }
+
+  const handleConfirmTradeSlot = () => {
+    if (!tradeSelectedItem.value) return
+    const result = hanhaiStore.addTradeSlot(tradeSelectedItem.value.id, tradeSelectedItem.value.quality, tradeQuantity.value)
+    if (result.success) {
+      sfxBuy()
+      tradeSelectedItem.value = null
+      showTradeAddModal.value = false
+    }
+  }
+
+  const handleUpgradeTrade = () => {
+    const result = hanhaiStore.upgradeTradeShop()
+    if (result.success) {
+      sfxBuy()
+      addLog(result.message)
+    } else {
+      addLog(result.message)
+    }
+  }
+
+  const getExchangeWeeklyRemaining = (item: TradeExchangeItemDef): number => {
+    if (!item.weeklyLimit) return Infinity
+    return Math.max(0, item.weeklyLimit - (hanhaiStore.weeklyExchangePurchases[item.itemId] ?? 0))
+  }
+
+  const getExchangeTotalRemaining = (item: TradeExchangeItemDef): number => {
+    if (!item.totalLimit) return Infinity
+    return Math.max(0, item.totalLimit - (hanhaiStore.totalExchangePurchases[item.itemId] ?? 0))
+  }
+
+  const canExchange = (item: TradeExchangeItemDef): boolean => {
+    if (hanhaiStore.tradePoints < item.pointsCost) return false
+    if (item.weeklyLimit && getExchangeWeeklyRemaining(item) <= 0) return false
+    if (item.totalLimit && getExchangeTotalRemaining(item) <= 0) return false
+    return true
+  }
+
+  const handleExchange = (itemId: string) => {
+    const result = hanhaiStore.exchangeItem(itemId)
+    if (result.success) {
+      sfxBuy()
+      exchangeModalItem.value = null
+    }
   }
 </script>
 

@@ -424,6 +424,19 @@ export const WEAPONS: Record<string, WeaponDef> = {
     shopPrice: null,
     shopMaterials: [],
     fixedEnchantment: null
+  },
+
+  // === 通商兑换 ===
+  trade_desert_blade: {
+    id: 'trade_desert_blade',
+    name: '沙漠弯刀',
+    type: 'sword',
+    attack: 40,
+    critRate: 0.08,
+    description: '西域锻造的弯刀，刃口如月牙般弯曲，锋利无比。',
+    shopPrice: null,
+    shopMaterials: [],
+    fixedEnchantment: null
   }
 }
 export const SHOP_WEAPONS: WeaponDef[] = Object.values(WEAPONS).filter(w => w.shopPrice !== null)

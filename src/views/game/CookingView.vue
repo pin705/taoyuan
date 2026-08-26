@@ -216,13 +216,10 @@
   }
 
   const qualityTextClass = (quality: Quality): string => {
-    const map: Record<Quality, string> = {
-      normal: '',
-      fine: 'text-water',
-      excellent: 'text-purple-400',
-      supreme: 'text-accent'
-    }
-    return map[quality]
+    if (quality === 'fine') return 'text-quality-fine'
+    if (quality === 'excellent') return 'text-quality-excellent'
+    if (quality === 'supreme') return 'text-quality-supreme'
+    return ''
   }
 
   const tutorialHint = computed(() => {

@@ -43,6 +43,13 @@ export const WALLET_ITEMS: WalletItemDef[] = [
     description: '作物生长速度+10%。',
     effect: { type: 'cropGrowth', value: 0.1 },
     unlockCondition: '收获100次作物'
+  },
+  {
+    id: 'trade_prosperity_seal',
+    name: '通商金印',
+    description: '通商积分获取+20%。',
+    effect: { type: 'tradeBonus', value: 0.2 },
+    unlockCondition: '通商积分兑换获得'
   }
 ]
 

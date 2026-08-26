@@ -414,6 +414,57 @@ export const HATS: HatDef[] = [
     recipeMoney: 0,
     obtainSource: '公会商店',
     sellPrice: 800
+  },
+  // === 通商兑换 ===
+  {
+    id: 'trade_silk_robe',
+    name: '丝绸长袍',
+    description: '西域丝绸织就的华美长袍，穿着时神清气爽。',
+    effects: [
+      { type: 'attack_bonus', value: 3 },
+      { type: 'max_hp_bonus', value: 20 }
+    ],
+    shopPrice: null,
+    recipe: null,
+    recipeMoney: 0,
+    obtainSource: '通商积分兑换',
+    sellPrice: 750
+  },
+  // === 竹林野兽材料制作 ===
+  {
+    id: 'wolf_pelt_hood',
+    name: '狼皮兜帽',
+    description: '以竹林灰狼的毛皮缝制的兜帽，保暖且防护力强。',
+    effects: [
+      { type: 'defense_bonus', value: 0.08 },
+      { type: 'max_hp_bonus', value: 10 }
+    ],
+    shopPrice: null,
+    recipe: [
+      { itemId: 'wolf_pelt', quantity: 3 },
+      { itemId: 'silk_cloth', quantity: 1 }
+    ],
+    recipeMoney: 800,
+    obtainSource: '铁匠铺合成',
+    sellPrice: 400
+  },
+  {
+    id: 'tiger_pelt_cape',
+    name: '虎皮披风',
+    description: '虎皮与熊皮合制的披风，攻守兼备，气势慑人。',
+    effects: [
+      { type: 'attack_bonus', value: 5 },
+      { type: 'defense_bonus', value: 0.06 }
+    ],
+    shopPrice: null,
+    recipe: [
+      { itemId: 'tiger_pelt', quantity: 2 },
+      { itemId: 'bear_pelt', quantity: 1 },
+      { itemId: 'silk_cloth', quantity: 1 }
+    ],
+    recipeMoney: 2000,
+    obtainSource: '铁匠铺合成',
+    sellPrice: 900
   }
 ]
 

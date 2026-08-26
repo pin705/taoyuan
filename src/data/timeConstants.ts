@@ -1,4 +1,5 @@
-import type { Weekday, TimePeriod, LocationGroup } from '@/types'
+import type { Weekday, TimePeriod, LocationGroup, Season } from '@/types'
+import { getNpcById } from '@/data/npcs'
 
 // === 时间常量 ===
 export const DAY_START_HOUR = 6
@@ -88,7 +89,7 @@ export const ACTION_TIME_COSTS = {
   craftSprinkler: 0.17,
   craftFertilizer: 0.17,
   craftJadeRing: 0.17,
-  // 畜棚
+  // 牧场
   feedAnimals: 0.5,
   petAnimal: 0.17,
   batchPet: 0.5,
@@ -293,19 +294,31 @@ export const NPC_SCHEDULES: NpcScheduleEntry[] = [
   { npcId: 'a_fu', availableDays: 'all', availableHours: { from: 7, to: 18 } }
 ]
 
-export const isNpcAvailable = (npcId: string, day: number, hour: number): boolean => {
+/** 检查今天是否为该NPC的生日 */
+const isNpcBirthday = (npcId: string, season: Season, day: number): boolean => {
+  const npc = getNpcById(npcId)
+  return !!npc?.birthday && npc.birthday.season === season && npc.birthday.day === day
+}
+
+export const isNpcAvailable = (npcId: string, day: number, hour: number, season?: Season): boolean => {
   const schedule = NPC_SCHEDULES.find(s => s.npcId === npcId)
   if (!schedule) return true
+  // 生日当天一定在村里
+  if (season && isNpcBirthday(npcId, season, day)) {
+    return hour >= schedule.availableHours.from && hour < schedule.availableHours.to
+  }
   const weekday = getWeekday(day)
   if (schedule.availableDays !== 'all' && !schedule.availableDays.includes(weekday)) return false
   return hour >= schedule.availableHours.from && hour < schedule.availableHours.to
 }
 
-export const getNpcUnavailableReason = (npcId: string, day: number, hour: number): string | null => {
+export const getNpcUnavailableReason = (npcId: string, day: number, hour: number, season?: Season): string | null => {
   const schedule = NPC_SCHEDULES.find(s => s.npcId === npcId)
   if (!schedule) return null
+  // 生日当天一定在村里
+  const isBday = season ? isNpcBirthday(npcId, season, day) : false
   const weekday = getWeekday(day)
-  if (schedule.availableDays !== 'all' && !schedule.availableDays.includes(weekday)) {
+  if (!isBday && schedule.availableDays !== 'all' && !schedule.availableDays.includes(weekday)) {
     return '今天不在村里'
   }
   if (hour < schedule.availableHours.from) return '还没出门'

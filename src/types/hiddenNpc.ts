@@ -134,6 +134,10 @@ export interface HiddenNpcDef {
   bondBonuses: BondBonusType[]
   /** 缘分能力树 */
   abilities: AffinityAbility[]
+  /** 求缘物品制作材料 */
+  courtshipCraftCost: { itemId: string; quantity: number }[]
+  /** 结缘物品制作材料 */
+  bondCraftCost: { itemId: string; quantity: number }[]
   /** 显灵日（等同生日） */
   manifestationDay: { season: Season; day: number }
 }

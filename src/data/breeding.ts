@@ -1,4 +1,5 @@
 import type { SeedGenetics, HybridDef, SeedStarRating } from '@/types/breeding'
+import type { Quality } from '@/types'
 import { getCropById } from './crops'
 
 // === 常量 ===
@@ -80,6 +81,22 @@ export const MUTATION_JUMP_MAX = 30
 
 /** 变异时变异率自身浮动 */
 export const MUTATION_RATE_DRIFT = 5
+
+/** 变异正向概率（增加方向） */
+export const MUTATION_POSITIVE_CHANCE = 0.6
+
+/** 收获育种作物时按品质返还种子的概率 */
+export const SEED_RETURN_CHANCE: Record<Quality, number> = {
+  normal: 0.5,
+  fine: 0.7,
+  excellent: 0.9,
+  supreme: 1.0
+}
+
+/** 判断收获时是否返还育种种子 */
+export const shouldReturnBreedingSeed = (quality: Quality): boolean => {
+  return Math.random() < (SEED_RETURN_CHANCE[quality] ?? 0)
+}
 
 /** 育种台制造费用 */
 export const BREEDING_STATION_COST = {

@@ -109,6 +109,11 @@ export const useWalletStore = defineStore('wallet', () => {
     return has('earth_totem') ? 0.1 : 0
   }
 
+  /** 通商积分加成 (0.2 = 20%) */
+  const getTradeBonus = (): number => {
+    return has('trade_prosperity_seal') ? 0.2 : 0
+  }
+
   const serialize = () => {
     return { unlockedItems: unlockedItems.value }
   }
@@ -129,6 +134,7 @@ export const useWalletStore = defineStore('wallet', () => {
     getFishingCalmBonus,
     getCookingRestoreBonus,
     getCropGrowthBonus,
+    getTradeBonus,
     serialize,
     deserialize
   }

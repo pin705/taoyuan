@@ -24,7 +24,7 @@ import { useAchievementStore } from './useAchievementStore'
 
 const INITIAL_CAPACITY = 24
 const MAX_CAPACITY = 60
-const MAX_STACK = 99
+const MAX_STACK = 999
 const TEMP_CAPACITY = 10
 
 export const useInventoryStore = defineStore('inventory', () => {
@@ -118,6 +118,11 @@ export const useInventoryStore = defineStore('inventory', () => {
   /** 检查是否已拥有某武器（不含附魔区分） */
   const hasWeapon = (defId: string): boolean => {
     return ownedWeapons.value.some(w => w.defId === defId)
+  }
+
+  /** 检查是否已拥有完全相同的武器（同defId + 同附魔） */
+  const hasWeaponExact = (defId: string, enchantmentId: string | null): boolean => {
+    return ownedWeapons.value.some(w => w.defId === defId && w.enchantmentId === enchantmentId)
   }
 
   /** 装备武器（按索引） */
@@ -775,7 +780,7 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   /** 创建空方案 */
   const createEquipmentPreset = (name: string): boolean => {
-    if (equipmentPresets.value.length >= 3) return false
+    if (equipmentPresets.value.length >= 5) return false
     equipmentPresets.value.push({
       id: Date.now().toString(),
       name,
@@ -875,6 +880,61 @@ export const useInventoryStore = defineStore('inventory', () => {
       return { success: true, message: `已应用方案「${preset.name}」，但${missing.join('、')}已不在背包中。` }
     }
     return { success: true, message: `已应用方案「${preset.name}」。` }
+  }
+
+  // ============================================================
+  // 装备整理
+  // ============================================================
+
+  /** 一键整理所有装备（按价值降序，装备中的置顶） */
+  const sortEquipment = () => {
+    // --- 武器排序 ---
+    const equippedWeapon = ownedWeapons.value[equippedWeaponIndex.value]
+    ownedWeapons.value.sort((a, b) => {
+      const defA = getWeaponById(a.defId)
+      const defB = getWeaponById(b.defId)
+      // 攻击力降序
+      const atkDiff = (defB?.attack ?? 0) - (defA?.attack ?? 0)
+      if (atkDiff !== 0) return atkDiff
+      // 附魔加成降序
+      const enchA = a.enchantmentId ? (getEnchantmentById(a.enchantmentId)?.attackBonus ?? 0) : 0
+      const enchB = b.enchantmentId ? (getEnchantmentById(b.enchantmentId)?.attackBonus ?? 0) : 0
+      if (enchB !== enchA) return enchB - enchA
+      return a.defId.localeCompare(b.defId)
+    })
+    equippedWeaponIndex.value = equippedWeapon ? ownedWeapons.value.indexOf(equippedWeapon) : 0
+
+    // --- 戒指排序 ---
+    const equippedRing1 = equippedRingSlot1.value >= 0 ? ownedRings.value[equippedRingSlot1.value] : undefined
+    const equippedRing2 = equippedRingSlot2.value >= 0 ? ownedRings.value[equippedRingSlot2.value] : undefined
+    ownedRings.value.sort((a, b) => {
+      const priceA = getRingById(a.defId)?.sellPrice ?? 0
+      const priceB = getRingById(b.defId)?.sellPrice ?? 0
+      if (priceB !== priceA) return priceB - priceA
+      return a.defId.localeCompare(b.defId)
+    })
+    equippedRingSlot1.value = equippedRing1 ? ownedRings.value.indexOf(equippedRing1) : -1
+    equippedRingSlot2.value = equippedRing2 ? ownedRings.value.indexOf(equippedRing2) : -1
+
+    // --- 帽子排序 ---
+    const equippedHat = equippedHatIndex.value >= 0 ? ownedHats.value[equippedHatIndex.value] : undefined
+    ownedHats.value.sort((a, b) => {
+      const priceA = getHatById(a.defId)?.sellPrice ?? 0
+      const priceB = getHatById(b.defId)?.sellPrice ?? 0
+      if (priceB !== priceA) return priceB - priceA
+      return a.defId.localeCompare(b.defId)
+    })
+    equippedHatIndex.value = equippedHat ? ownedHats.value.indexOf(equippedHat) : -1
+
+    // --- 鞋子排序 ---
+    const equippedShoe = equippedShoeIndex.value >= 0 ? ownedShoes.value[equippedShoeIndex.value] : undefined
+    ownedShoes.value.sort((a, b) => {
+      const priceA = getShoeById(a.defId)?.sellPrice ?? 0
+      const priceB = getShoeById(b.defId)?.sellPrice ?? 0
+      if (priceB !== priceA) return priceB - priceA
+      return a.defId.localeCompare(b.defId)
+    })
+    equippedShoeIndex.value = equippedShoe ? ownedShoes.value.indexOf(equippedShoe) : -1
   }
 
   const serialize = () => {
@@ -1002,6 +1062,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     getEquippedWeapon,
     addWeapon,
     hasWeapon,
+    hasWeaponExact,
     equipWeapon,
     sellWeapon,
     ownedRings,
@@ -1039,6 +1100,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     renameEquipmentPreset,
     saveCurrentToPreset,
     applyEquipmentPreset,
+    sortEquipment,
     serialize,
     deserialize
   }

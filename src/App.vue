@@ -35,7 +35,7 @@
 
   onMounted(() => {
     if (!import.meta.env.DEV) {
-      document.body.classList.add('no-select')
+      document.body.classList.add('select-none')
     }
 
     script = document.createElement('script');

@@ -92,7 +92,7 @@ export type PregnancyStage = 'early' | 'mid' | 'late' | 'ready'
 export type ProposalResponse = 'accept' | 'decline' | 'wait'
 
 /** 雇工任务类型 */
-export type FarmHelperTask = 'water' | 'feed' | 'harvest' | 'weed'
+export type FarmHelperTask = 'water' | 'feed' | 'harvest' | 'weed' | 'bait'
 
 /** 雇工状态 */
 export interface HiredHelper {

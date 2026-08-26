@@ -228,7 +228,7 @@ export const GUILD_SHOP_ITEMS: GuildShopItemDef[] = [
     contributionCost: 150,
     description: '攻击力永久+3。',
     unlockGuildLevel: 6,
-    dailyLimit: 1
+    weeklyLimit: 10
   },
   {
     itemId: 'life_talisman',

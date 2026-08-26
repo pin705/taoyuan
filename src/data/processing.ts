@@ -1580,6 +1580,29 @@ export const PROCESSING_RECIPES: ProcessingRecipeDef[] = [
     processingDays: 2,
     description: '将草药研磨成活力饲料。'
   },
+  // 竹林野兽材料加工
+  {
+    id: 'grind_bear_gall',
+    machineType: 'herb_grinder',
+    name: '熊胆丸',
+    inputItemId: 'bear_gall',
+    inputQuantity: 1,
+    outputItemId: 'bear_gall_pill',
+    outputQuantity: 2,
+    processingDays: 2,
+    description: '将熊胆研磨制成苦寒丸药。'
+  },
+  {
+    id: 'grind_tiger_bone',
+    machineType: 'herb_grinder',
+    name: '虎骨酒',
+    inputItemId: 'tiger_bone',
+    inputQuantity: 1,
+    outputItemId: 'tiger_bone_tonic',
+    outputQuantity: 1,
+    processingDays: 3,
+    description: '将虎骨浸泡酿制成药酒。'
+  },
   // 制香坊
   {
     id: 'incense_pine',
@@ -1613,6 +1636,84 @@ export const PROCESSING_RECIPES: ProcessingRecipeDef[] = [
     outputQuantity: 1,
     processingDays: 2,
     description: '将桂花制成桂花香。'
+  },
+  // 瀚海加工配方
+  {
+    id: 'press_spice_oil',
+    machineType: 'oil_press',
+    name: '香料油',
+    inputItemId: 'hanhai_spice',
+    inputQuantity: 2,
+    outputItemId: 'spice_oil',
+    outputQuantity: 1,
+    processingDays: 2,
+    description: '将西域香料榨成浓郁的异域风味油脂。'
+  },
+  {
+    id: 'jar_cactus_jam',
+    machineType: 'sauce_jar',
+    name: '仙人掌果酱',
+    inputItemId: 'hanhai_cactus',
+    inputQuantity: 2,
+    outputItemId: 'cactus_jam',
+    outputQuantity: 1,
+    processingDays: 2,
+    description: '将仙人掌制成酸甜可口的沙漠果酱。'
+  },
+  {
+    id: 'brew_cactus_wine',
+    machineType: 'wine_workshop',
+    name: '仙人掌酒',
+    inputItemId: 'hanhai_cactus',
+    inputQuantity: 3,
+    outputItemId: 'cactus_wine',
+    outputQuantity: 1,
+    processingDays: 3,
+    description: '将仙人掌酿成西域特色佳酿。'
+  },
+  {
+    id: 'brew_date_wine',
+    machineType: 'wine_workshop',
+    name: '椰枣酒',
+    inputItemId: 'hanhai_date',
+    inputQuantity: 3,
+    outputItemId: 'date_wine',
+    outputQuantity: 1,
+    processingDays: 3,
+    description: '将椰枣酿成甘醇滋补的枣酿。'
+  },
+  {
+    id: 'crystal_turquoise',
+    machineType: 'crystal_duplicator',
+    name: '绿松石饰品',
+    inputItemId: 'hanhai_turquoise',
+    inputQuantity: 2,
+    outputItemId: 'turquoise_accessory',
+    outputQuantity: 1,
+    processingDays: 3,
+    description: '将绿松石打磨成精致的首饰。'
+  },
+  {
+    id: 'weave_brocade',
+    machineType: 'loom',
+    name: '锦缎',
+    inputItemId: 'hanhai_silk',
+    inputQuantity: 1,
+    outputItemId: 'brocade',
+    outputQuantity: 1,
+    processingDays: 2,
+    description: '将丝绸织成上等华丽的锦缎。'
+  },
+  {
+    id: 'brew_spice_tea',
+    machineType: 'tea_maker',
+    name: '香料茶',
+    inputItemId: 'hanhai_spice',
+    inputQuantity: 2,
+    outputItemId: 'spice_tea',
+    outputQuantity: 1,
+    processingDays: 2,
+    description: '将西域香料冲泡成异域风味的香茶。'
   }
 ]
 

@@ -9,7 +9,7 @@
     <div class="border border-accent/20 rounded-xs p-3 mb-4">
       <p class="text-sm text-accent mb-2">
         <Mountain :size="14" class="inline" />
-        山洞
+        {{ homeStore.caveUnlocked && homeStore.caveChoice !== 'none' ? homeStore.caveName : '山洞' }}
       </p>
       <div v-if="!homeStore.caveUnlocked">
         <p class="text-xs text-muted">山洞尚未开放。（累计收入达到一定额度后自动开放）</p>
@@ -34,9 +34,60 @@
         </div>
       </div>
       <div v-else>
-        <p class="text-xs">
-          {{ homeStore.caveChoice === 'mushroom' ? '蘑菇洞 — 每天有概率产出野蘑菇。' : '蝙蝠洞 — 每天有概率产出各季水果。' }}
+        <p class="text-xs mb-1">
+          {{ homeStore.caveChoice === 'mushroom' ? '蘑菇洞 — 每天有概率产出蘑菇类物品。' : '蝙蝠洞 — 每天有概率产出各季水果。' }}
         </p>
+        <div class="border border-accent/10 rounded-xs p-2 mb-2 space-y-0.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] text-muted">等级</span>
+            <span class="text-[10px] text-accent">{{ homeStore.caveName }}（Lv.{{ homeStore.caveLevel }}）</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] text-muted">运作天数</span>
+            <span class="text-[10px]">{{ homeStore.caveDaysActive }}天</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] text-muted">产出品质</span>
+            <span class="text-[10px]" :class="caveQualityClass">{{ caveQualityLabel }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] text-muted">产出概率</span>
+            <span class="text-[10px]">{{ caveChanceText }}</span>
+          </div>
+          <div v-if="currentCaveDef && currentCaveDef.doubleChance > 0" class="flex items-center justify-between">
+            <span class="text-[10px] text-muted">双倍概率</span>
+            <span class="text-[10px]">{{ Math.round(currentCaveDef.doubleChance * 100) }}%</span>
+          </div>
+        </div>
+        <!-- 山洞升级 -->
+        <div v-if="homeStore.nextCaveUpgrade" class="border border-accent/10 rounded-xs p-2">
+          <p class="text-[10px] text-muted mb-1">升级至 {{ homeStore.nextCaveUpgrade.name }}</p>
+          <div class="space-y-0.5 mb-1.5">
+            <div v-for="mat in homeStore.nextCaveUpgrade.materialCost" :key="mat.itemId" class="flex items-center justify-between">
+              <span class="text-[10px] text-muted">{{ getItemName(mat.itemId) }}</span>
+              <span class="text-[10px]" :class="getCombinedItemCount(mat.itemId) >= mat.quantity ? '' : 'text-danger'">
+                {{ getCombinedItemCount(mat.itemId) }}/{{ mat.quantity }}
+              </span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] text-muted">铜钱</span>
+              <span class="text-[10px]" :class="playerStore.money >= homeStore.nextCaveUpgrade.cost ? '' : 'text-danger'">
+                {{ homeStore.nextCaveUpgrade.cost }}文
+              </span>
+            </div>
+          </div>
+          <Button
+            class="w-full justify-center"
+            :class="{ '!bg-accent !text-bg': canUpgradeCave }"
+            :disabled="!canUpgradeCave"
+            :icon="ArrowUp"
+            :icon-size="12"
+            @click="handleUpgradeCave"
+          >
+            升级山洞
+          </Button>
+        </div>
+        <div v-else class="text-[10px] text-muted">山洞已升至最高等级。</div>
       </div>
     </div>
 
@@ -90,7 +141,7 @@
         <!-- 箱子列表 -->
         <div v-if="warehouseStore.chests.length > 0" class="flex flex-col space-y-1.5 mb-2">
           <div
-            v-for="chest in warehouseStore.chests"
+            v-for="(chest, chestIdx) in warehouseStore.chests"
             :key="chest.id"
             class="border border-accent/10 rounded-xs px-3 py-2 cursor-pointer hover:bg-accent/5"
             @click="openChestId = chest.id"
@@ -123,6 +174,20 @@
               </div>
               <div class="flex items-center space-x-1.5">
                 <span class="text-[10px] text-muted">{{ chest.items.length }}/{{ CHEST_DEFS[chest.tier].capacity }}</span>
+                <button
+                  v-if="warehouseStore.chests.length > 1 && chestIdx > 0"
+                  class="text-muted hover:text-accent"
+                  @click.stop="warehouseStore.moveChest(chest.id, 'up')"
+                >
+                  <ChevronUp :size="12" />
+                </button>
+                <button
+                  v-if="warehouseStore.chests.length > 1 && chestIdx < warehouseStore.chests.length - 1"
+                  class="text-muted hover:text-accent"
+                  @click.stop="warehouseStore.moveChest(chest.id, 'down')"
+                >
+                  <ChevronDown :size="12" />
+                </button>
                 <button class="text-muted hover:text-danger" @click.stop="openDismantleConfirm(chest.id)">
                   <Trash2 :size="10" />
                 </button>
@@ -305,6 +370,16 @@
             <p class="text-[10px] text-muted/50 mt-0.5">点击下方「存入物品」添加</p>
           </div>
 
+          <!-- 一键整理 -->
+          <Button
+            v-if="currentOpenChest && currentOpenChest.items.length > 1"
+            class="w-full mb-1"
+            :icon="ArrowDown01"
+            :icon-size="12"
+            @click="warehouseStore.sortChest(openChestId!)"
+          >
+            整理
+          </Button>
           <!-- 一键存入重复物品 -->
           <Button
             v-if="duplicateDepositItems.length > 0"
@@ -534,7 +609,23 @@
 
 <script setup lang="ts">
   import { computed, ref } from 'vue'
-  import { ArrowDown, ArrowDownToLine, Building, Mountain, Leaf, Pencil, Plus, Trash2, Unlock, Warehouse, X } from 'lucide-vue-next'
+  import {
+    ArrowDown,
+    ArrowDown01,
+    ArrowDownToLine,
+    ArrowUp,
+    Building,
+    ChevronDown,
+    ChevronUp,
+    Mountain,
+    Leaf,
+    Pencil,
+    Plus,
+    Trash2,
+    Unlock,
+    Warehouse,
+    X
+  } from 'lucide-vue-next'
   import { useHomeStore } from '@/stores/useHomeStore'
   import { useInventoryStore } from '@/stores/useInventoryStore'
   import { usePlayerStore } from '@/stores/usePlayerStore'
@@ -542,7 +633,7 @@
   import { useWarehouseStore } from '@/stores/useWarehouseStore'
   import { getCombinedItemCount, removeCombinedItem } from '@/composables/useCombinedInventory'
   import { getItemById } from '@/data'
-  import { GREENHOUSE_UNLOCK_COST, GREENHOUSE_MATERIAL_COST, WAREHOUSE_UNLOCK_MATERIALS } from '@/data/buildings'
+  import { GREENHOUSE_UNLOCK_COST, GREENHOUSE_MATERIAL_COST, WAREHOUSE_UNLOCK_MATERIALS, getCaveUpgrade } from '@/data/buildings'
   import { CHEST_DEFS, CHEST_TIER_ORDER } from '@/data/items'
   import type { Quality, ChestTier, VoidChestRole } from '@/types'
   import { addLog } from '@/composables/useGameLog'
@@ -572,6 +663,35 @@
     if (homeStore.chooseCave(choice)) {
       const name = choice === 'mushroom' ? '蘑菇洞' : '蝙蝠洞'
       addLog(`选择了${name}，每天会有被动产出。`)
+    }
+  }
+
+  const currentCaveDef = computed(() => getCaveUpgrade(homeStore.caveLevel) ?? null)
+
+  const caveQualityLabel = computed(() => QUALITY_LABEL[homeStore.caveQuality])
+
+  const caveQualityClass = computed(() => qualityTextClass(homeStore.caveQuality))
+
+  const caveChanceText = computed(() => {
+    const def = currentCaveDef.value
+    if (!def) return ''
+    if (homeStore.caveChoice === 'mushroom') return `${Math.round(def.mushroomChance * 100)}%`
+    if (homeStore.caveChoice === 'fruit_bat') return `${Math.round(def.fruitBatChance * 100)}%`
+    return ''
+  })
+
+  const canUpgradeCave = computed(() => {
+    const upgrade = homeStore.nextCaveUpgrade
+    if (!upgrade) return false
+    if (playerStore.money < upgrade.cost) return false
+    return upgrade.materialCost.every(mat => getCombinedItemCount(mat.itemId) >= mat.quantity)
+  })
+
+  const handleUpgradeCave = () => {
+    if (homeStore.upgradeCave()) {
+      addLog(`山洞升级至${homeStore.caveName}！`)
+    } else {
+      addLog('铜钱或材料不足，无法升级山洞。')
     }
   }
 

@@ -52,6 +52,90 @@ export const CAVE_MUSHROOM_DAILY_CHANCE = 0.6
 /** 蝙蝠洞每天产出概率 */
 export const CAVE_FRUIT_BAT_DAILY_CHANCE = 0.5
 
+/** 山洞品质随时间提升阈值（天数） */
+export const CAVE_QUALITY_THRESHOLDS = [
+  { days: 0, quality: 'normal' as const },
+  { days: 56, quality: 'fine' as const },
+  { days: 112, quality: 'excellent' as const },
+  { days: 224, quality: 'supreme' as const }
+]
+
+/** 山洞升级定义 */
+export interface CaveUpgradeDef {
+  level: number
+  name: string
+  mushroomChance: number
+  fruitBatChance: number
+  doubleChance: number
+  cost: number
+  materialCost: { itemId: string; quantity: number }[]
+  mushroomPool: { itemId: string; weight: number }[]
+  fruitPool: string[]
+}
+
+export const CAVE_UPGRADES: CaveUpgradeDef[] = [
+  {
+    level: 1,
+    name: '山洞',
+    mushroomChance: 0.6,
+    fruitBatChance: 0.5,
+    doubleChance: 0,
+    cost: 0,
+    materialCost: [],
+    mushroomPool: [{ itemId: 'wild_mushroom', weight: 1 }],
+    fruitPool: ['tree_peach', 'lychee', 'mandarin', 'plum_blossom']
+  },
+  {
+    level: 2,
+    name: '山洞·贰',
+    mushroomChance: 0.7,
+    fruitBatChance: 0.6,
+    doubleChance: 0,
+    cost: 15000,
+    materialCost: [
+      { itemId: 'wood', quantity: 100 },
+      { itemId: 'iron_bar', quantity: 5 }
+    ],
+    mushroomPool: [
+      { itemId: 'wild_mushroom', weight: 70 },
+      { itemId: 'herb', weight: 30 }
+    ],
+    fruitPool: ['tree_peach', 'lychee', 'mandarin', 'plum_blossom', 'apricot', 'pomegranate']
+  },
+  {
+    level: 3,
+    name: '山洞·叁',
+    mushroomChance: 0.8,
+    fruitBatChance: 0.7,
+    doubleChance: 0.25,
+    cost: 40000,
+    materialCost: [
+      { itemId: 'wood', quantity: 200 },
+      { itemId: 'gold_bar', quantity: 10 }
+    ],
+    mushroomPool: [
+      { itemId: 'wild_mushroom', weight: 50 },
+      { itemId: 'herb', weight: 35 },
+      { itemId: 'ginseng', weight: 15 }
+    ],
+    fruitPool: ['tree_peach', 'lychee', 'mandarin', 'plum_blossom', 'apricot', 'pomegranate', 'persimmon', 'hawthorn']
+  }
+]
+
+/** 根据等级获取山洞升级定义 */
+export const getCaveUpgrade = (level: number): CaveUpgradeDef | undefined => {
+  return CAVE_UPGRADES.find(u => u.level === level)
+}
+
+/** 根据天数获取山洞品质 */
+export const getCaveQuality = (daysActive: number): 'normal' | 'fine' | 'excellent' | 'supreme' => {
+  let result: 'normal' | 'fine' | 'excellent' | 'supreme' = 'normal'
+  for (const t of CAVE_QUALITY_THRESHOLDS) {
+    if (daysActive >= t.days) result = t.quality
+  }
+  return result
+}
+
 /** 仓库解锁材料需求 */
 export const WAREHOUSE_UNLOCK_MATERIALS = [
   { itemId: 'wood', quantity: 300 },
@@ -109,11 +193,68 @@ export const GREENHOUSE_UPGRADES: GreenhouseUpgradeDef[] = [
   }
 ]
 
-/** 酒窖陈酿天数——提升一档品质所需天数 */
-export const CELLAR_AGING_DAYS = 14
+/** 酒窖增值周期天数 */
+export const CELLAR_VALUE_CYCLE_DAYS = 7
 
-/** 酒窖最大容量 */
-export const CELLAR_MAX_SLOTS = 6
+/** 酒窖升级定义 */
+export interface CellarUpgradeDef {
+  level: number
+  name: string
+  valuePerCycle: number
+  maxSlots: number
+  cost: number
+  materialCost: { itemId: string; quantity: number }[]
+}
+
+export const CELLAR_UPGRADES: CellarUpgradeDef[] = [
+  { level: 1, name: '酒窖', valuePerCycle: 100, maxSlots: 6, cost: 0, materialCost: [] },
+  {
+    level: 2,
+    name: '酒窖·贰',
+    valuePerCycle: 125,
+    maxSlots: 9,
+    cost: 30000,
+    materialCost: [
+      { itemId: 'wood', quantity: 200 },
+      { itemId: 'iron_bar', quantity: 10 }
+    ]
+  },
+  {
+    level: 3,
+    name: '酒窖·叁',
+    valuePerCycle: 150,
+    maxSlots: 12,
+    cost: 60000,
+    materialCost: [
+      { itemId: 'wood', quantity: 300 },
+      { itemId: 'gold_bar', quantity: 10 }
+    ]
+  },
+  {
+    level: 4,
+    name: '酒窖·肆',
+    valuePerCycle: 175,
+    maxSlots: 15,
+    cost: 100000,
+    materialCost: [
+      { itemId: 'wood', quantity: 400 },
+      { itemId: 'gold_bar', quantity: 20 }
+    ]
+  },
+  {
+    level: 5,
+    name: '酒窖·伍',
+    valuePerCycle: 200,
+    maxSlots: 18,
+    cost: 150000,
+    materialCost: [
+      { itemId: 'wood', quantity: 500 },
+      { itemId: 'iridium_bar', quantity: 5 }
+    ]
+  }
+]
+
+export const getCellarUpgrade = (level: number): CellarUpgradeDef | undefined => CELLAR_UPGRADES.find(u => u.level === level)
 
 export const getFarmhouseUpgrade = (level: number): FarmhouseUpgradeDef | undefined => {
   return FARMHOUSE_UPGRADES.find(u => u.level === level)

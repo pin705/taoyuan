@@ -590,7 +590,7 @@
   const npcAvailable = (npcId: string): boolean => {
     const state = npcStore.getNpcState(npcId)
     if (state?.married) return true
-    return isNpcAvailable(npcId, gameStore.day, gameStore.hour)
+    return isNpcAvailable(npcId, gameStore.day, gameStore.hour, gameStore.season)
   }
 
   const handleSelectNpc = (npcId: string) => {

@@ -238,45 +238,52 @@
 
     <!-- 酒窖 -->
     <div v-if="homeStore.hasCellar" class="border border-accent/20 rounded-xs p-3">
-      <p class="text-sm text-accent mb-2">
-        <Gem :size="14" class="inline" />
-        酒窖
-      </p>
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-sm text-accent">
+          <Wine :size="14" class="inline" />
+          酒窖·Lv.{{ homeStore.cellarLevel }}
+          <span class="text-[10px] text-muted ml-1">（{{ homeStore.cellarSlots.length }}/{{ homeStore.cellarMaxSlots }}）</span>
+        </p>
+        <Button v-if="homeStore.nextCellarUpgrade" class="py-0 px-1" @click="showCellarUpgradeModal = true">
+          <ArrowUp :size="12" class="inline" />
+          升级
+        </Button>
+      </div>
       <div v-if="homeStore.cellarSlots.length > 0" class="flex flex-col space-y-1.5 mb-3">
         <div v-for="(slot, idx) in homeStore.cellarSlots" :key="idx" class="border border-accent/10 rounded-xs p-2">
           <div class="flex items-center justify-between mb-1">
-            <span
-              class="text-xs"
-              :class="{
-                'text-quality-fine': slot.quality === 'fine',
-                'text-quality-excellent': slot.quality === 'excellent',
-                'text-quality-supreme': slot.quality === 'supreme',
-                'text-accent': slot.quality === 'normal'
-              }"
-            >
-              {{ getItemName(slot.itemId) }}
-            </span>
+            <div class="flex items-center space-x-1">
+              <span class="text-xs text-accent">{{ getItemName(slot.itemId) }}</span>
+              <span v-if="slot.upgradeCount >= 16" class="text-[10px] text-success">陈酿{{ Math.floor(slot.upgradeCount / 16) }}年</span>
+            </div>
             <Button class="py-0 px-1" @click="removeAgingConfirmIdx = idx">取出</Button>
           </div>
+          <div class="flex items-center justify-between mb-0.5">
+            <span class="text-[10px] text-muted">已增值+{{ slot.addedValue }}文（提升{{ slot.upgradeCount }}次）</span>
+          </div>
           <div class="flex items-center space-x-1">
-            <span class="text-[10px] text-muted w-6">陈酿</span>
+            <span class="text-[10px] text-muted w-6">周期</span>
             <div class="flex-1 h-1.5 bg-bg rounded-xs border border-accent/10">
               <div
                 class="h-full rounded-xs bg-accent transition-all"
-                :style="{ width: Math.min(100, Math.floor((slot.daysAging / 14) * 100)) + '%' }"
+                :style="{ width: Math.min(100, Math.floor((slot.daysAging / 7) * 100)) + '%' }"
               />
             </div>
-            <span class="text-[10px] text-muted">{{ slot.daysAging }}/14天</span>
+            <span class="text-[10px] text-muted">{{ slot.daysAging }}/7天</span>
           </div>
         </div>
       </div>
       <div v-if="homeStore.cellarSlots.length === 0" class="flex flex-col items-center justify-center py-6 text-muted mb-3">
-        <Gem :size="32" class="mb-2" />
+        <Wine :size="32" class="mb-2" />
         <p class="text-xs">酒窖空空如也</p>
       </div>
 
       <!-- 放入新酒 -->
-      <Button class="w-full" v-if="homeStore.cellarSlots.length < 6 && ageableInInventory.length > 0" @click="showAgingModal = true">
+      <Button
+        class="w-full"
+        v-if="homeStore.cellarSlots.length < homeStore.cellarMaxSlots && ageableInInventory.length > 0"
+        @click="showAgingModal = true"
+      >
         放入陈酿
       </Button>
     </div>
@@ -583,11 +590,71 @@
       >
         <div class="game-panel max-w-xs w-full text-center">
           <p class="text-sm text-accent mb-3">确定取出{{ getItemName(removeAgingConfirmSlot.itemId) }}吗？</p>
-          <p class="text-xs text-muted mb-4">已陈酿{{ removeAgingConfirmSlot.daysAging }}天，满14天可提升品质。</p>
+          <p class="text-xs text-muted mb-2">
+            已增值+{{ removeAgingConfirmSlot.addedValue }}文（提升{{ removeAgingConfirmSlot.upgradeCount }}次）
+          </p>
+          <p v-if="removeAgingConfirmSlot.upgradeCount >= 16" class="text-xs text-success mb-2">
+            已成为陈酿{{ Math.floor(removeAgingConfirmSlot.upgradeCount / 16) }}年，取出将点亮图鉴！
+          </p>
+          <p v-if="removeAgingConfirmSlot.addedValue > 0" class="text-xs text-accent mb-4">
+            取出时将获得{{ removeAgingConfirmSlot.addedValue }}文增值铜钱。
+          </p>
+          <p v-else class="text-xs text-muted mb-4">尚未增值，满7天可提升价值。</p>
           <div class="flex space-x-3 justify-center">
             <Button @click="removeAgingConfirmIdx = null">取消</Button>
             <Button @click="handleRemoveAging(removeAgingConfirmIdx!)">确认取出</Button>
           </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- 酒窖升级弹窗 -->
+    <Transition name="panel-fade">
+      <div
+        v-if="showCellarUpgradeModal && homeStore.nextCellarUpgrade"
+        class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+        @click.self="showCellarUpgradeModal = false"
+      >
+        <div class="game-panel max-w-xs w-full relative">
+          <button class="absolute top-2 right-2 text-muted hover:text-text" @click="showCellarUpgradeModal = false">
+            <X :size="14" />
+          </button>
+
+          <p class="text-sm text-accent mb-2">升级酒窖</p>
+
+          <div class="border border-accent/10 rounded-xs p-2 mb-2">
+            <p class="text-xs">升级为「{{ homeStore.nextCellarUpgrade.name }}」</p>
+            <p class="text-xs text-muted mt-0.5">
+              每次增值{{ homeStore.nextCellarUpgrade.valuePerCycle }}文，最大容量{{ homeStore.nextCellarUpgrade.maxSlots }}个
+            </p>
+          </div>
+
+          <div class="border border-accent/10 rounded-xs p-2 mb-2 space-y-1">
+            <p class="text-xs text-muted mb-1">所需材料</p>
+            <div v-for="mat in homeStore.nextCellarUpgrade.materialCost" :key="mat.itemId" class="flex items-center justify-between">
+              <span class="text-xs text-muted">{{ getItemName(mat.itemId) }}</span>
+              <span class="text-xs" :class="getCombinedItemCount(mat.itemId) >= mat.quantity ? '' : 'text-danger'">
+                {{ getCombinedItemCount(mat.itemId) }}/{{ mat.quantity }}
+              </span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-muted">铜钱</span>
+              <span class="text-xs" :class="playerStore.money >= homeStore.nextCellarUpgrade.cost ? '' : 'text-danger'">
+                {{ homeStore.nextCellarUpgrade.cost }}文
+              </span>
+            </div>
+          </div>
+
+          <Button
+            class="w-full justify-center"
+            :class="{ '!bg-accent !text-bg': canUpgradeCellar }"
+            :disabled="!canUpgradeCellar"
+            :icon="ArrowUp"
+            :icon-size="12"
+            @click="handleUpgradeCellar"
+          >
+            升级
+          </Button>
         </div>
       </div>
     </Transition>
@@ -596,12 +663,13 @@
 
 <script setup lang="ts">
   import { computed, ref } from 'vue'
-  import { ArrowUp, Calendar, Gem, Gift, Hammer, Home, Heart, MessageCircle, UserPlus, Users, X } from 'lucide-vue-next'
+  import { ArrowUp, Calendar, Gift, Hammer, Home, Heart, MessageCircle, UserPlus, Users, Wine, X } from 'lucide-vue-next'
   import { useCookingStore } from '@/stores/useCookingStore'
   import { useGameStore } from '@/stores/useGameStore'
   import { useHomeStore } from '@/stores/useHomeStore'
   import { useInventoryStore } from '@/stores/useInventoryStore'
   import { useNpcStore } from '@/stores/useNpcStore'
+  import { useAchievementStore } from '@/stores/useAchievementStore'
   import { usePlayerStore } from '@/stores/usePlayerStore'
   import { SEASON_NAMES } from '@/stores/useGameStore'
   import { getCombinedItemCount } from '@/composables/useCombinedInventory'
@@ -630,6 +698,7 @@
   const hireConfirmNpcId = ref<string | null>(null)
   const dismissConfirmNpcId = ref<string | null>(null)
   const removeAgingConfirmIdx = ref<number | null>(null)
+  const showCellarUpgradeModal = ref(false)
   const removeAgingConfirmSlot = computed(() =>
     removeAgingConfirmIdx.value !== null ? (homeStore.cellarSlots[removeAgingConfirmIdx.value] ?? null) : null
   )
@@ -829,7 +898,7 @@
   })
 
   const ageableInInventory = computed(() => {
-    return inventoryStore.items.filter(inv => AGEABLE_ITEMS.includes(inv.itemId) && inv.quality !== 'supreme')
+    return inventoryStore.items.filter(inv => AGEABLE_ITEMS.includes(inv.itemId))
   })
 
   const getItemName = (itemId: string): string => {
@@ -898,18 +967,50 @@
       addLog('无法放入酒窖（已满或物品不可陈酿）。')
     }
     // 酒窖满或无剩余可陈酿物品时关闭弹窗
-    if (homeStore.cellarSlots.length >= 6 || ageableInInventory.value.length === 0) {
+    if (homeStore.cellarSlots.length >= homeStore.cellarMaxSlots || ageableInInventory.value.length === 0) {
       showAgingModal.value = false
     }
   }
 
   const handleRemoveAging = (index: number) => {
+    // 取出前先记录剩余天数
+    const slotBeforeRemove = homeStore.cellarSlots[index]
+    const remainingDays = slotBeforeRemove?.daysAging ?? 0
     const result = homeStore.removeAging(index)
     if (result) {
       inventoryStore.addItem(result.itemId, 1, result.quality)
       const name = getItemName(result.itemId)
-      addLog(`从酒窖取出了${name}。`)
+      const totalDays = result.upgradeCount * 7 + remainingDays
+      let msg = `从酒窖取出了${name}`
+      if (result.addedValue > 0) {
+        msg += `（陈酿${totalDays}天，增值+${result.addedValue}文）`
+      }
+      addLog(msg + '。')
+      // 满1年点亮图鉴
+      if (result.upgradeCount >= 16) {
+        const achievementStore = useAchievementStore()
+        achievementStore.discoverItem('aged_' + result.itemId)
+        addLog(`点亮了${name}陈酿图鉴！`)
+      }
     }
     removeAgingConfirmIdx.value = null
+  }
+
+  const canUpgradeCellar = computed(() => {
+    const upgrade = homeStore.nextCellarUpgrade
+    if (!upgrade) return false
+    if (playerStore.money < upgrade.cost) return false
+    return upgrade.materialCost.every(mat => getCombinedItemCount(mat.itemId) >= mat.quantity)
+  })
+
+  const handleUpgradeCellar = () => {
+    const upgrade = homeStore.nextCellarUpgrade
+    if (!upgrade) return
+    if (homeStore.upgradeCellar()) {
+      addLog(`酒窖升级为「${upgrade.name}」！每次增值${upgrade.valuePerCycle}文，最大容量${upgrade.maxSlots}个。`)
+      showCellarUpgradeModal.value = false
+    } else {
+      addLog('铜钱或材料不足，无法升级酒窖。')
+    }
   }
 </script>

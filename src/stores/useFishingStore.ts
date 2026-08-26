@@ -27,7 +27,7 @@ import { useSecretNoteStore } from './useSecretNoteStore'
 import { useHiddenNpcStore } from './useHiddenNpcStore'
 
 const STAMINA_COST = 4
-const MAX_CRAB_POTS = 10
+const MAX_CRAB_POTS = 12
 const MAX_CRAB_POTS_PER_LOCATION = 3
 
 /** 蟹笼产物池 */
@@ -335,14 +335,34 @@ export const useFishingStore = defineStore('fishing', () => {
   }
 
   /** 完成钓鱼（小游戏结束后调用） */
-  const completeFishing = (rating: MiniGameRating): { message: string; fishName?: string; fishId?: string; difficulty?: string; sellPrice?: number; description?: string; quality?: Quality; quantity?: number; success: boolean } | null => {
+  const completeFishing = (
+    rating: MiniGameRating
+  ): {
+    message: string
+    fishName?: string
+    fishId?: string
+    difficulty?: string
+    sellPrice?: number
+    description?: string
+    quality?: Quality
+    quantity?: number
+    success: boolean
+  } | null => {
     if (!currentFish.value) return null
 
     // poor = 鱼跑了
     if (rating === 'poor') {
       const fish = currentFish.value
       endFishing()
-      return { message: `鱼跑掉了……${fish.name}逃脱了！`, fishName: fish.name, fishId: fish.id, difficulty: fish.difficulty, sellPrice: fish.sellPrice, description: fish.description, success: false }
+      return {
+        message: `鱼跑掉了……${fish.name}逃脱了！`,
+        fishName: fish.name,
+        fishId: fish.id,
+        difficulty: fish.difficulty,
+        sellPrice: fish.sellPrice,
+        description: fish.description,
+        success: false
+      }
     }
 
     // 品质计算
@@ -396,7 +416,13 @@ export const useFishingStore = defineStore('fishing', () => {
     const luremasterCatchMult = skillStore.getSkill('fishing').perk10 === 'luremaster' ? 2 : 1
     const doubleCatchChance = (activeBaitDef.value?.doubleCatchChance ?? 0) * luremasterCatchMult
     const catchQty = doubleCatchChance > 0 && Math.random() < doubleCatchChance ? 2 : 1
-    const caughtFish = { name: currentFish.value.name, id: currentFish.value.id, difficulty: currentFish.value.difficulty, sellPrice: currentFish.value.sellPrice, description: currentFish.value.description }
+    const caughtFish = {
+      name: currentFish.value.name,
+      id: currentFish.value.id,
+      difficulty: currentFish.value.difficulty,
+      sellPrice: currentFish.value.sellPrice,
+      description: currentFish.value.description
+    }
 
     const added = inventoryStore.addItem(currentFish.value.id, catchQty, quality)
     const achievementStore = useAchievementStore()
@@ -441,7 +467,17 @@ export const useFishingStore = defineStore('fishing', () => {
 
     lastPerfect.value = rating === 'perfect'
     endFishing()
-    return { message, fishName: caughtFish.name, fishId: caughtFish.id, difficulty: caughtFish.difficulty, sellPrice: caughtFish.sellPrice, description: caughtFish.description, quality, quantity: catchQty, success: true }
+    return {
+      message,
+      fishName: caughtFish.name,
+      fishId: caughtFish.id,
+      difficulty: caughtFish.difficulty,
+      sellPrice: caughtFish.sellPrice,
+      description: caughtFish.description,
+      quality,
+      quantity: catchQty,
+      success: true
+    }
   }
 
   /** 钓鱼宝箱 */
@@ -529,6 +565,21 @@ export const useFishingStore = defineStore('fishing', () => {
     }
     if (baited === 0) return { success: false, message: '没有鱼饵了。' }
     return { success: true, message: `装饵${baited}个蟹笼。` }
+  }
+
+  /** 全局装饵（雇工自动调用，不限地点） */
+  const baitAllCrabPots = (): number => {
+    const pots = crabPots.value.filter(p => !p.hasBait)
+    let baited = 0
+    for (const pot of pots) {
+      if (inventoryStore.removeItem('standard_bait', 1)) {
+        pot.hasBait = true
+        baited++
+      } else {
+        break
+      }
+    }
+    return baited
   }
 
   /** 各地点蟹笼统计 */
@@ -631,6 +682,7 @@ export const useFishingStore = defineStore('fishing', () => {
     placeCrabPot,
     removeCrabPot,
     baitCrabPots,
+    baitAllCrabPots,
     collectCrabPots,
     serialize,
     deserialize

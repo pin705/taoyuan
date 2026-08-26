@@ -6,7 +6,7 @@ import { useInventoryStore } from './useInventoryStore'
 
 const INITIAL_MAX_CHESTS = 3
 const MAX_CHESTS_CAP = 10
-const MAX_STACK = 99
+const MAX_STACK = 999
 const UNLOCK_COST = 50000
 
 export const useWarehouseStore = defineStore('warehouse', () => {
@@ -219,6 +219,86 @@ export const useWarehouseStore = defineStore('warehouse', () => {
     return chests.value.filter(c => c.tier === 'void')
   }
 
+  // ---- 箱子排序 ----
+
+  /** 移动箱子位置（上移/下移） */
+  const moveChest = (chestId: string, direction: 'up' | 'down'): boolean => {
+    const idx = chests.value.findIndex(c => c.id === chestId)
+    if (idx === -1) return false
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1
+    if (targetIdx < 0 || targetIdx >= chests.value.length) return false
+    const temp = chests.value[idx]!
+    chests.value[idx] = chests.value[targetIdx]!
+    chests.value[targetIdx] = temp
+    return true
+  }
+
+  // ---- 整理 ----
+
+  /** 物品分类排序优先级 */
+  const CATEGORY_ORDER: Record<string, number> = {
+    seed: 0,
+    crop: 1,
+    fruit: 2,
+    fish: 3,
+    animal_product: 4,
+    processed: 5,
+    food: 6,
+    ore: 7,
+    gem: 8,
+    material: 9,
+    machine: 10,
+    sprinkler: 11,
+    fertilizer: 12,
+    bait: 13,
+    tackle: 14,
+    bomb: 15,
+    sapling: 16,
+    gift: 17,
+    fossil: 18,
+    artifact: 19,
+    misc: 20
+  }
+
+  const qualityOrder: Record<string, number> = { normal: 0, fine: 1, excellent: 2, supreme: 3 }
+
+  /** 一键整理箱子（按分类→物品ID→品质排序，合并同类栈） */
+  const sortChest = (chestId: string) => {
+    const chest = getChest(chestId)
+    if (!chest || chest.items.length === 0) return
+    // 合并同类栈
+    const merged: InventoryItem[] = []
+    for (const item of chest.items) {
+      const existing = merged.find(m => m.itemId === item.itemId && m.quality === item.quality)
+      if (existing) {
+        existing.quantity += item.quantity
+      } else {
+        merged.push({ ...item })
+      }
+    }
+    // 拆分超过 MAX_STACK 的栈
+    const split: InventoryItem[] = []
+    for (const item of merged) {
+      let remaining = item.quantity
+      while (remaining > 0) {
+        const batch = Math.min(remaining, MAX_STACK)
+        split.push({ itemId: item.itemId, quantity: batch, quality: item.quality })
+        remaining -= batch
+      }
+    }
+    // 按分类 → 物品ID → 品质排序
+    split.sort((a, b) => {
+      const defA = getItemById(a.itemId)
+      const defB = getItemById(b.itemId)
+      const catA = CATEGORY_ORDER[defA?.category ?? 'misc'] ?? 20
+      const catB = CATEGORY_ORDER[defB?.category ?? 'misc'] ?? 20
+      if (catA !== catB) return catA - catB
+      if (a.itemId !== b.itemId) return a.itemId.localeCompare(b.itemId)
+      return (qualityOrder[a.quality] ?? 0) - (qualityOrder[b.quality] ?? 0)
+    })
+    chest.items = split
+  }
+
   // ---- 序列化 ----
 
   const serialize = () => {
@@ -288,6 +368,8 @@ export const useWarehouseStore = defineStore('warehouse', () => {
     getVoidInputChest,
     getVoidOutputChest,
     getVoidChests,
+    moveChest,
+    sortChest,
     serialize,
     deserialize
   }

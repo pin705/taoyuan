@@ -1,7 +1,8 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import {
-  HANHAI_SHOP_ITEMS,
+  HANHAI_FIXED_ITEMS,
+  getWeeklyRotatingItems,
   MAX_DAILY_BETS,
   HANHAI_UNLOCK_COST,
   spinRoulette,
@@ -23,13 +24,19 @@ import {
   BUCKSHOT_WIN_MULTIPLIER,
   BUCKSHOT_PLAYER_HP,
   BUCKSHOT_DEALER_HP,
-  loadShotgun
+  loadShotgun,
+  TRADE_SHOP_UPGRADES,
+  TRADE_EXCHANGE_ITEMS,
+  calcTradePoints
 } from '@/data/hanhai'
+import { getItemById } from '@/data/items'
 import { usePlayerStore } from './usePlayerStore'
 import { useInventoryStore } from './useInventoryStore'
 import { useGameStore } from './useGameStore'
+import { useWalletStore } from './useWalletStore'
+import { getCombinedItemCount, removeCombinedItem } from '@/composables/useCombinedInventory'
 import { addLog } from '@/composables/useGameLog'
-import type { TexasSetup, TexasTierId, BuckshotSetup } from '@/types'
+import type { TexasSetup, TexasTierId, BuckshotSetup, HanhaiShopItemDef, TradeSlot, Quality } from '@/types'
 
 export const useHanhaiStore = defineStore('hanhai', () => {
   /** 是否已解锁瀚海 */
@@ -38,6 +45,25 @@ export const useHanhaiStore = defineStore('hanhai', () => {
   const casinoBetsToday = ref(0)
   /** 本周商店购买计数 { itemId: count } */
   const weeklyPurchases = ref<Record<string, number>>({})
+
+  // === 通商系统 ===
+  /** 通商积分 */
+  const tradePoints = ref(0)
+  /** 通商店铺等级 */
+  const tradeShopLevel = ref(1)
+  /** 售货槽位 */
+  const tradeSlots = ref<TradeSlot[]>([])
+  /** 本周轮换商品 */
+  const weeklyRotatingStock = ref<HanhaiShopItemDef[]>([])
+  /** 积分兑换购买记录 { itemId: count }（每周限购） */
+  const weeklyExchangePurchases = ref<Record<string, number>>({})
+  /** 积分兑换购买记录 { itemId: count }（总限购） */
+  const totalExchangePurchases = ref<Record<string, number>>({})
+
+  /** 当前店铺升级配置 */
+  const tradeShopConfig = computed(() => TRADE_SHOP_UPGRADES.find(u => u.level === tradeShopLevel.value) ?? TRADE_SHOP_UPGRADES[0]!)
+  /** 下一级店铺升级配置 */
+  const nextTradeShopUpgrade = computed(() => TRADE_SHOP_UPGRADES.find(u => u.level === tradeShopLevel.value + 1))
 
   const canBet = computed(() => casinoBetsToday.value < MAX_DAILY_BETS)
   const betsRemaining = computed(() => MAX_DAILY_BETS - casinoBetsToday.value)
@@ -56,14 +82,17 @@ export const useHanhaiStore = defineStore('hanhai', () => {
 
   /** 查询某商品本周剩余可购买数量 */
   const getWeeklyRemaining = (itemId: string): number => {
-    const item = HANHAI_SHOP_ITEMS.find(i => i.itemId === itemId)
+    const allAvailable = [...HANHAI_FIXED_ITEMS, ...weeklyRotatingStock.value]
+    const item = allAvailable.find(i => i.itemId === itemId)
     if (!item?.weeklyLimit) return Infinity
     return Math.max(0, item.weeklyLimit - (weeklyPurchases.value[itemId] ?? 0))
   }
 
-  /** 购买驿站商品 */
+  /** 购买驿站商品（固定+轮换） */
   const buyShopItem = (itemId: string): { success: boolean; message: string } => {
-    const item = HANHAI_SHOP_ITEMS.find(i => i.itemId === itemId)
+    // 从固定商品和当前轮换商品中查找
+    const allAvailable = [...HANHAI_FIXED_ITEMS, ...weeklyRotatingStock.value]
+    const item = allAvailable.find(i => i.itemId === itemId)
     if (!item) return { success: false, message: '商品不存在。' }
     if (item.weeklyLimit && (weeklyPurchases.value[itemId] ?? 0) >= item.weeklyLimit) {
       return { success: false, message: `${item.name}本周限购已达上限。` }
@@ -309,6 +338,158 @@ export const useHanhaiStore = defineStore('hanhai', () => {
     }
   }
 
+  // === 通商系统方法 ===
+
+  /** 刷新本周轮换商品 */
+  const refreshRotatingStock = () => {
+    const gameStore = useGameStore()
+    weeklyRotatingStock.value = getWeeklyRotatingItems(gameStore.year, gameStore.seasonIndex, gameStore.day)
+  }
+
+  /** 放入物品到通商售货槽 */
+  const addTradeSlot = (itemId: string, quality: string, quantity: number): { success: boolean; message: string } => {
+    if (quantity <= 0) return { success: false, message: '数量必须为正整数。' }
+    const config = tradeShopConfig.value
+    if (tradeSlots.value.length >= config.maxSlots) {
+      return { success: false, message: '售货槽位已满。' }
+    }
+    const itemDef = getItemById(itemId)
+    if (!itemDef) return { success: false, message: '物品不存在。' }
+    const inventoryStore = useInventoryStore()
+    if (!inventoryStore.removeItem(itemId, quantity, quality as Quality)) {
+      return { success: false, message: '物品不足。' }
+    }
+    // 计算积分奖励
+    const basePoints = calcTradePoints(itemDef.sellPrice * quantity, quality)
+    // 通商金印加成
+    const walletStore = useWalletStore()
+    const bonus = walletStore.getTradeBonus()
+    const pointsReward = Math.ceil(basePoints * (1 + bonus))
+
+    tradeSlots.value.push({
+      itemId,
+      quality,
+      quantity,
+      daysRemaining: config.sellDays,
+      pointsReward
+    })
+    addLog(`在通商摊位上架了${itemDef.name}×${quantity}，预计${config.sellDays}天后获得${pointsReward}积分。`)
+    return { success: true, message: `已上架${itemDef.name}×${quantity}。` }
+  }
+
+  /** 每日通商结算：减少剩余天数，到期的发放积分 */
+  const dailyTradeUpdate = (): { completed: { itemId: string; points: number }[] } => {
+    const completed: { itemId: string; points: number }[] = []
+    const remaining: TradeSlot[] = []
+    for (const slot of tradeSlots.value) {
+      slot.daysRemaining--
+      if (slot.daysRemaining <= 0) {
+        tradePoints.value += slot.pointsReward
+        completed.push({ itemId: slot.itemId, points: slot.pointsReward })
+        const itemDef = getItemById(slot.itemId)
+        addLog(`通商售出${itemDef?.name ?? slot.itemId}×${slot.quantity}，获得${slot.pointsReward}通商积分。`)
+      } else {
+        remaining.push(slot)
+      }
+    }
+    tradeSlots.value = remaining
+    return { completed }
+  }
+
+  /** 升级通商店铺 */
+  const upgradeTradeShop = (): { success: boolean; message: string } => {
+    const next = nextTradeShopUpgrade.value
+    if (!next) return { success: false, message: '店铺已满级。' }
+    const playerStore = usePlayerStore()
+    if (playerStore.money < next.cost) {
+      return { success: false, message: `金钱不足（需要${next.cost}文）。` }
+    }
+    // 检查材料
+    for (const mat of next.materialCost) {
+      const count = getCombinedItemCount(mat.itemId)
+      if (count < mat.quantity) {
+        const itemDef = getItemById(mat.itemId)
+        return { success: false, message: `材料不足：${itemDef?.name ?? mat.itemId} 需要${mat.quantity}个。` }
+      }
+    }
+    // 扣除
+    playerStore.spendMoney(next.cost)
+    for (const mat of next.materialCost) {
+      removeCombinedItem(mat.itemId, mat.quantity)
+    }
+    tradeShopLevel.value = next.level
+    addLog(`通商店铺升级为「${next.name}」！槽位${next.maxSlots}个，售卖周期${next.sellDays}天。`)
+    return { success: true, message: `店铺升级为「${next.name}」！` }
+  }
+
+  /** 积分兑换物品 */
+  const exchangeItem = (itemId: string): { success: boolean; message: string } => {
+    const exchangeDef = TRADE_EXCHANGE_ITEMS.find(e => e.itemId === itemId)
+    if (!exchangeDef) return { success: false, message: '兑换物品不存在。' }
+    // 检查周限购
+    if (exchangeDef.weeklyLimit) {
+      const weeklyCount = weeklyExchangePurchases.value[itemId] ?? 0
+      if (weeklyCount >= exchangeDef.weeklyLimit) {
+        return { success: false, message: `${exchangeDef.name}本周兑换已达上限。` }
+      }
+    }
+    // 检查总限购
+    if (exchangeDef.totalLimit) {
+      const totalCount = totalExchangePurchases.value[itemId] ?? 0
+      if (totalCount >= exchangeDef.totalLimit) {
+        return { success: false, message: `${exchangeDef.name}已达兑换上限。` }
+      }
+    }
+    // 检查积分
+    if (tradePoints.value < exchangeDef.pointsCost) {
+      return { success: false, message: `积分不足（需要${exchangeDef.pointsCost}积分）。` }
+    }
+    // 扣除积分
+    tradePoints.value -= exchangeDef.pointsCost
+    // 更新购买记录
+    if (exchangeDef.weeklyLimit) {
+      weeklyExchangePurchases.value[itemId] = (weeklyExchangePurchases.value[itemId] ?? 0) + 1
+    }
+    if (exchangeDef.totalLimit) {
+      totalExchangePurchases.value[itemId] = (totalExchangePurchases.value[itemId] ?? 0) + 1
+    }
+    // 钱袋物品直接解锁
+    if (exchangeDef.isWalletItem) {
+      const walletStore = useWalletStore()
+      walletStore.unlock(itemId)
+      addLog(`兑换了${exchangeDef.name}，已加入钱袋！`)
+      return { success: true, message: `兑换了${exchangeDef.name}，已加入钱袋！` }
+    }
+    // 香料礼包特殊处理：直接给5个西域香料
+    if (itemId === 'trade_spice_bundle') {
+      const inventoryStore = useInventoryStore()
+      if (!inventoryStore.addItem('hanhai_spice', 5)) {
+        tradePoints.value += exchangeDef.pointsCost
+        if (exchangeDef.weeklyLimit) {
+          weeklyExchangePurchases.value[itemId] = (weeklyExchangePurchases.value[itemId] ?? 0) - 1
+        }
+        return { success: false, message: '背包已满，无法兑换。' }
+      }
+      addLog(`用${exchangeDef.pointsCost}积分兑换了${exchangeDef.name}，获得西域香料×5。`)
+      return { success: true, message: '获得西域香料×5！' }
+    }
+    // 普通物品加入背包
+    const inventoryStore = useInventoryStore()
+    if (!inventoryStore.addItem(itemId, 1)) {
+      // 退还积分
+      tradePoints.value += exchangeDef.pointsCost
+      if (exchangeDef.weeklyLimit) {
+        weeklyExchangePurchases.value[itemId] = (weeklyExchangePurchases.value[itemId] ?? 0) - 1
+      }
+      if (exchangeDef.totalLimit) {
+        totalExchangePurchases.value[itemId] = (totalExchangePurchases.value[itemId] ?? 0) - 1
+      }
+      return { success: false, message: '背包已满，无法兑换。' }
+    }
+    addLog(`用${exchangeDef.pointsCost}积分兑换了${exchangeDef.name}。`)
+    return { success: true, message: `兑换了${exchangeDef.name}！` }
+  }
+
   /** 每日重置赌博次数，每周重置商店限购 */
   const resetDailyBets = () => {
     casinoBetsToday.value = 0
@@ -316,19 +497,34 @@ export const useHanhaiStore = defineStore('hanhai', () => {
     const gameStore = useGameStore()
     if (gameStore.day % 7 === 0) {
       weeklyPurchases.value = {}
+      weeklyExchangePurchases.value = {}
     }
   }
 
   const serialize = () => ({
     unlocked: unlocked.value,
     casinoBetsToday: casinoBetsToday.value,
-    weeklyPurchases: weeklyPurchases.value
+    weeklyPurchases: weeklyPurchases.value,
+    tradePoints: tradePoints.value,
+    tradeShopLevel: tradeShopLevel.value,
+    tradeSlots: tradeSlots.value,
+    weeklyExchangePurchases: weeklyExchangePurchases.value,
+    totalExchangePurchases: totalExchangePurchases.value
   })
 
   const deserialize = (data: any) => {
     unlocked.value = data.unlocked ?? false
     casinoBetsToday.value = data.casinoBetsToday ?? 0
     weeklyPurchases.value = data.weeklyPurchases ?? {}
+    tradePoints.value = data.tradePoints ?? 0
+    tradeShopLevel.value = data.tradeShopLevel ?? 1
+    tradeSlots.value = data.tradeSlots ?? []
+    weeklyExchangePurchases.value = data.weeklyExchangePurchases ?? {}
+    totalExchangePurchases.value = data.totalExchangePurchases ?? {}
+    // 反序列化后刷新轮换商品
+    if (unlocked.value) {
+      refreshRotatingStock()
+    }
   }
 
   return {
@@ -337,6 +533,16 @@ export const useHanhaiStore = defineStore('hanhai', () => {
     weeklyPurchases,
     canBet,
     betsRemaining,
+    // 通商系统
+    tradePoints,
+    tradeShopLevel,
+    tradeSlots,
+    weeklyRotatingStock,
+    weeklyExchangePurchases,
+    totalExchangePurchases,
+    tradeShopConfig,
+    nextTradeShopUpgrade,
+    // 方法
     unlockHanhai,
     getWeeklyRemaining,
     buyShopItem,
@@ -350,6 +556,11 @@ export const useHanhaiStore = defineStore('hanhai', () => {
     endTexas,
     startBuckshot,
     endBuckshot,
+    refreshRotatingStock,
+    addTradeSlot,
+    dailyTradeUpdate,
+    upgradeTradeShop,
+    exchangeItem,
     resetDailyBets,
     serialize,
     deserialize

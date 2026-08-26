@@ -23,8 +23,31 @@
 
     <!-- 物品图鉴 -->
     <template v-if="tab === 'collection'">
-      <p class="text-xs text-muted mb-2">已发现 {{ achievementStore.discoveredCount }}/{{ allItems.length }}</p>
-      <div ref="collectionRef" class="max-h-72 overflow-y-auto" @scroll="onCollectionScroll">
+      <div class="flex items-center justify-between mb-1.5">
+        <p class="text-xs text-muted">
+          已发现 {{ filteredDiscoveredCount }}/{{ filteredItems.length }}
+          <span v-if="selectedCategory" class="text-accent ml-0.5">· {{ CATEGORY_NAMES[selectedCategory] ?? selectedCategory }}</span>
+        </p>
+        <button
+          v-if="selectedCategory"
+          class="text-[10px] px-1.5 py-0.5 border border-accent/20 rounded-xs text-muted hover:text-text"
+          @click="selectedCategory = null"
+        >
+          清除筛选
+        </button>
+      </div>
+      <div class="flex flex-wrap mb-2">
+        <button
+          v-for="cat in collectionCategories"
+          :key="cat.key"
+          class="text-[10px] px-1.5 py-0.5 border rounded-xs mr-1 mb-1"
+          :class="selectedCategory === cat.key ? 'border-accent text-accent' : 'border-accent/15 text-muted/60 hover:text-muted'"
+          @click="selectedCategory = selectedCategory === cat.key ? null : cat.key"
+        >
+          {{ cat.label }}({{ cat.count }})
+        </button>
+      </div>
+      <div ref="collectionRef" class="max-h-60 overflow-y-auto" @scroll="onCollectionScroll">
         <div :style="{ paddingTop: topPad + 'px', paddingBottom: bottomPad + 'px' }">
           <div class="grid grid-cols-3 md:grid-cols-5 gap-1">
             <div
@@ -504,6 +527,33 @@
 
   const allItems = ITEMS
 
+  // === 图鉴分类筛选 ===
+  const selectedCategory = ref<ItemCategory | null>(null)
+
+  /** 统计各分类物品数量，生成分类按钮列表 */
+  const collectionCategories = computed(() => {
+    const countMap = new Map<ItemCategory, number>()
+    for (const item of allItems) {
+      countMap.set(item.category, (countMap.get(item.category) ?? 0) + 1)
+    }
+    return [...countMap.entries()].map(([key, count]) => ({
+      key,
+      label: CATEGORY_NAMES[key] ?? key,
+      count
+    }))
+  })
+
+  /** 按分类筛选后的物品列表 */
+  const filteredItems = computed(() => {
+    if (!selectedCategory.value) return allItems
+    return allItems.filter(i => i.category === selectedCategory.value)
+  })
+
+  /** 筛选后已发现数量 */
+  const filteredDiscoveredCount = computed(() => {
+    return filteredItems.value.filter(i => achievementStore.isDiscovered(i.id)).length
+  })
+
   // === 图鉴虚拟滚动 ===
   const collectionRef = ref<HTMLElement | null>(null)
   const collectionScrollTop = ref(0)
@@ -531,7 +581,7 @@
     if (collectionRef.value) containerH.value = collectionRef.value.clientHeight
   })
 
-  const totalRows = computed(() => Math.ceil(allItems.length / collectionCols.value))
+  const totalRows = computed(() => Math.ceil(filteredItems.value.length / collectionCols.value))
 
   const visibleRange = computed(() => {
     const start = Math.max(0, Math.floor(collectionScrollTop.value / ROW_H) - VBUFFER)
@@ -541,7 +591,7 @@
 
   const visibleItems = computed(() => {
     const { start, end } = visibleRange.value
-    return allItems.slice(start * collectionCols.value, end * collectionCols.value)
+    return filteredItems.value.slice(start * collectionCols.value, end * collectionCols.value)
   })
 
   const topPad = computed(() => visibleRange.value.start * ROW_H)
@@ -549,6 +599,11 @@
 
   watch(tab, () => {
     collectionScrollTop.value = 0
+  })
+
+  watch(selectedCategory, () => {
+    collectionScrollTop.value = 0
+    if (collectionRef.value) collectionRef.value.scrollTop = 0
   })
 
   /** 成就详情弹窗 */

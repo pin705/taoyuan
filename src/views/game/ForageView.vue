@@ -128,12 +128,126 @@
         </div>
       </div>
     </div>
+
+    <!-- 温和动物遭遇弹窗 -->
+    <Transition name="panel-fade">
+      <div v-if="encounter && encounter.type === 'friendly'" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+        <div class="game-panel max-w-xs w-full">
+          <p class="text-sm text-accent mb-2">遇到了{{ encounter.animal.name }}！</p>
+          <p class="text-xs text-muted mb-3">一只{{ encounter.animal.name }}出现在竹林中，看起来很温顺。</p>
+          <div class="flex flex-col space-y-1.5">
+            <div
+              class="flex items-center justify-between border border-success/20 rounded-xs px-3 py-1.5 cursor-pointer hover:bg-success/5"
+              @click="handleFriendlyCollect"
+            >
+              <span class="text-xs text-success">收集产物</span>
+              <span class="text-[10px] text-muted">+{{ encounter.animal.collectExp }}采集经验</span>
+            </div>
+            <div
+              class="flex items-center justify-between border border-accent/20 rounded-xs px-3 py-1.5 cursor-pointer hover:bg-accent/5"
+              @click="handleFriendlyChase"
+            >
+              <span class="text-xs">驱赶</span>
+              <span class="text-[10px] text-muted">+{{ encounter.animal.chaseExp }}采集经验</span>
+            </div>
+            <div
+              class="flex items-center justify-between border border-accent/10 rounded-xs px-3 py-1.5 cursor-pointer hover:bg-accent/5"
+              @click="encounter = null"
+            >
+              <span class="text-xs text-muted">离开</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- 野兽战斗弹窗 -->
+    <Transition name="panel-fade">
+      <div v-if="inForestCombat && forestCombatMonster" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+        <div class="game-panel max-w-xs w-full">
+          <p class="text-sm text-danger mb-2">遭遇{{ forestCombatMonster.name }}！</p>
+
+          <!-- 玩家 vs 野兽 -->
+          <div class="grid grid-cols-[1fr_auto_1fr] mb-3 items-center" style="column-gap: 6px">
+            <!-- 玩家 -->
+            <div class="border border-accent/10 rounded-xs p-2">
+              <p class="text-xs text-center mb-1.5">你</p>
+              <div class="bg-bg rounded-xs h-1.5 mb-1">
+                <div
+                  class="h-1.5 rounded-xs transition-all"
+                  :class="playerStore.getIsLowHp() ? 'bg-danger' : 'bg-success'"
+                  :style="{ width: `${playerStore.getHpPercent()}%` }"
+                />
+              </div>
+              <p class="text-[10px]" :class="playerStore.getIsLowHp() ? 'text-danger' : 'text-muted'">
+                {{ playerStore.hp }}/{{ playerStore.getMaxHp() }}
+              </p>
+            </div>
+            <span class="text-[10px] text-muted/40">VS</span>
+            <!-- 野兽 -->
+            <div class="border border-danger/20 rounded-xs p-2">
+              <p class="text-xs text-center text-danger mb-1.5">{{ forestCombatMonster.name }}</p>
+              <div class="bg-bg rounded-xs h-1.5 mb-1">
+                <div
+                  class="h-1.5 bg-danger rounded-xs transition-all"
+                  :style="{ width: `${(forestCombatMonsterHp / forestCombatMonster.hp) * 100}%` }"
+                />
+              </div>
+              <p class="text-[10px] text-muted">{{ forestCombatMonsterHp }}/{{ forestCombatMonster.hp }}</p>
+            </div>
+          </div>
+
+          <!-- 操作 -->
+          <div class="grid grid-cols-3 mb-3" style="column-gap: 4px">
+            <div
+              class="flex flex-col items-center border border-accent/20 rounded-xs py-1.5"
+              :class="forestCombatAnimLock ? 'opacity-50' : 'cursor-pointer hover:bg-accent/5'"
+              @click="!forestCombatAnimLock && handleForestCombat('attack')"
+            >
+              <span class="text-xs">
+                <Swords :size="12" class="inline" />
+                攻击
+              </span>
+              <span class="text-[10px] text-muted">{{ forestWeaponAttack }}攻击力</span>
+            </div>
+            <div
+              class="flex flex-col items-center border border-accent/20 rounded-xs py-1.5"
+              :class="forestCombatAnimLock ? 'opacity-50' : 'cursor-pointer hover:bg-accent/5'"
+              @click="!forestCombatAnimLock && handleForestCombat('defend')"
+            >
+              <span class="text-xs">
+                <Shield :size="12" class="inline" />
+                防御
+              </span>
+              <span class="text-[10px] text-muted">减免伤害</span>
+            </div>
+            <div
+              class="flex flex-col items-center border border-danger/20 rounded-xs py-1.5 cursor-pointer hover:bg-danger/5"
+              :class="forestCombatAnimLock ? 'opacity-50' : ''"
+              @click="!forestCombatAnimLock && handleForestCombat('flee')"
+            >
+              <span class="text-xs text-danger">
+                <MoveRight :size="12" class="inline" />
+                逃跑
+              </span>
+            </div>
+          </div>
+
+          <!-- 战斗日志 -->
+          <div class="text-xs space-y-0.5 max-h-28 overflow-y-auto">
+            <p v-for="(msg, i) in forestCombatLog" :key="i" :class="i < forestCombatLog.length - 1 ? 'text-muted' : 'text-text'">
+              {{ msg }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
   import { ref, computed } from 'vue'
-  import { TreePine, Search, X } from 'lucide-vue-next'
+  import { TreePine, Search, X, Swords, Shield, MoveRight } from 'lucide-vue-next'
   import { useAchievementStore } from '@/stores/useAchievementStore'
   import { useCookingStore } from '@/stores/useCookingStore'
   import { useGameStore, SEASON_NAMES } from '@/stores/useGameStore'
@@ -141,10 +255,20 @@
   import { usePlayerStore } from '@/stores/usePlayerStore'
   import { useQuestStore } from '@/stores/useQuestStore'
   import { useSkillStore } from '@/stores/useSkillStore'
+  import { useMiningStore } from '@/stores/useMiningStore'
   import { useWalletStore } from '@/stores/useWalletStore'
   import type { Quality } from '@/types'
+  import type { MonsterDef, CombatAction } from '@/types/skill'
   import { getForageItems, getItemById, getItemSource } from '@/data'
-  import { WEATHER_FORAGE_MODIFIER } from '@/data/forage'
+  import {
+    WEATHER_FORAGE_MODIFIER,
+    FOREST_ENCOUNTER_CHANCE,
+    FOREST_DEFEAT_MONEY_PENALTY_RATE,
+    FOREST_DEFEAT_MONEY_PENALTY_CAP,
+    rollForestEncounter
+  } from '@/data/forage'
+  import type { FriendlyAnimalDef } from '@/data/forage'
+  import { getWeaponById, getEnchantmentById } from '@/data/weapons'
   import { ACTION_TIME_COSTS, TOOL_TIME_SAVINGS, SKILL_TIME_REDUCTION_PER_LEVEL, MIN_ACTION_MINUTES } from '@/data/timeConstants'
   import { sfxForage } from '@/composables/useAudio'
   import { addLog } from '@/composables/useGameLog'
@@ -356,6 +480,268 @@
 
     const tr = gameStore.advanceTime(forageTime.value)
     if (tr.message) addLog(tr.message)
-    if (tr.passedOut) handleEndDay()
+    if (tr.passedOut) {
+      handleEndDay()
+      return
+    }
+
+    // 动物遭遇判定
+    if (Math.random() < FOREST_ENCOUNTER_CHANCE) {
+      const enc = rollForestEncounter(gameStore.season)
+      if (enc) {
+        if (enc.type === 'friendly') {
+          encounter.value = enc
+        } else {
+          encounter.value = enc
+          startForestCombat(enc.monster)
+        }
+      }
+    }
+  }
+
+  // ===== 动物遭遇 =====
+
+  const encounter = ref<{ type: 'friendly'; animal: FriendlyAnimalDef } | { type: 'hostile'; monster: MonsterDef } | null>(null)
+
+  // --- 温和动物 ---
+
+  const handleFriendlyCollect = () => {
+    if (!encounter.value || encounter.value.type !== 'friendly') return
+    const animal = encounter.value.animal
+    const forageAllSkillsBuff = cookingStore.activeBuff?.type === 'all_skills' ? cookingStore.activeBuff.value : 0
+    let quality = skillStore.rollForageQuality(forageAllSkillsBuff)
+    const walletBoost = walletStore.getForageQualityBoost()
+    if (walletBoost > 0) {
+      const qualityOrder: Quality[] = ['normal', 'fine', 'excellent', 'supreme']
+      const idx = qualityOrder.indexOf(quality)
+      const newIdx = Math.min(idx + walletBoost, qualityOrder.length - 1)
+      quality = qualityOrder[newIdx]!
+    }
+    inventoryStore.addItem(animal.productItemId, 1, quality)
+    achievementStore.discoverItem(animal.productItemId)
+    useQuestStore().onItemObtained(animal.productItemId, 1)
+    const { leveledUp, newLevel } = skillStore.addExp('foraging', animal.collectExp)
+    const itemDef = getItemById(animal.productItemId)
+    const qLabel = quality !== 'normal' ? `(${QUALITY_NAMES[quality]})` : ''
+    lastResults.value.push({
+      label: `从${animal.name}处获得了${itemDef?.name ?? animal.productItemId}${qLabel}`,
+      itemId: animal.productItemId,
+      quantity: 1,
+      quality
+    })
+    let msg = `在竹林遇到${animal.name}，收集到了${itemDef?.name ?? animal.productItemId}${qLabel}！`
+    if (leveledUp) msg += ` 采集提升到${newLevel}级！`
+    addLog(msg)
+    encounter.value = null
+  }
+
+  const handleFriendlyChase = () => {
+    if (!encounter.value || encounter.value.type !== 'friendly') return
+    const animal = encounter.value.animal
+    const { leveledUp, newLevel } = skillStore.addExp('foraging', animal.chaseExp)
+    lastResults.value.push({ label: `驱赶了${animal.name}（+${animal.chaseExp}经验）`, quantity: 0 })
+    let msg = `在竹林遇到${animal.name}，将其驱赶了。（+${animal.chaseExp}采集经验）`
+    if (leveledUp) msg += ` 采集提升到${newLevel}级！`
+    addLog(msg)
+    encounter.value = null
+  }
+
+  // --- 野兽战斗 ---
+
+  const miningStore = useMiningStore()
+  const inForestCombat = ref(false)
+  const forestCombatMonster = ref<MonsterDef | null>(null)
+  const forestCombatMonsterHp = ref(0)
+  const forestCombatLog = ref<string[]>([])
+  const forestCombatRound = ref(0)
+  const forestCombatAnimLock = ref(false)
+
+  const forestWeaponAttack = computed(() => {
+    const cookingAllSkillsBuff = cookingStore.activeBuff?.type === 'all_skills' ? cookingStore.activeBuff.value : 0
+    const ringAttackBonus = inventoryStore.getRingEffectValue('attack_bonus')
+    return (
+      inventoryStore.getWeaponAttack() +
+      (skillStore.combatLevel + cookingAllSkillsBuff) * 2 +
+      ringAttackBonus +
+      miningStore.guildBadgeBonusAttack
+    )
+  })
+
+  const startForestCombat = (monster: MonsterDef) => {
+    inForestCombat.value = true
+    forestCombatMonster.value = monster
+    forestCombatMonsterHp.value = monster.hp
+    forestCombatLog.value = [`${monster.name}挡住了去路！`]
+    forestCombatRound.value = 0
+  }
+
+  const handleForestCombat = (action: CombatAction) => {
+    if (!inForestCombat.value || !forestCombatMonster.value) return
+    forestCombatRound.value++
+    const monster = forestCombatMonster.value
+
+    // 逃跑 —— 竹林100%成功
+    if (action === 'flee') {
+      forestCombatLog.value.push('你转身逃离了！')
+      addLog(`在竹林遭遇${monster.name}，你选择了逃跑。`)
+      endForestCombat(false)
+      return
+    }
+
+    // 防御
+    if (action === 'defend') {
+      const tankReduction = skillStore.getSkill('combat').perk10 === 'tank' ? 0.7 : 0.6
+      const cookingDefBuff = cookingStore.activeBuff?.type === 'defense' ? cookingStore.activeBuff.value / 100 : 0
+      const ringDefenseBonus = inventoryStore.getRingEffectValue('defense_bonus')
+      const damage = Math.max(
+        1,
+        Math.floor(
+          monster.attack * (1 - tankReduction) * (1 - cookingDefBuff) * (1 - ringDefenseBonus) * (1 - miningStore.guildBonusDefense)
+        )
+      )
+      playerStore.takeDamage(damage)
+      let defendMsg = `你举盾防御，受到${damage}点伤害。`
+      if (skillStore.getSkill('combat').perk5 === 'defender') {
+        playerStore.restoreHealth(5)
+        defendMsg += '（守护者回复5HP）'
+      }
+      forestCombatLog.value.push(defendMsg)
+
+      if (playerStore.hp <= 0) {
+        handleForestDefeat()
+        return
+      }
+      return
+    }
+
+    // 攻击
+    const owned = inventoryStore.getEquippedWeapon()
+    const weaponDef = getWeaponById(owned.defId)
+    const enchant = owned.enchantmentId ? getEnchantmentById(owned.enchantmentId) : null
+
+    const cookingAllSkillsBuff = cookingStore.activeBuff?.type === 'all_skills' ? cookingStore.activeBuff.value : 0
+    const ringAttackBonus = inventoryStore.getRingEffectValue('attack_bonus')
+    const baseAttack =
+      inventoryStore.getWeaponAttack() +
+      (skillStore.combatLevel + cookingAllSkillsBuff) * 2 +
+      ringAttackBonus +
+      miningStore.guildBadgeBonusAttack
+
+    // 暴击
+    const critChance = (weaponDef?.critRate ?? 0.05) + (enchant?.critBonus ?? 0)
+    const isCrit = Math.random() < critChance
+    const critMultiplier = isCrit ? 2.0 : 1.0
+    const bruteBonus = skillStore.getSkill('combat').perk10 === 'brute' ? 1.25 : 1.0
+
+    const playerDmg = Math.max(1, Math.floor(baseAttack * critMultiplier * bruteBonus) - monster.defense)
+    forestCombatMonsterHp.value -= playerDmg
+    let atkMsg = isCrit ? `暴击！对${monster.name}造成${playerDmg}点伤害！` : `对${monster.name}造成${playerDmg}点伤害。`
+
+    // 吸血附魔
+    if (enchant?.special === 'vampiric' && isCrit) {
+      const heal = Math.floor(playerDmg * 0.2)
+      playerStore.restoreHealth(heal)
+      atkMsg += ` 吸血恢复${heal}HP。`
+    }
+
+    forestCombatLog.value.push(atkMsg)
+
+    // 检查野兽死亡
+    if (forestCombatMonsterHp.value <= 0) {
+      handleForestVictory()
+      return
+    }
+
+    // 野兽反击
+    const fighterReduction = skillStore.getSkill('combat').perk5 === 'fighter' ? 0.85 : 1.0
+    const ringDefenseBonus = inventoryStore.getRingEffectValue('defense_bonus')
+    const monsterDmg = Math.max(
+      1,
+      Math.floor(monster.attack * fighterReduction * (1 - ringDefenseBonus) * (1 - miningStore.guildBonusDefense))
+    )
+    playerStore.takeDamage(monsterDmg)
+    forestCombatLog.value.push(`${monster.name}反击，造成${monsterDmg}点伤害！`)
+
+    // 杂技师反击
+    if (skillStore.getSkill('combat').perk10 === 'acrobat' && Math.random() < 0.25) {
+      const counterDmg = Math.floor(monsterDmg * 0.5)
+      forestCombatMonsterHp.value -= counterDmg
+      forestCombatLog.value.push(`杂技师闪避反击！造成${counterDmg}点伤害！`)
+      if (forestCombatMonsterHp.value <= 0) {
+        handleForestVictory()
+        return
+      }
+    }
+
+    if (playerStore.hp <= 0) {
+      handleForestDefeat()
+    }
+  }
+
+  const handleForestVictory = () => {
+    const monster = forestCombatMonster.value!
+    forestCombatLog.value.push(`你击败了${monster.name}！`)
+
+    // 掉落物
+    const drops: string[] = []
+    const dropRateBonus = miningStore.guildBonusDropRate
+    for (const drop of monster.drops) {
+      if (Math.random() < drop.chance + dropRateBonus) {
+        inventoryStore.addItem(drop.itemId)
+        achievementStore.discoverItem(drop.itemId)
+        const itemDef = getItemById(drop.itemId)
+        drops.push(itemDef?.name ?? drop.itemId)
+      }
+    }
+
+    // 战斗经验
+    const { leveledUp, newLevel } = skillStore.addExp('combat', monster.expReward)
+
+    let msg = `在竹林击败了${monster.name}！`
+    if (drops.length > 0) msg += ` 获得了${drops.join('、')}。`
+    msg += ` (+${monster.expReward}战斗经验)`
+    if (leveledUp) msg += ` 战斗提升到${newLevel}级！`
+    addLog(msg)
+
+    // 延迟关闭让玩家看到结果
+    forestCombatAnimLock.value = true
+    setTimeout(() => {
+      endForestCombat(false)
+    }, 1200)
+  }
+
+  const handleForestDefeat = () => {
+    const monster = forestCombatMonster.value!
+    forestCombatLog.value.push(`你被${monster.name}击败了……`)
+
+    // 惩罚：损失金钱
+    const moneyLoss = Math.min(Math.floor(playerStore.money * FOREST_DEFEAT_MONEY_PENALTY_RATE), FOREST_DEFEAT_MONEY_PENALTY_CAP)
+    if (moneyLoss > 0) playerStore.spendMoney(moneyLoss)
+
+    // 清空本次采集结果
+    lastResults.value = [{ label: `被${monster.name}击败，采集物散落一地……`, quantity: 0 }]
+
+    // HP恢复50%
+    playerStore.restoreHealth(Math.floor(playerStore.getMaxHp() * 0.5))
+
+    let msg = `在竹林被${monster.name}击败了……`
+    if (moneyLoss > 0) msg += ` 丢失了${moneyLoss}文。`
+    msg += ' 采集物全部散落。'
+    addLog(msg)
+
+    forestCombatAnimLock.value = true
+    setTimeout(() => {
+      endForestCombat(false)
+    }, 1200)
+  }
+
+  const endForestCombat = (_won: boolean) => {
+    inForestCombat.value = false
+    forestCombatMonster.value = null
+    forestCombatMonsterHp.value = 0
+    forestCombatLog.value = []
+    forestCombatRound.value = 0
+    forestCombatAnimLock.value = false
+    encounter.value = null
   }
 </script>

@@ -13,7 +13,7 @@ export const NPCS: NpcDef[] = [
     personality: '热心豪爽',
     birthday: { season: 'spring', day: 8 },
     lovedItems: ['tea', 'osmanthus', 'ginseng'],
-    likedItems: ['cabbage', 'rice', 'potato', 'goat_milk', 'truffle', 'rabbit_foot', 'hanhai_spice'],
+    likedItems: ['cabbage', 'rice', 'potato', 'goat_milk', 'truffle', 'rabbit_foot', 'hanhai_spice', 'ginseng_tea', 'cheese'],
     hatedItems: ['copper_ore', 'quartz'],
     dialogues: {
       stranger: ['客官，初来乍到吧？老朽陈伯，万物铺就是我开的。', '{title}，有什么需要的尽管来，童叟无欺。'],
@@ -30,7 +30,7 @@ export const NPCS: NpcDef[] = [
     personality: '温柔聪慧',
     birthday: { season: 'summer', day: 14 },
     lovedItems: ['chrysanthemum', 'osmanthus', 'peacock_feather'],
-    likedItems: ['tea', 'wintersweet', 'rabbit_fur', 'rabbit_foot', 'hanhai_silk'],
+    likedItems: ['tea', 'wintersweet', 'rabbit_fur', 'rabbit_foot', 'hanhai_silk', 'osmanthus_honey', 'osmanthus_tea'],
     hatedItems: ['iron_ore', 'firewood'],
     dialogues: {
       stranger: ['你好，你是新来的田庄主人吧？我是柳娘。', '桃源乡很美的，{title}你会喜欢这里。'],
@@ -86,7 +86,7 @@ export const NPCS: NpcDef[] = [
     personality: '活泼开朗',
     birthday: { season: 'winter', day: 20 },
     lovedItems: ['koi', 'giant_salamander'],
-    likedItems: ['crucian', 'carp', 'grass_carp', 'bass', 'rabbit_foot'],
+    likedItems: ['crucian', 'carp', 'grass_carp', 'bass', 'rabbit_foot', 'smoked_carp', 'smoked_bass'],
     hatedItems: ['copper_ore', 'iron_ore'],
     dialogues: {
       stranger: ['哎呀，新面孔！{title}你好，我是秋月，最会钓鱼的那个！', '想学钓鱼就来找我呀！'],
@@ -116,7 +116,17 @@ export const NPCS: NpcDef[] = [
     personality: '慈祥博学',
     birthday: { season: 'autumn', day: 22 },
     lovedItems: ['herb', 'tea', 'antler_velvet'],
-    likedItems: ['winter_bamboo_shoot', 'bamboo', 'yak_milk', 'camel_milk', 'rabbit_foot', 'hanhai_spice'],
+    likedItems: [
+      'winter_bamboo_shoot',
+      'bamboo',
+      'yak_milk',
+      'camel_milk',
+      'rabbit_foot',
+      'hanhai_spice',
+      'herbal_paste',
+      'ginseng_extract',
+      'antler_powder'
+    ],
     hatedItems: ['ruby', 'gold_ore'],
     dialogues: {
       stranger: ['年轻人，初来此地，水土可还习惯？', '老夫行医数十载，{title}有什么不舒服的尽管说。'],
@@ -133,7 +143,7 @@ export const NPCS: NpcDef[] = [
     personality: '调皮好奇',
     birthday: { season: 'spring', day: 18 },
     lovedItems: ['watermelon', 'sweet_potato'],
-    likedItems: ['wood', 'bamboo', 'radish', 'rabbit_foot'],
+    likedItems: ['wood', 'bamboo', 'radish', 'rabbit_foot', 'tea_oil', 'buffalo_cheese', 'yak_cheese'],
     hatedItems: ['herb', 'tea'],
     dialogues: {
       stranger: ['哇，你就是那个新来的！我是小满！', '{title}的田庄我去偷看过了，好破啊——啊不是，很有潜力！'],
@@ -154,7 +164,7 @@ export const NPCS: NpcDef[] = [
     personality: '温婉端庄',
     birthday: { season: 'spring', day: 3 },
     lovedItems: ['tea', 'osmanthus', 'chrysanthemum'],
-    likedItems: ['honey', 'lotus_seed', 'peach', 'rabbit_foot', 'hanhai_silk'],
+    likedItems: ['honey', 'lotus_seed', 'peach', 'rabbit_foot', 'hanhai_silk', 'chrysanthemum_honey', 'mayonnaise'],
     hatedItems: ['iron_ore', 'copper_ore'],
     dialogues: {
       stranger: ['请进，喝杯茶吧。我是春兰，这茶庄是祖上传下来的。', '{title}若喜欢喝茶，以后常来坐坐。'],
@@ -184,7 +194,7 @@ export const NPCS: NpcDef[] = [
     personality: '孤傲清高',
     birthday: { season: 'winter', day: 10 },
     lovedItems: ['snow_lotus', 'moonstone'],
-    likedItems: ['chrysanthemum', 'wintersweet', 'bamboo', 'rabbit_foot', 'hanhai_turquoise'],
+    likedItems: ['chrysanthemum', 'wintersweet', 'bamboo', 'rabbit_foot', 'hanhai_turquoise', 'snow_lotus_honey', 'goat_cheese'],
     hatedItems: ['pickled_cabbage', 'dried_radish'],
     dialogues: {
       stranger: ['……你挡住我的光了。', '不买画的话，请不要碰那些颜料。'],
@@ -214,7 +224,7 @@ export const NPCS: NpcDef[] = [
     personality: '娴静手巧',
     birthday: { season: 'summer', day: 3 },
     lovedItems: ['silk', 'wintersweet', 'alpaca_wool', 'peacock_feather'],
-    likedItems: ['wool', 'chrysanthemum', 'osmanthus', 'rabbit_fur', 'rabbit_foot'],
+    likedItems: ['wool', 'chrysanthemum', 'osmanthus', 'rabbit_fur', 'rabbit_foot', 'dried_peach', 'dried_lychee'],
     hatedItems: ['iron_ore', 'stone'],
     dialogues: {
       stranger: ['欢迎来到素裁坊，我是素素。', '需要什么衣裳，{title}尽管说。'],
@@ -244,7 +254,7 @@ export const NPCS: NpcDef[] = [
     personality: '豪爽大方',
     birthday: { season: 'autumn', day: 10 },
     lovedItems: ['watermelon_wine', 'peach_wine', 'jujube_wine'],
-    likedItems: ['watermelon', 'peanut', 'corn', 'rabbit_foot'],
+    likedItems: ['watermelon', 'peanut', 'corn', 'rabbit_foot', 'corn_wine', 'cactus_wine'],
     hatedItems: ['tea', 'herb'],
     dialogues: {
       stranger: ['哟，来一壶？我是红豆，这酒庄的当家人！', '不喝酒也行，进来坐坐，{title}别客气。'],
@@ -360,7 +370,7 @@ export const NPCS: NpcDef[] = [
     personality: '憨直热情',
     birthday: { season: 'winter', day: 3 },
     lovedItems: ['milk', 'hay', 'goat_milk', 'buffalo_milk', 'yak_milk'],
-    likedItems: ['egg', 'corn', 'sweet_potato', 'truffle', 'donkey_milk', 'rabbit_foot'],
+    likedItems: ['egg', 'corn', 'sweet_potato', 'truffle', 'donkey_milk', 'rabbit_foot', 'cheese', 'dried_mushroom'],
     hatedItems: ['ruby', 'moonstone'],
     dialogues: {
       stranger: ['嘿！你好你好！我是大牛！我最喜欢牛了！', '{title}养动物了么？我可以教你！'],
@@ -424,7 +434,7 @@ export const NPCS: NpcDef[] = [
     personality: '热心善良',
     birthday: { season: 'summer', day: 18 },
     lovedItems: ['rice', 'sesame_oil'],
-    likedItems: ['cabbage', 'radish', 'egg', 'rabbit_foot'],
+    likedItems: ['cabbage', 'radish', 'egg', 'rabbit_foot', 'rice_vinegar', 'pickled_cabbage', 'pumpkin_preserve'],
     hatedItems: ['quartz', 'obsidian'],
     dialogues: {
       stranger: ['哎哟，新来的吧？瘦得跟竹竿似的，来来来，婶子给你盛碗饭！', '我是王大婶，村里红白喜事的大厨！'],
@@ -475,7 +485,7 @@ export const NPCS: NpcDef[] = [
     personality: '慈祥唠叨',
     birthday: { season: 'spring', day: 7 },
     lovedItems: ['wool', 'silk'],
-    likedItems: ['tea', 'pumpkin', 'sweet_potato', 'rabbit_foot'],
+    likedItems: ['tea', 'pumpkin', 'sweet_potato', 'rabbit_foot', 'pickled_ginger', 'dried_radish', 'sesame_paste'],
     hatedItems: ['gold_ore', 'ruby'],
     dialogues: {
       stranger: ['哎呀呀，年轻人来啦？快坐快坐。老婆子我姓张，织了一辈子布。', '你穿的这衣裳不行，回头婆婆给你织一件。'],
@@ -492,7 +502,7 @@ export const NPCS: NpcDef[] = [
     personality: '淡泊悠闲',
     birthday: { season: 'summer', day: 22 },
     lovedItems: ['koi', 'sturgeon'],
-    likedItems: ['crucian', 'bass', 'tea', 'rabbit_foot'],
+    likedItems: ['crucian', 'bass', 'tea', 'rabbit_foot', 'smoked_eel', 'smoked_sturgeon', 'smoked_mandarin_fish'],
     hatedItems: ['gold_ore', 'ruby'],
     dialogues: {
       stranger: ['嗬，又来了个钓鱼的。老朽李渔翁，在这溪边坐了二十年了。', '钓鱼么？急不得。'],
@@ -509,7 +519,7 @@ export const NPCS: NpcDef[] = [
     personality: '迂腐可爱',
     birthday: { season: 'autumn', day: 18 },
     lovedItems: ['bamboo', 'tea'],
-    likedItems: ['chrysanthemum', 'osmanthus', 'rabbit_foot'],
+    likedItems: ['chrysanthemum', 'osmanthus', 'rabbit_foot', 'chrysanthemum_tea', 'green_tea_drink', 'truffle_oil'],
     hatedItems: ['pickled_cabbage', 'corn_wine'],
     dialogues: {
       stranger: ['"有朋自远方来，不亦乐乎"。在下周秀才，此地的私塾先生。', '{title}可曾读过《论语》？'],
@@ -541,7 +551,7 @@ export const NPCS: NpcDef[] = [
     gender: 'male',
     role: '货郎',
     personality: '油嘴滑舌',
-    birthday: { season: 'winter', day: 25 },
+    birthday: { season: 'winter', day: 20 },
     lovedItems: ['jade', 'prismatic_shard'],
     likedItems: ['gold_ore', 'honey', 'peach', 'rabbit_foot'],
     hatedItems: ['stone', 'wood'],
@@ -645,7 +655,7 @@ export const NPCS: NpcDef[] = [
     personality: '嗜酒好客',
     birthday: { season: 'autumn', day: 8 },
     lovedItems: ['watermelon_wine', 'peach_wine'],
-    likedItems: ['jujube_wine', 'corn_wine', 'peanut', 'rabbit_foot'],
+    likedItems: ['jujube_wine', 'corn_wine', 'peanut', 'rabbit_foot', 'date_wine', 'osmanthus_wine'],
     hatedItems: ['tea', 'herb'],
     dialogues: {
       stranger: ['来来来！进来喝一杯！我是老陆！', '人生在世，不喝酒多无趣啊！{title}你说是不是？'],

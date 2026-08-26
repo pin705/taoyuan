@@ -5,23 +5,23 @@
 
       <!-- 已播放的场景 -->
       <div v-for="(scene, i) in playedScenes" :key="i" class="mb-3">
-        <p class="text-xs leading-relaxed">{{ scene.text }}</p>
-        <p v-if="scene.chosenResponse" class="text-xs text-accent mt-1 ml-2">→ {{ scene.chosenResponse }}</p>
+        <p class="text-xs leading-relaxed">{{ r(scene.text) }}</p>
+        <p v-if="scene.chosenResponse" class="text-xs text-accent mt-1 ml-2">→ {{ r(scene.chosenResponse) }}</p>
       </div>
 
       <!-- 当前场景 -->
       <div v-if="currentScene">
-        <p class="text-xs leading-relaxed mb-3">{{ currentScene.text }}</p>
+        <p class="text-xs leading-relaxed mb-3">{{ r(currentScene.text) }}</p>
 
         <!-- 选择项 -->
         <div v-if="currentScene.choices && !hasChosen" class="space-y-2 mt-3">
           <Button v-for="(choice, ci) in currentScene.choices" :key="ci" class="w-full text-left" @click="handleChoice(choice)">
-            {{ choice.text }}
+            {{ r(choice.text) }}
           </Button>
         </div>
 
         <!-- 选择后的回应 -->
-        <p v-if="choiceResponse" class="text-xs text-accent mt-2 ml-2">→ {{ choiceResponse }}</p>
+        <p v-if="choiceResponse" class="text-xs text-accent mt-2 ml-2">→ {{ r(choiceResponse) }}</p>
 
         <!-- 继续按钮（无选择或已选择后） -->
         <Button v-if="!currentScene.choices || hasChosen" class="mt-3" @click="nextScene">
@@ -36,6 +36,7 @@
   import { ref, computed } from 'vue'
   import type { HeartEventDef, HeartEventScene } from '@/types'
   import Button from '@/components/game/Button.vue'
+  import { usePlayerStore } from '@/stores/usePlayerStore'
 
   const props = defineProps<{
     event: HeartEventDef
@@ -44,6 +45,11 @@
   const emit = defineEmits<{
     close: [friendshipChanges: { npcId: string; amount: number }[]]
   }>()
+
+  const playerStore = usePlayerStore()
+
+  /** 替换对话中的 {player} / {title} 占位符 */
+  const r = (text: string): string => text.replace(/\{player\}/g, playerStore.playerName).replace(/\{title\}/g, playerStore.honorific)
 
   const currentIndex = ref(0)
   const playedScenes = ref<{ text: string; chosenResponse?: string }[]>([])

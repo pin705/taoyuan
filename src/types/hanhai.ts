@@ -85,6 +85,41 @@ export interface TexasSetup {
   tier: TexasTierDef
 }
 
+// === 通商系统 ===
+
+/** 通商售货槽位 */
+export interface TradeSlot {
+  itemId: string
+  quality: string
+  quantity: number
+  daysRemaining: number
+  pointsReward: number
+}
+
+/** 通商店铺升级定义 */
+export interface TradeShopUpgradeDef {
+  level: number
+  name: string
+  maxSlots: number
+  sellDays: number
+  cost: number
+  materialCost: { itemId: string; quantity: number }[]
+}
+
+/** 积分兑换物品定义 */
+export interface TradeExchangeItemDef {
+  itemId: string
+  name: string
+  pointsCost: number
+  description: string
+  weeklyLimit?: number
+  totalLimit?: number
+  /** 是否为钱袋物品（购买后自动加入钱袋） */
+  isWalletItem?: boolean
+  /** 是否为装备 */
+  equipType?: 'weapon' | 'ring' | 'hat' | 'shoe'
+}
+
 // === 恶魔轮盘 ===
 
 export type ShellType = 'live' | 'blank'

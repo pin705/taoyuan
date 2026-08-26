@@ -71,7 +71,7 @@ export const FISH: FishDef[] = [
     description: '暴风雨中才会出现的传说之鱼。',
     location: 'creek',
     miniGameSpeed: 5.0,
-    miniGameDirChange: 0.10
+    miniGameDirChange: 0.1
   },
   // 溪流新增
   {
@@ -674,7 +674,7 @@ export const FISH: FishDef[] = [
     description: '传说中的神秘生物，只在冬雪中出现。',
     location: 'swamp',
     miniGameSpeed: 2.0,
-    miniGameDirChange: 0.10
+    miniGameDirChange: 0.1
   },
   // 沼泽新增
   {

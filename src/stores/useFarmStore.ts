@@ -134,6 +134,14 @@ export const useFarmStore = defineStore('farm', () => {
     const crop = cropId ? getCropById(cropId) : null
     const genetics = plot.seedGenetics
 
+    // 如果属于巨型作物组，清除同组所有地块的 giantCropGroup（防止残留）
+    if (plot.giantCropGroup !== null) {
+      const groupId = plot.giantCropGroup
+      for (const p of plots.value) {
+        if (p.giantCropGroup === groupId) p.giantCropGroup = null
+      }
+    }
+
     // 多茬作物：收获后回到生长状态（有次数上限）
     if (crop && crop.regrowth && crop.regrowthDays) {
       plot.harvestCount++
@@ -187,6 +195,13 @@ export const useFarmStore = defineStore('farm', () => {
       return { cropId: null }
     }
     const cropId = plot.cropId
+    // 如果属于巨型作物组，清除同组所有地块的 giantCropGroup
+    if (plot.giantCropGroup !== null) {
+      const groupId = plot.giantCropGroup
+      for (const p of plots.value) {
+        if (p.giantCropGroup === groupId) p.giantCropGroup = null
+      }
+    }
     plot.state = 'tilled'
     plot.cropId = null
     plot.growthDays = 0
@@ -320,22 +335,24 @@ export const useFarmStore = defineStore('farm', () => {
     return true
   }
 
-  /** 桃源田庄：季初给所有已耕但无肥料的地块施加基础肥料 */
-  const applyFertileSoil = (): number => {
+  /** 桃源田庄：季初给所有已耕但无肥料的地块施加肥料（按种植等级升级） */
+  const applyFertileSoil = (farmingLevel: number): { count: number; fertilizerName: string } => {
+    const fertilizerId = farmingLevel >= 8 ? 'deluxe_speed_gro' : farmingLevel >= 5 ? 'quality_fertilizer' : 'basic_fertilizer'
+    const fertilizerName = farmingLevel >= 8 ? '高级生长激素' : farmingLevel >= 5 ? '优质肥料' : '基础肥料'
     let count = 0
     for (const plot of plots.value) {
       if (plot.state !== 'wasteland' && !plot.fertilizer) {
-        plot.fertilizer = 'basic_fertilizer'
+        plot.fertilizer = fertilizerId
         count++
       }
     }
     for (const plot of greenhousePlots.value) {
       if (plot.state !== 'wasteland' && !plot.fertilizer) {
-        plot.fertilizer = 'basic_fertilizer'
+        plot.fertilizer = fertilizerId
         count++
       }
     }
-    return count
+    return { count, fertilizerName }
   }
 
   /** 每日更新所有地块 */
@@ -639,7 +656,7 @@ export const useFarmStore = defineStore('farm', () => {
 
   /** 扩建农场 */
   const expandFarm = (): FarmSize | null => {
-    const sizes: FarmSize[] = [4, 6, 8]
+    const sizes: FarmSize[] = [4, 6, 8, 10]
     const currentIndex = sizes.indexOf(farmSize.value)
     if (currentIndex >= sizes.length - 1) return null
     const newSize = sizes[currentIndex + 1]!
@@ -846,14 +863,31 @@ export const useFarmStore = defineStore('farm', () => {
     plot.growthDays = 0
     plot.watered = false
     plot.unwateredDays = 0
+    plot.seedGenetics = null
+    return true
+  }
+
+  /** 温室播种育种种子 */
+  const greenhousePlantGeneticSeed = (plotId: number, genetics: SeedGenetics): boolean => {
+    const plot = greenhousePlots.value[plotId]
+    if (!plot || plot.state !== 'tilled') return false
+    const crop = getCropById(genetics.cropId)
+    if (!crop) return false
+    plot.state = 'planted'
+    plot.cropId = genetics.cropId
+    plot.growthDays = 0
+    plot.watered = false
+    plot.unwateredDays = 0
+    plot.seedGenetics = genetics
     return true
   }
 
   /** 温室收获 */
-  const greenhouseHarvestPlot = (plotId: number): string | null => {
+  const greenhouseHarvestPlot = (plotId: number): { cropId: string | null; genetics: SeedGenetics | null } => {
     const plot = greenhousePlots.value[plotId]
-    if (!plot || plot.state !== 'harvestable') return null
+    if (!plot || plot.state !== 'harvestable') return { cropId: null, genetics: null }
     const cropId = plot.cropId
+    const genetics = plot.seedGenetics ?? null
     const crop = cropId ? getCropById(cropId) : null
 
     if (crop && crop.regrowth && crop.regrowthDays) {
@@ -866,11 +900,13 @@ export const useFarmStore = defineStore('farm', () => {
         plot.unwateredDays = 0
         plot.harvestCount = 0
         plot.fertilizer = null
+        plot.seedGenetics = null
       } else {
         plot.state = 'growing'
         plot.growthDays = crop.growthDays - crop.regrowthDays
         plot.watered = false
         plot.unwateredDays = 0
+        // 多茬未达上限：保留 seedGenetics
       }
     } else {
       plot.state = 'tilled'
@@ -880,8 +916,9 @@ export const useFarmStore = defineStore('farm', () => {
       plot.unwateredDays = 0
       plot.fertilizer = null
       plot.harvestCount = 0
+      plot.seedGenetics = null
     }
-    return cropId
+    return { cropId, genetics }
   }
 
   /** 温室每日更新（自动浇水，无天气影响） */
@@ -933,13 +970,13 @@ export const useFarmStore = defineStore('farm', () => {
   }
 
   /** 温室一键收获：返回收获结果列表 */
-  const greenhouseBatchHarvest = (): { cropId: string }[] => {
-    const results: { cropId: string }[] = []
+  const greenhouseBatchHarvest = (): { cropId: string; genetics: SeedGenetics | null }[] => {
+    const results: { cropId: string; genetics: SeedGenetics | null }[] = []
     for (let i = 0; i < greenhousePlots.value.length; i++) {
       const plot = greenhousePlots.value[i]!
       if (plot.state !== 'harvestable') continue
-      const cropId = greenhouseHarvestPlot(i)
-      if (cropId) results.push({ cropId })
+      const result = greenhouseHarvestPlot(i)
+      if (result.cropId) results.push({ cropId: result.cropId, genetics: result.genetics })
     }
     return results
   }
@@ -1055,6 +1092,7 @@ export const useFarmStore = defineStore('farm', () => {
     initGreenhouse,
     greenhouseLevel,
     greenhousePlantCrop,
+    greenhousePlantGeneticSeed,
     greenhouseHarvestPlot,
     greenhouseDailyUpdate,
     upgradeGreenhouse,

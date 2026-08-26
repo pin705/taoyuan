@@ -25,7 +25,8 @@ import {
   BOSS_DROP_WEAPONS,
   TREASURE_DROP_WEAPONS,
   rollRandomEnchantment,
-  getWeaponDisplayName
+  getWeaponDisplayName,
+  getWeaponSellPrice
 } from '@/data/weapons'
 import { getRingById, MONSTER_DROP_RINGS, BOSS_DROP_RINGS, TREASURE_DROP_RINGS } from '@/data/rings'
 import { getHatById, MONSTER_DROP_HATS, BOSS_DROP_HATS, TREASURE_DROP_HATS } from '@/data/hats'
@@ -61,6 +62,7 @@ export const useMiningStore = defineStore('mining', () => {
   const isInSkullCavern = ref(false)
   const skullCavernFloor = ref(0)
   const skullCavernBestFloor = ref(0)
+  const skullSafePointFloor = ref(0)
   const cachedSkullFloorData = ref<SkullCavernFloorDef | null>(null)
 
   /** 战斗状态 */
@@ -127,7 +129,7 @@ export const useMiningStore = defineStore('mining', () => {
         zone: 'abyss',
         ores: sc.ores,
         monsters: sc.monsters.map(m => scaleMonster(m, sc.scaleFactor)),
-        isSafePoint: false,
+        isSafePoint: sc.isSafePoint,
         specialType: sc.specialType
       }
     }
@@ -439,18 +441,19 @@ export const useMiningStore = defineStore('mining', () => {
 
     // 宝箱戒指掉落
     const floor = getActiveFloorData()
+    let autoSoldMoney = 0
     const treasureRings = TREASURE_DROP_RINGS[floor?.zone ?? 'shallow']
     if (treasureRings) {
       const ringTreasureBonus = inventoryStore.getRingEffectValue('treasure_find')
       for (const tr of treasureRings) {
         if (Math.random() < tr.chance + ringTreasureBonus * tr.chance) {
-          inventoryStore.addRing(tr.ringId)
-          const ringDef = getRingById(tr.ringId)
-          items.push({ itemId: tr.ringId, quantity: 1 })
-          if (ringDef) {
-            if (money > 0 || items.length > 1) {
-              // message will include ring name below
-            }
+          if (inventoryStore.hasRing(tr.ringId)) {
+            const price = getRingById(tr.ringId)?.sellPrice ?? 0
+            playerStore.earnMoney(price)
+            autoSoldMoney += price
+          } else {
+            inventoryStore.addRing(tr.ringId)
+            items.push({ itemId: tr.ringId, quantity: 1 })
           }
         }
       }
@@ -462,8 +465,14 @@ export const useMiningStore = defineStore('mining', () => {
       const treasureBonus = inventoryStore.getRingEffectValue('treasure_find')
       for (const th of treasureHats) {
         if (Math.random() < th.chance + treasureBonus * th.chance) {
-          inventoryStore.addHat(th.hatId)
-          items.push({ itemId: th.hatId, quantity: 1 })
+          if (inventoryStore.hasHat(th.hatId)) {
+            const price = getHatById(th.hatId)?.sellPrice ?? 0
+            playerStore.earnMoney(price)
+            autoSoldMoney += price
+          } else {
+            inventoryStore.addHat(th.hatId)
+            items.push({ itemId: th.hatId, quantity: 1 })
+          }
         }
       }
     }
@@ -474,8 +483,14 @@ export const useMiningStore = defineStore('mining', () => {
       const treasureBonus = inventoryStore.getRingEffectValue('treasure_find')
       for (const ts of treasureShoes) {
         if (Math.random() < ts.chance + treasureBonus * ts.chance) {
-          inventoryStore.addShoe(ts.shoeId)
-          items.push({ itemId: ts.shoeId, quantity: 1 })
+          if (inventoryStore.hasShoe(ts.shoeId)) {
+            const price = getShoeById(ts.shoeId)?.sellPrice ?? 0
+            playerStore.earnMoney(price)
+            autoSoldMoney += price
+          } else {
+            inventoryStore.addShoe(ts.shoeId)
+            items.push({ itemId: ts.shoeId, quantity: 1 })
+          }
         }
       }
     }
@@ -487,8 +502,14 @@ export const useMiningStore = defineStore('mining', () => {
       for (const tw of treasureWeapons) {
         if (Math.random() < tw.chance + treasureBonus * tw.chance) {
           const enchantId = rollRandomEnchantment()
-          inventoryStore.addWeapon(tw.weaponId, enchantId)
-          items.push({ itemId: tw.weaponId, quantity: 1 })
+          if (inventoryStore.hasWeaponExact(tw.weaponId, enchantId)) {
+            const price = getWeaponSellPrice(tw.weaponId, enchantId)
+            playerStore.earnMoney(price)
+            autoSoldMoney += price
+          } else {
+            inventoryStore.addWeapon(tw.weaponId, enchantId)
+            items.push({ itemId: tw.weaponId, quantity: 1 })
+          }
         }
       }
     }
@@ -498,6 +519,7 @@ export const useMiningStore = defineStore('mining', () => {
     let msg = '发现宝箱！'
     if (items.length > 0) msg += `获得了${getRewardNames(items)}`
     if (money > 0) msg += `${items.length > 0 ? '和' : '获得了'}${money}文`
+    if (autoSoldMoney > 0) msg += `（重复装备自动售出+${autoSoldMoney}文）`
     msg += `！(-${staminaCost}体力)`
     return { success: true, message: msg, startsCombat: false }
   }
@@ -664,20 +686,21 @@ export const useMiningStore = defineStore('mining', () => {
     return `进入云隐矿洞，当前第${currentFloor.value}层。`
   }
 
-  /** 进入骷髅矿穴 */
-  const enterSkullCavern = (): string => {
+  /** 进入骷髅矿穴（可选择起始安全点楼层） */
+  const enterSkullCavern = (startFromSafePoint?: number): string => {
     if (!isSkullCavernUnlocked()) return '需要先击败60层BOSS才能进入骷髅矿穴。'
     isExploring.value = true
     isInSkullCavern.value = true
-    skullCavernFloor.value = 1
-    cacheSkullFloor(1)
+    const baseFloor = startFromSafePoint ?? skullSafePointFloor.value
+    skullCavernFloor.value = baseFloor + 1
+    cacheSkullFloor(skullCavernFloor.value)
     sessionLoot.value = []
 
     _generateGrid()
 
     _checkAutoBossCombat()
 
-    return `进入骷髅矿穴，当前第1层。`
+    return `进入骷髅矿穴，当前第${skullCavernFloor.value}层。`
   }
 
   /** 检查是否自动触发BOSS战（BOSS格在入口邻格时） */
@@ -689,6 +712,15 @@ export const useMiningStore = defineStore('mining', () => {
   const getUnlockedSafePoints = (): number[] => {
     const points: number[] = [0] // 0 = 从第1层开始
     for (let f = 5; f <= safePointFloor.value; f += 5) {
+      points.push(f)
+    }
+    return points
+  }
+
+  /** 获取骷髅矿穴已解锁的安全点 */
+  const getUnlockedSkullSafePoints = (): number[] => {
+    const points: number[] = [0] // 0 = 从第1层开始
+    for (let f = 10; f <= skullSafePointFloor.value; f += 10) {
       points.push(f)
     }
     return points
@@ -908,6 +940,7 @@ export const useMiningStore = defineStore('mining', () => {
     }
 
     // 武器掉落（普通怪物，非 BOSS）
+    let monsterAutoSold = 0
     if (!combatIsBoss.value && floor) {
       const weaponDrops = MONSTER_DROP_WEAPONS[floor.zone]
       if (weaponDrops) {
@@ -915,9 +948,15 @@ export const useMiningStore = defineStore('mining', () => {
           const dropChance = wd.chance + luckyBonus * wd.chance
           if (Math.random() < dropChance) {
             const enchantId = rollRandomEnchantment()
-            inventoryStore.addWeapon(wd.weaponId, enchantId)
-            const displayName = getWeaponDisplayName(wd.weaponId, enchantId)
-            msg += ` 获得了武器：${displayName}！`
+            if (inventoryStore.hasWeaponExact(wd.weaponId, enchantId)) {
+              const price = getWeaponSellPrice(wd.weaponId, enchantId)
+              playerStore.earnMoney(price)
+              monsterAutoSold += price
+            } else {
+              inventoryStore.addWeapon(wd.weaponId, enchantId)
+              const displayName = getWeaponDisplayName(wd.weaponId, enchantId)
+              msg += ` 获得了武器：${displayName}！`
+            }
           }
         }
       }
@@ -926,9 +965,15 @@ export const useMiningStore = defineStore('mining', () => {
       if (ringDrops) {
         for (const rd of ringDrops) {
           if (Math.random() < rd.chance + luckyBonus * rd.chance) {
-            inventoryStore.addRing(rd.ringId)
-            const ringDef = getRingById(rd.ringId)
-            msg += ` 获得了戒指：${ringDef?.name ?? rd.ringId}！`
+            if (inventoryStore.hasRing(rd.ringId)) {
+              const price = getRingById(rd.ringId)?.sellPrice ?? 0
+              playerStore.earnMoney(price)
+              monsterAutoSold += price
+            } else {
+              inventoryStore.addRing(rd.ringId)
+              const ringDef = getRingById(rd.ringId)
+              msg += ` 获得了戒指：${ringDef?.name ?? rd.ringId}！`
+            }
           }
         }
       }
@@ -937,9 +982,15 @@ export const useMiningStore = defineStore('mining', () => {
       if (hatDrops) {
         for (const hd of hatDrops) {
           if (Math.random() < hd.chance + luckyBonus * hd.chance) {
-            inventoryStore.addHat(hd.hatId)
-            const hatDef = getHatById(hd.hatId)
-            msg += ` 获得了帽子：${hatDef?.name ?? hd.hatId}！`
+            if (inventoryStore.hasHat(hd.hatId)) {
+              const price = getHatById(hd.hatId)?.sellPrice ?? 0
+              playerStore.earnMoney(price)
+              monsterAutoSold += price
+            } else {
+              inventoryStore.addHat(hd.hatId)
+              const hatDef = getHatById(hd.hatId)
+              msg += ` 获得了帽子：${hatDef?.name ?? hd.hatId}！`
+            }
           }
         }
       }
@@ -948,12 +999,19 @@ export const useMiningStore = defineStore('mining', () => {
       if (shoeDrops) {
         for (const sd of shoeDrops) {
           if (Math.random() < sd.chance + luckyBonus * sd.chance) {
-            inventoryStore.addShoe(sd.shoeId)
-            const shoeDef = getShoeById(sd.shoeId)
-            msg += ` 获得了鞋子：${shoeDef?.name ?? sd.shoeId}！`
+            if (inventoryStore.hasShoe(sd.shoeId)) {
+              const price = getShoeById(sd.shoeId)?.sellPrice ?? 0
+              playerStore.earnMoney(price)
+              monsterAutoSold += price
+            } else {
+              inventoryStore.addShoe(sd.shoeId)
+              const shoeDef = getShoeById(sd.shoeId)
+              msg += ` 获得了鞋子：${shoeDef?.name ?? sd.shoeId}！`
+            }
           }
         }
       }
+      if (monsterAutoSold > 0) msg += `（重复装备自动售出+${monsterAutoSold}文）`
     }
 
     // BOSS 击败处理
@@ -1143,12 +1201,17 @@ export const useMiningStore = defineStore('mining', () => {
     }
 
     if (isInSkullCavern.value) {
-      // 骷髅矿穴：无上限，无安全点
+      // 骷髅矿穴：无上限，每10层安全点
       skullCavernFloor.value++
       cacheSkullFloor(skullCavernFloor.value)
       if (skullCavernFloor.value > skullCavernBestFloor.value) {
         skullCavernBestFloor.value = skullCavernFloor.value
         useAchievementStore().recordSkullCavernFloor(skullCavernFloor.value)
+      }
+      // 到达新安全点时保存
+      const skullFloor = cachedSkullFloorData.value
+      if (skullFloor?.isSafePoint && skullCavernFloor.value > skullSafePointFloor.value) {
+        skullSafePointFloor.value = skullCavernFloor.value
       }
     } else {
       // 主矿洞：最多 120 层
@@ -1202,6 +1265,13 @@ export const useMiningStore = defineStore('mining', () => {
         safePointFloor.value = currentFloor.value
       }
     }
+    // 骷髅矿穴：离开前保存安全点
+    if (isInSkullCavern.value) {
+      const skullFloor = cachedSkullFloorData.value
+      if (skullFloor?.isSafePoint && skullCavernFloor.value > skullSafePointFloor.value) {
+        skullSafePointFloor.value = skullCavernFloor.value
+      }
+    }
     isExploring.value = false
     combatIsBoss.value = false
     floorGrid.value = []
@@ -1218,41 +1288,49 @@ export const useMiningStore = defineStore('mining', () => {
   // ==================== 道具使用 ====================
 
   /** 在战斗/探索中使用道具 */
-  const useCombatItem = (itemId: string): { success: boolean; message: string } => {
+  const useCombatItem = (itemId: string, quantity: number = 1): { success: boolean; message: string } => {
     if (!inCombat.value && !isExploring.value) return { success: false, message: '不在矿洞中。' }
 
     // 公会徽章：永久+3攻击力
     if (itemId === 'guild_badge') {
-      if (!inventoryStore.removeItem('guild_badge')) return { success: false, message: '没有公会徽章。' }
-      guildBadgeBonusAttack.value += 3
-      const msg = '使用了公会徽章，攻击力永久+3！'
+      const actual = Math.min(quantity, inventoryStore.getItemCount('guild_badge'))
+      if (actual <= 0) return { success: false, message: '没有公会徽章。' }
+      inventoryStore.removeItem('guild_badge', actual)
+      guildBadgeBonusAttack.value += 3 * actual
+      const msg = `使用了公会徽章×${actual}，攻击力永久+${3 * actual}！`
       if (inCombat.value) combatLog.value.push(msg)
       return { success: true, message: msg }
     }
 
     // 生命护符：永久+15最大HP
     if (itemId === 'life_talisman') {
-      if (!inventoryStore.removeItem('life_talisman')) return { success: false, message: '没有生命护符。' }
-      guildBonusMaxHp.value += 15
-      const msg = '使用了生命护符，最大生命值永久+15！'
+      const actual = Math.min(quantity, inventoryStore.getItemCount('life_talisman'))
+      if (actual <= 0) return { success: false, message: '没有生命护符。' }
+      inventoryStore.removeItem('life_talisman', actual)
+      guildBonusMaxHp.value += 15 * actual
+      const msg = `使用了生命护符×${actual}，最大生命值永久+${15 * actual}！`
       if (inCombat.value) combatLog.value.push(msg)
       return { success: true, message: msg }
     }
 
     // 幸运铜钱：永久掉落率+5%
     if (itemId === 'lucky_coin') {
-      if (!inventoryStore.removeItem('lucky_coin')) return { success: false, message: '没有幸运铜钱。' }
-      guildBonusDropRate.value += 0.05
-      const msg = '使用了幸运铜钱，怪物掉落率永久+5%！'
+      const actual = Math.min(quantity, inventoryStore.getItemCount('lucky_coin'))
+      if (actual <= 0) return { success: false, message: '没有幸运铜钱。' }
+      inventoryStore.removeItem('lucky_coin', actual)
+      guildBonusDropRate.value += 0.05 * actual
+      const msg = `使用了幸运铜钱×${actual}，怪物掉落率永久+${5 * actual}%！`
       if (inCombat.value) combatLog.value.push(msg)
       return { success: true, message: msg }
     }
 
     // 守护符：永久防御+3%
     if (itemId === 'defense_charm') {
-      if (!inventoryStore.removeItem('defense_charm')) return { success: false, message: '没有守护符。' }
-      guildBonusDefense.value += 0.03
-      const msg = '使用了守护符，防御永久+3%！'
+      const actual = Math.min(quantity, inventoryStore.getItemCount('defense_charm'))
+      if (actual <= 0) return { success: false, message: '没有守护符。' }
+      inventoryStore.removeItem('defense_charm', actual)
+      guildBonusDefense.value += 0.03 * actual
+      const msg = `使用了守护符×${actual}，防御永久+${3 * actual}%！`
       if (inCombat.value) combatLog.value.push(msg)
       return { success: true, message: msg }
     }
@@ -1369,6 +1447,7 @@ export const useMiningStore = defineStore('mining', () => {
       isInSkullCavern: isInSkullCavern.value,
       skullCavernFloor: skullCavernFloor.value,
       skullCavernBestFloor: skullCavernBestFloor.value,
+      skullSafePointFloor: skullSafePointFloor.value,
       guildBadgeBonusAttack: guildBadgeBonusAttack.value,
       guildBonusMaxHp: guildBonusMaxHp.value,
       guildBonusDropRate: guildBonusDropRate.value,
@@ -1397,6 +1476,7 @@ export const useMiningStore = defineStore('mining', () => {
     isInSkullCavern.value = ((data as Record<string, unknown>).isInSkullCavern as boolean) ?? false
     skullCavernFloor.value = ((data as Record<string, unknown>).skullCavernFloor as number) ?? 0
     skullCavernBestFloor.value = ((data as Record<string, unknown>).skullCavernBestFloor as number) ?? 0
+    skullSafePointFloor.value = ((data as Record<string, unknown>).skullSafePointFloor as number) ?? 0
 
     // 格子状态不序列化——读档后玩家在矿洞外
     isExploring.value = false
@@ -1416,6 +1496,7 @@ export const useMiningStore = defineStore('mining', () => {
     isInSkullCavern,
     skullCavernFloor,
     skullCavernBestFloor,
+    skullSafePointFloor,
     inCombat,
     combatMonster,
     combatMonsterHp,
@@ -1440,6 +1521,7 @@ export const useMiningStore = defineStore('mining', () => {
     isSkullCavernUnlocked,
     getActiveFloorData,
     getUnlockedSafePoints,
+    getUnlockedSkullSafePoints,
     canRevealTile,
     engageRevealedMonster,
     revealTile,
